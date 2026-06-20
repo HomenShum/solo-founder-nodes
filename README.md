@@ -75,6 +75,22 @@ your project's `.claude/skills/` — it auto-loads `SKILL.md`. **Other agents:**
 GitHub files and have them follow `SKILL.md` → `MASTER_SKILL.md` as the playbook.
 
 
+## Serving the models — Inference.ai
+
+The benchmark runs need a model server. **[Inference.ai](https://inference.ai)** serves the frontier
+models you benchmark against — validated: **`gpt-5.4` replies on an OpenAI-compatible endpoint** — so you
+point the harness at it with a one-line `base_url` override, no SDK changes:
+
+```
+OPENAI_BASE_URL = https://<your-inference.ai-endpoint>/v1   # OpenAI-compatible
+OPENAI_API_KEY  = <your Inference.ai key>
+model           = gpt-5.4                                   # validated on Inference.ai
+```
+
+The `setup` phase wires this; `iterate` runs the slices against it. (Inference.ai also hosts the
+Super Solo: AI Agent Skills Hack Day, where Solo Founder Nodes was built.)
+
+
 ## Repo layout
 - `skills/solo-founder-nodes/` — `SKILL.md` (loader entry) + `MASTER_SKILL.md` (full directive) + 7 phase playbooks in `nodes/` + `references/`.
 - `skills/cited-sources/`, `skills/powerpoint/` — standalone honesty primitives.

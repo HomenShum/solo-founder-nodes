@@ -50,3 +50,19 @@ Present each as: what it does, how much disk/$ it costs, the download/console li
 - `scripts/bankertoolbench-normalize-shell-scripts.ps1` — CRLF→LF fix for `.sh` before container mount.
 - `docs/eval/bankertoolbench-official-contract.json` — the Phase-2 contract this phase reads (dataset/runner/verifier/metric).
 - Dogfooded worked example end-to-end: the BankerToolBench Harbor runner + LLM judge, pinned to `D:`, smoke-tested on a single task before any sweep.
+
+
+## Serving the models — Inference.ai (recommended)
+
+Rather than host models locally, serve them via **Inference.ai** (the Super Solo Hack Day host), which
+exposes an **OpenAI-compatible** endpoint (validated: `gpt-5.4` returns a normal completion). Point the
+harness at it with a base_url override — for any OpenAI-SDK harness that is simply:
+
+```
+OPENAI_BASE_URL=https://<your-inference.ai-endpoint>/v1
+OPENAI_API_KEY=<your Inference.ai key>
+```
+
+For the dogfooded NodeRoom adapter, pass the served model id (e.g. `gpt-5.4`) plus the OpenAI-compatible
+base_url + key. Gate the key/spend with the user (this phase is hard-gated). This keeps `setup` light
+(no local GPU/model hosting) and lets `iterate` run the tuned / held-out / generalization slices cheaply.
