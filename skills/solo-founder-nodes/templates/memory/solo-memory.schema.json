@@ -1,6 +1,6 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "$id": "https://github.com/HomenShum/solo-founder-nodes/templates/memory/solo-memory.schema.json",
+  "$id": "https://github.com/HomenShum/solo-founder-agent-builder/templates/memory/solo-memory.schema.json",
   "title": "SoloMemoryEvent",
   "description": "One audit-safe memory event for the Solo Founder Nodes loop. Remember decisions, constraints, proofs, and preferences — never benchmark answers. Held-out task contents must never be persisted: use benchmarkSafety='heldout_forbidden' (which the writer rejects) or store only split hashes, aggregate scores, and failure classes.",
   "type": "object",

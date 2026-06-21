@@ -40,7 +40,7 @@ model           = gpt-5.4                                   # validated on Infer
 ## Use it with your coding agent
 Portable **SKILL.md** — works with any coding agent. Paste this into your agent, **inside your own project**:
 
-> Fetch Solo Founder Agent Builder + Eval Loop Engineering Skill Nodes from https://github.com/HomenShum/solo-founder-nodes (clone it, or read the
+> Fetch Solo Founder Agent Builder + Eval Loop Engineering Skill Nodes from https://github.com/HomenShum/solo-founder-agent-builder (clone it, or read the
 > raw files). Then act as the master directive in `skills/solo-founder-nodes/SKILL.md` → `MASTER_SKILL.md`:
 > run benchmark-driven development on THIS project — discover what my agent should do, recommend a
 > benchmark, set it up, build the missing agent + UI, wire the adapter, iterate, and verify it in my live
