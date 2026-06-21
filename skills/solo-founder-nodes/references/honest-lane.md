@@ -116,3 +116,9 @@ flow catches it. Derive, don't accept — then have someone try to beat what you
 **Grounding:** the recent eval-integrity literature corroborating this doctrine — contamination,
 reward hacking, eval-awareness, dynamic benchmarks, verifiable evaluation — is mapped to T1–T6 and
 the S9–S16 mechanisms in [`research.md`](research.md).
+
+**Runnable reference:** a local-first implementation of S9–S16 — `SoloLedger` (derive-the-gate, split
+sealing, memory-leak taint, hash-chain) + `SoloMemory` (S13 content gate) + a smoke that proves each
+mechanism (incl. tamper detection) — lives in [`../templates/`](../templates/). No cloud:
+`npm i && npm run smoke`. App-coupled parts (S10/S11 receipts, S15 verifier, the sealed-gold corpus +
+HMAC salt) are wired as hooks the harness fills out-of-process.

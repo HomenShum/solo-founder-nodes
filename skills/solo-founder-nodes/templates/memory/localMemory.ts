@@ -26,12 +26,18 @@ type SoloMemoryArgs = {
   dbUrl?: string;
   eventLogPath?: string;
   embeddingProvider?: EmbeddingProvider;
+  // S13: optional content gate. Return a reject reason to refuse the write — blocks held-out gold from
+  // being persisted under ANY benchmarkSafety label. Build it from a sealed corpus (ledger/contentGate.ts),
+  // out of the agent's reach. This is the derive-don't-accept fix for memory: the quarantine no longer
+  // trusts the caller's self-declared label.
+  heldOutGuard?: (input: RememberInput) => string | null;
 };
 
 export class SoloMemory {
   private readonly db: Client;
   private readonly events: JsonlEventLog;
   private readonly embeddingProvider?: EmbeddingProvider;
+  private readonly heldOutGuard?: (input: RememberInput) => string | null;
 
   constructor(args: SoloMemoryArgs = {}) {
     this.db = createClient({
@@ -43,6 +49,7 @@ export class SoloMemory {
     );
 
     this.embeddingProvider = args.embeddingProvider;
+    this.heldOutGuard = args.heldOutGuard;
   }
 
   async init() {
@@ -52,6 +59,23 @@ export class SoloMemory {
   async remember(input: RememberInput) {
     const parsed = rememberInputSchema.parse(input);
     this.assertBenchmarkSafe(parsed);
+
+    // S13 content gate: reject a write that leaks held-out gold, regardless of its self-declared label.
+    if (this.heldOutGuard) {
+      const reason = this.heldOutGuard(parsed);
+      if (reason) {
+        this.events.append({
+          id: `evt_${nanoid(12)}`,
+          projectId: parsed.projectId,
+          eventType: "quarantine_reject",
+          payload: { reason, summary: parsed.summary, phase: parsed.phase, kind: parsed.kind },
+          createdAt: new Date().toISOString(),
+        });
+        throw new Error(
+          `SoloMemory: content gate rejected the write (${reason}). Held-out gold may not be persisted under any label.`,
+        );
+      }
+    }
 
     const id = `mem_${nanoid(12)}`;
     const now = new Date().toISOString();
