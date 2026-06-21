@@ -10,6 +10,19 @@ npm i && npm run smoke
 The smoke runs **17 assertions** that *prove* each anti-cheat mechanism (and the chain detecting a
 tamper) — not a claim, a passing run.
 
+## CLI (`sfn`) — the universal shell entry
+A thin wrapper over the **same code the smoke proves** — pure shell, no new deps. It's the
+agent-agnostic surface: every coding agent can run it.
+
+```
+npm run sfn -- doctor                       # node + deps readiness
+npm run sfn -- smoke                        # the substrate proof (expect 17 passed, 0 failed)
+npm run sfn -- conformance                  # the cross-agent portability probe (PASS + receipt)
+npm run sfn -- seal --salt <s> <taskId...>  # seal a held-out manifest (HMAC) — keep the salt OUT of the agent's reach
+npm run sfn -- ledger list                  # list recorded eval runs
+npm run sfn -- ledger verify <runId>        # re-verify a run's hash-chain (tamper check)
+```
+
 ## What's here
 - **`ledger/` — `SoloLedger`**: the honest-lane eval ledger that **DERIVES the gate, never accepts it**.
   - Enforced fully + locally: **S9** derive-the-gate + quarantine-on-disagreement · **S12** split

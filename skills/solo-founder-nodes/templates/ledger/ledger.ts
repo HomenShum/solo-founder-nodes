@@ -5,9 +5,18 @@
 // (nonce issued per run), S15 independent verifier. The harness produces the receipts; the ledger checks them.
 import { createClient, type Client } from "@libsql/client";
 import { nanoid } from "nanoid";
+import { mkdirSync } from "node:fs";
+import { dirname } from "node:path";
 import { LEDGER_SCHEMA_SQL } from "./schema";
 import { deriveCleanProbe, type GateEvidence } from "./gate";
 import { sha256, hmac, canon } from "./hash";
+
+// A `file:` db needs its parent dir to exist before libsql opens it (else SQLITE_CANTOPEN).
+function ensureFileDir(url: string) {
+  if (!url.startsWith("file:")) return;
+  const p = url.slice(5).split("?")[0];
+  if (p && p !== ":memory:") mkdirSync(dirname(p), { recursive: true });
+}
 
 export type WriterReceipt = { firedWriterLeaf: string; deliverableHash: string };
 export type TransportReceipt = { tokensUsed: number; nonce: string };
@@ -29,7 +38,9 @@ export class SoloLedger {
   private now: () => number;
 
   constructor(o: { dbUrl?: string; salt?: string; now?: () => number } = {}) {
-    this.db = createClient({ url: o.dbUrl ?? process.env.SOLO_LEDGER_DB_URL ?? "file:.solo-ledger/ledger.db" });
+    const url = o.dbUrl ?? process.env.SOLO_LEDGER_DB_URL ?? "file:.solo-ledger/ledger.db";
+    ensureFileDir(url);
+    this.db = createClient({ url });
     this.salt = o.salt ?? process.env.SOLO_LEDGER_SALT ?? "dev-salt-change-me";
     this.now = o.now ?? (() => Date.now());
   }

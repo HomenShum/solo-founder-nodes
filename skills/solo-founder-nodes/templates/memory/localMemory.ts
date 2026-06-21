@@ -3,6 +3,7 @@
 // Enforces the held-out quarantine on write (benchmarkSafety='heldout_forbidden' is rejected).
 import { createClient, type Client } from "@libsql/client";
 import { nanoid } from "nanoid";
+import { mkdirSync } from "node:fs";
 import path from "node:path";
 import {
   type EmbeddingProvider,
@@ -40,9 +41,12 @@ export class SoloMemory {
   private readonly heldOutGuard?: (input: RememberInput) => string | null;
 
   constructor(args: SoloMemoryArgs = {}) {
-    this.db = createClient({
-      url: args.dbUrl ?? process.env.SOLO_MEMORY_DB_URL ?? "file:.solo-memory/memory.db",
-    });
+    const url = args.dbUrl ?? process.env.SOLO_MEMORY_DB_URL ?? "file:.solo-memory/memory.db";
+    if (url.startsWith("file:")) {
+      const p = url.slice(5).split("?")[0];
+      if (p && p !== ":memory:") mkdirSync(path.dirname(p), { recursive: true });
+    }
+    this.db = createClient({ url });
 
     this.events = new JsonlEventLog(
       args.eventLogPath ?? path.join(".solo-memory", "memory.events.jsonl"),
