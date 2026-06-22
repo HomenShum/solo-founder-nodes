@@ -281,6 +281,15 @@ def code_exec_script(task, dpath, grader):
         "  - For numeric outputs that may sit on a 2-decimal rounding boundary (values ending\n"
         "    in .xx5), prefer decimal.Decimal with ROUND_HALF_UP, or write the value Excel would\n"
         "    store (Excel rounds 22.425 -> 22.43, not 22.42). Avoid raw Python round() for money.\n"
+        "  - NO STYLING. Do NOT use PatternFill, Color, Fill, Font, Alignment, Border, Side,\n"
+        "    NamedStyle, GradientFill, or anything from openpyxl.styles. The grader compares\n"
+        "    cell VALUES inside answer_position, not formatting. Styling code that constructs\n"
+        "    Color/Fill objects raises TypeError on many openpyxl versions\n"
+        "    (e.g. 'PatternFill.fgColor should be Color but value is RGB'); the script then\n"
+        "    aborts and the test case scores 0.\n"
+        "  - Use the openpyxl basic API ONLY: load_workbook(input).active or wb[sheet_name],\n"
+        "    ws['A1'].value = ..., ws.cell(row, column, value=...), wb.create_sheet(name),\n"
+        "    wb.save(output). No styles imports.\n"
         "  - Wrap in if __name__ == '__main__'. Print nothing on success.\n\n"
         f"Instruction:\n{task['instruction']}\n\n"
         f"instruction_type: {task['instruction_type']}\n"
@@ -297,7 +306,60 @@ def code_exec_script(task, dpath, grader):
         if code.startswith("python"):
             code = code[len("python"):]
         code = code.strip()
+    # Belt-and-suspenders: scrub openpyxl.styles usage that some models emit despite the
+    # prompt warning. Observed failure on glm-5.2 R3 for task 99-24 (sheet-level):
+    #   TypeError: <class 'openpyxl.styles.fills.PatternFill'>.fgColor should be
+    #   <class 'openpyxl.styles.colors.Color'> but value is <class 'openpyxl.styles.colors.RGB'>
+    # The grader only checks VALUES inside answer_position (cell_level_compare ignores fills),
+    # so stripping styling is non-destructive and prevents a hard abort on the whole test case.
+    code = _strip_styling(code)
     return code
+
+
+_STYLE_CLASSES = (
+    "PatternFill", "GradientFill", "Fill", "Color", "Font", "Alignment",
+    "Border", "Side", "NamedStyle", "Protection",
+)
+
+
+def _strip_styling(code: str):
+    """Remove openpyxl.styles imports and any line that constructs/assigns a style object.
+
+    Conservative: we drop whole physical lines (and their continuation lines) that reference
+    a style class or assign to a styling property (.fill / .font / .alignment / .border /
+    .number_format on a cell). Keep .value assignments. If a `for`/`if` body becomes empty
+    we leave a `pass` stub so indentation stays valid.
+    """
+    import re
+    style_class_re = re.compile(r"\b(" + "|".join(_STYLE_CLASSES) + r")\b")
+    style_attr_re = re.compile(r"\.(fill|font|alignment|border|number_format|protection|style)\s*=")
+    style_import_re = re.compile(r"^\s*(from\s+openpyxl\.styles[\w\.]*\s+import\s+|import\s+openpyxl\.styles)")
+    out, i = [], 0
+    lines = code.splitlines()
+    while i < len(lines):
+        line = lines[i]
+        stripped = line.strip()
+        is_style = (
+            style_import_re.match(line) is not None
+            or (style_class_re.search(line) is not None and not stripped.startswith("#"))
+            or (style_attr_re.search(line) is not None and ".value" not in line)
+        )
+        if is_style:
+            # Consume continuation lines (open paren or trailing backslash).
+            open_parens = line.count("(") - line.count(")")
+            trailing_bs = line.rstrip().endswith("\\")
+            while (open_parens > 0 or trailing_bs) and i + 1 < len(lines):
+                i += 1
+                nxt = lines[i]
+                open_parens += nxt.count("(") - nxt.count(")")
+                trailing_bs = nxt.rstrip().endswith("\\")
+            # Replace with a comment placeholder preserving indentation so block bodies stay valid.
+            indent = line[: len(line) - len(line.lstrip())]
+            out.append(f"{indent}pass  # [stripped styling]")
+        else:
+            out.append(line)
+        i += 1
+    return "\n".join(out)
 
 
 def run_code_exec(script, in_path, out_path, timeout=60):
