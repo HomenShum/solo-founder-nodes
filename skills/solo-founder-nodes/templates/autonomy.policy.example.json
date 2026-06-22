@@ -1,0 +1,28 @@
+{
+  "_comment": "Founder autonomy policy — set once; the agent then runs the whole loop unattended within it. See references/autonomy.md.",
+  "model": "gpt-4.1-mini",
+  "apiKeyEnv": "OPENAI_API_KEY",
+  "budgetUsd": 5.0,
+  "downloadAllowlist": [
+    "huggingface.co",
+    "github.com/<scope-to-the-specific-benchmark-repo>"
+  ],
+  "autoApprove": {
+    "installs": true,
+    "codeChanges": true,
+    "localRuns": true
+  },
+  "hardStops": [
+    "publishPublic",
+    "overBudget",
+    "downloadOffAllowlist",
+    "deleteData",
+    "credentials"
+  ],
+  "_referee": "OUT OF THE AGENT'S REACH — the agent never sets these; they live in CI / a secret / the trust-root API.",
+  "referee": {
+    "sealSaltEnv": "SOLO_LEDGER_SALT",
+    "sealedGoldPath": "<host-controlled, not agent-writable>",
+    "verifierModel": "<a different model/lens than `model`>"
+  }
+}

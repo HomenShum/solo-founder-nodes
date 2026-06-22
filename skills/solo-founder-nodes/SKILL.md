@@ -36,7 +36,10 @@ Obey in every phase: **held-out · no answer-keys · in-app transfer · honest p
 guard: only **model-in-loop + the generic writer on a held-out task** is real capability; **model-off**
 (0 tokens) is a harness failure not a score, and any per-task/family writer is a fake answer-key
 ([`references/honest-lane.md`](references/honest-lane.md)). Gate any install / spend / code change on
-the user's approval, and log each phase: what you did, the result, and what you could not do.
+the user's approval — **or run unattended under a founder autonomy policy**
+([`references/autonomy.md`](references/autonomy.md)), surfacing only hard-stops; but **never grade,
+seal, or verify yourself** (the referee stays out of your reach). Log each phase: what you did, the
+result, and what you could not do.
 
 **Memory:** at each phase START re-hydrate safe project memory (prior scorecard, frozen splits,
 decisions, approvals, rejected fixes) and at END write decision/provenance memory — but **never** write

@@ -20,6 +20,15 @@ the honesty conscience a solo founder cannot staff. Every phase obeys:
 The user's coding agent drives each phase (reads the codebase, web-searches, builds). The user steers
 by **comment**. If the user defers, proceed on explicit, stated assumptions and surface them.
 
+**Full autonomy (the goal).** Under a founder **autonomy policy** ([`references/autonomy.md`](references/autonomy.md))
+— model + key, a budget cap, a download allowlist, auto-approve installs/code — the agent runs the WHOLE
+loop unattended on the founder's behalf: download the dataset, wire the harness, run the model, iterate,
+and verify in the live app, pausing only on a hard-stop (over budget · untrusted download · public
+publish · deleting data · credentials). The carve-out that makes this safe: **the agent does every step
+and produces every proof, but never grades / seals / verifies itself — the referee (seal salt, gate
+derivation, sealed-gold, independent verifier) lives out of its reach** ([`references/trust-root-api.md`](references/trust-root-api.md)).
+Maximum autonomy on the work; zero autonomy on the scoring.
+
 ## Permission gates (hard)
 Phases that install heavy infra (Docker, Harbor, HuggingFace), spend API money, or mutate the codebase
 are **guide -> generate -> gate**: present the plan + exact commands + links, dry-run if possible, and
