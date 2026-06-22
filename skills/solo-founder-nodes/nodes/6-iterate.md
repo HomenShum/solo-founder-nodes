@@ -7,6 +7,7 @@ Closes the benchmark-driven loop. You already have an adapter that runs tasks th
 Inputs:
 - The three task splits: TUNED (you may inspect + iterate on), HELD-OUT (run, never tune on), GENERALIZATION (off-distribution; run, never tune on). For the dogfood: BankerToolBench tuned/held-out + the non-BTB generalization slice.
 - The deterministic grader: `docs/eval/nonbtb/grade.py` (correctness / formula / citation / fabrication; self-tested — run its self-test first).
+- **Reference autonomous runner:** [`templates/run/`](../templates/run/) — the full benchmark loop as runnable code (clone-from-allowlist → seal held-out → **model-in-loop** attempt → grade with the benchmark's **OWN** grader → honest headline). `spreadsheetbench.py` is the worked adapter (imports SpreadsheetBench's official `compare_workbooks`; `--mode api` = full-auto with the policy model, `--mode agent` = the coding agent in the loop). Proven on a held-out slice. Copy its shape for any benchmark.
 - The slice contract + materializers-off rule: `docs/eval/BTB_GENERALIZATION_DIAGNOSTIC.md`.
 - The parallel runner: `scripts/bankertoolbench-nodeagent-parallel.ps1` (throttled parallel runs).
 - The agent adapter from the prior phase (the thing that drives the real NodeRoom agent over a task).
