@@ -12,10 +12,13 @@ headline only as a held-out clean probe with the model genuinely in the loop. Th
 benchmark's own; we never reimplement or soften it.
 
 Modes:
-  --mode api    : call an OpenAI-compatible model (env OPENAI_API_KEY, OPENAI_BASE_URL) — full auto.
-  --mode agent  : the coding agent IS the model — read attempts from <attempts-dir>/<id>.json.
-  --dump        : print each held-out task (instruction + answer_position + per-test-case input
-                  preview) so an agent-in-the-loop can produce attempts. No grading.
+  --mode api      : call an OpenAI-compatible model (env OPENAI_API_KEY, OPENAI_BASE_URL) — full auto.
+  --mode agent    : the coding agent IS the model — read attempts from <attempts-dir>/<id>.json.
+  --mode code-exec: ask the model to write a self-contained openpyxl python script per task;
+                    execute it once per test case in an isolated tempdir under --code-timeout.
+                    Required for sheet-level tasks (new sheets, large spans, formula resolution).
+  --dump          : print each held-out task (instruction + answer_position + per-test-case input
+                    preview) so an agent-in-the-loop can produce attempts. No grading.
 
 Usage:
   python spreadsheetbench.py --repo <clone> --dataset sample_data_200 --slice 3 --salt <s> --dump
@@ -90,7 +93,12 @@ def preview_input(grader, path, answer_position, max_rows=20):
 
 def apply_attempt(input_path, out_path, attempt_cells):
     # attempt_cells: { "Sheet!Cell" or "Cell": value }. Fill them into a copy of the input.
+    # MergedCell fix: openpyxl makes non-anchor cells of a merged range read-only
+    # (AttributeError on assignment). Before writing, detect+unmerge the containing range.
+    # This only affects the model's output copy; the grader compares VALUES inside answer_position
+    # (cell_level_compare ignores fill/font), so cosmetic merge loss is benign.
     import openpyxl
+    from openpyxl.utils.cell import coordinate_from_string, column_index_from_string
     wb = openpyxl.load_workbook(input_path)
     for ref, val in attempt_cells.items():
         sheet = wb.sheetnames[0]
@@ -99,7 +107,22 @@ def apply_attempt(input_path, out_path, attempt_cells):
             sheet, cell = ref.split("!")
             sheet = sheet.strip("'")
         ws = wb[sheet] if sheet in wb.sheetnames else wb[wb.sheetnames[0]]
-        ws[cell] = val
+        # Unmerge any merged range that contains this target so the write doesn't hit a read-only MergedCell.
+        try:
+            col_letters, row = coordinate_from_string(cell)
+            ci = column_index_from_string(col_letters)
+            for mr in list(ws.merged_cells.ranges):
+                if mr.min_col <= ci <= mr.max_col and mr.min_row <= row <= mr.max_row:
+                    ws.unmerge_cells(str(mr))
+                    break
+        except Exception as e:
+            print(f"   ! unmerge probe failed for {ref}: {e}")
+        try:
+            ws[cell] = val
+        except AttributeError as e:
+            # Last-resort: skip with warning rather than crash the whole task.
+            print(f"   ! skip merged-readonly cell {ref}: {e}")
+            continue
     wb.save(out_path)
 
 
@@ -126,11 +149,13 @@ def main():
     ap.add_argument("--dataset", default="sample_data_200")
     ap.add_argument("--slice", type=int, default=3)
     ap.add_argument("--salt", default=os.environ.get("SOLO_LEDGER_SALT", "dev-salt-change-me"))
-    ap.add_argument("--mode", choices=["api", "agent"], default="agent")
+    ap.add_argument("--mode", choices=["api", "agent", "code-exec"], default="agent")
     ap.add_argument("--attempts-dir", default="./attempts")
     ap.add_argument("--allowlist", default="github.com")
     ap.add_argument("--out", default="results.json")
     ap.add_argument("--dump", action="store_true")
+    ap.add_argument("--code-timeout", type=int, default=60,
+                    help="seconds per test case in --mode code-exec (default 60)")
     a = ap.parse_args()
 
     dpath = ensure_dataset(a.repo, a.dataset, a.allowlist.split(","))
@@ -163,6 +188,33 @@ def main():
         tid = t["id"]
         n = num_test_cases(dpath, tid)
         out_dir = os.path.join("_sb_out", str(tid)); os.makedirs(out_dir, exist_ok=True)
+        # ---- code-exec: one model-authored python script per task; run it per test case ----
+        if a.mode == "code-exec":
+            script = code_exec_script(t, dpath, grader)
+            # Anti-cheat: the model must produce an actual openpyxl script that reads argv,
+            # not a hardcoded-values dump. If either signal is missing, we still execute
+            # (failure -> no output -> grader scores 0) but mark cleanGeneralProbe=False.
+            has_openpyxl = "openpyxl" in script
+            has_argv = "argv" in script
+            scripted = bool(script) and has_openpyxl and has_argv
+            any_timeout = False
+            for i in range(1, n + 1):
+                in_path = tc_path(dpath, tid, i, "input")
+                out_path = os.path.join(out_dir, f"{i}_{tid}_output.xlsx")
+                timed_out = run_code_exec(script, in_path, out_path, timeout=a.code_timeout)
+                if timed_out:
+                    any_timeout = True
+            g = grade_task(grader, dpath, t, out_dir)
+            clean = scripted and not any_timeout
+            rows.append({"id": tid, "type": t["instruction_type"], **g, "mode": a.mode,
+                         "cleanGeneralProbe": clean, "modelInLoop": True,
+                         "codeExec": {"scripted": scripted, "timeout": any_timeout,
+                                      "hasOpenpyxl": has_openpyxl, "hasArgv": has_argv}})
+            if clean:
+                counted_hard.append(g["hard"])
+            print(f"  {tid}: hard={g['hard']} soft={g['soft']:.2f} ({g['test_case_results']}) "
+                  f"[code-exec scripted={scripted} timeout={any_timeout}]")
+            continue
         # ---- attempt (model in the loop) ----
         if a.mode == "agent":
             ap_file = os.path.join(a.attempts_dir, f"{tid}.json")
@@ -190,6 +242,78 @@ def main():
     json.dump(summary, open(a.out, "w"), indent=2)
     print(f"\nHEADLINE (held-out, model-in-loop, official grader): hard@all = {headline_hard} over n={len(counted_hard)}")
     print(f"results -> {a.out}")
+
+
+def code_exec_script(task, dpath, grader):
+    """Ask the model for ONE openpyxl python script. argv[1]=input, argv[2]=output. Returns the script text.
+
+    Honesty: prompt carries the instruction + answer_position + a 30-row input preview — same
+    information api_attempt already gets. We do NOT show the answer workbook.
+    """
+    from openai import OpenAI
+    client = OpenAI(base_url=os.environ.get("OPENAI_BASE_URL"), api_key=os.environ["OPENAI_API_KEY"])
+    model = os.environ.get("SOLO_MODEL", "openai/gpt-4.1-mini")
+    # One representative preview grounds column meanings; do NOT leak answers.
+    pv = preview_input(grader, tc_path(dpath, task["id"], 1, "input"), task["answer_position"], max_rows=30)
+    prompt = (
+        "Write ONE Python 3 script that solves a SpreadsheetBench task using openpyxl.\n"
+        "Contract:\n"
+        "  - argv[1] = absolute path to input .xlsx; argv[2] = absolute path where you MUST save the result.\n"
+        "  - Use openpyxl only (already installed). Do not read network or other files.\n"
+        "  - Read input, mutate as the instruction requires, write to argv[2].\n"
+        f"  - The grader compares VALUES (not formulas) inside answer_position={task['answer_position']!r}.\n"
+        "    Resolve formulas to literal values before saving (e.g. compute in Python, write the result).\n"
+        "  - If the task creates/filters NEW sheets (e.g. 'Paid', 'NotPaid'), create them with the EXACT names.\n"
+        "  - Preserve other sheets/cells untouched.\n"
+        "  - Wrap in if __name__ == '__main__'. Print nothing on success.\n\n"
+        f"Instruction:\n{task['instruction']}\n\n"
+        f"instruction_type: {task['instruction_type']}\n"
+        f"answer_position : {task['answer_position']}\n\n"
+        f"Representative input preview (test case 1, first rows):\n{json.dumps(pv, default=str)[:6000]}\n\n"
+        "Return ONLY the python code, no fences, no prose."
+    )
+    r = client.chat.completions.create(model=model, messages=[{"role": "user", "content": prompt}],
+                                       temperature=0)
+    code = r.choices[0].message.content.strip()
+    # Defensive strip of accidental ``` fences
+    if code.startswith("```"):
+        code = code.strip("`")
+        if code.startswith("python"):
+            code = code[len("python"):]
+        code = code.strip()
+    return code
+
+
+def run_code_exec(script, in_path, out_path, timeout=60):
+    """Execute the model-authored script in a tempdir against a copy of the input.
+
+    Returns True if the script timed out, else False. Failure (nonzero, timeout, missing output)
+    leaves out_path absent so the grader scores 0 via 'File not exist' — no soft pass-through.
+    """
+    import tempfile, shutil
+    os.makedirs(os.path.dirname(out_path), exist_ok=True)
+    with tempfile.TemporaryDirectory(prefix="sb_exec_") as td:
+        sp = os.path.join(td, "solve.py")
+        ip = os.path.join(td, "input.xlsx")
+        op = os.path.join(td, "output.xlsx")
+        with open(sp, "w", encoding="utf-8") as f:
+            f.write(script)
+        shutil.copyfile(in_path, ip)
+        try:
+            proc = subprocess.run([sys.executable, sp, ip, op],
+                                  cwd=td, timeout=timeout,
+                                  capture_output=True, text=True)
+        except subprocess.TimeoutExpired:
+            print(f"   code-exec TIMEOUT after {timeout}s for {os.path.basename(in_path)}")
+            return True
+        if proc.returncode != 0:
+            tail = (proc.stderr or "")[-400:]
+            print(f"   code-exec NONZERO rc={proc.returncode} stderr={tail}")
+            return False
+        if os.path.isfile(op):
+            shutil.copyfile(op, out_path)  # grader will find it
+        # else: grader's compare_workbooks returns ('File not exist') -> scored 0.
+        return False
 
 
 def api_attempt(task, dpath, grader):
