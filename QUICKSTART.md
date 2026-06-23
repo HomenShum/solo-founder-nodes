@@ -3,6 +3,8 @@
 You do **not** need to be a developer. You need one thing: an **AI coding tool** you already use —
 Claude Code, Cursor, Windsurf, Codex, Trae, OpenClaw, Hermes, OpenCode, or Kilo Code.
 
+> **Just want to run the harness directly?** If you're not using a coding agent and want to invoke the SpreadsheetBench/BankerToolBench loops yourself: see [`skills/solo-founder-nodes/templates/run/README.md`](skills/solo-founder-nodes/templates/run/README.md) — the runnable substrate with the mode-selection table.
+
 **Paste this one message into your AI coding tool, sitting in your app's folder:**
 
 > I'm not a coder. Use the Solo Founder Nodes skill (github.com/HomenShum/solo-founder-agent-builder)

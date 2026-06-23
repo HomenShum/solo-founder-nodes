@@ -1,5 +1,16 @@
 # Autonomous benchmark runner — REFERENCE ADAPTER (shape only)
 
+## Which `--mode` to use
+
+> ⚠️ **CRITICAL HONESTY GATE:** `--mode api` evaluates **the upstream LLM** (e.g. gpt-4.1-mini) inside the harness — **not your agent**. Quoting an api-mode score as your agent's performance is the exact misrepresentation this skill is built to prevent. Use `--mode agent` to evaluate **your** agent against the same harness.
+
+| Mode | What it evaluates | Use when |
+|---|---|---|
+| `--mode api` | The upstream LLM (via OpenRouter / OpenAI-compatible) inside the harness — requires `OPENAI_API_KEY`. The runner calls a chat model once per test case for a JSON answer-map, then value-fills the answer-position cells. | You're sanity-checking the harness itself, or comparing **models** against the benchmark — **not** when reporting your agent's score. |
+| `--mode agent` | **Your agent** — reads attempts from `<attempts-dir>/<id>.json` produced by your coding agent and applies the same value-fill path as `api`, but with no API call. | You're evaluating **the founder's agent** (the skill's primary purpose) on cell-level tasks. |
+| `--mode code-exec` | Your agent through a code-execution attempt: the model writes ONE openpyxl Python script per task (`argv[1]=input`, `argv[2]=output`), the harness runs it in an isolated tempdir under `--code-timeout`, and the grader scores the output. Anti-cheat: script must contain `openpyxl` and `argv`. | Sheet-level tasks (new sheets, multi-sheet filters, large-span formulas) where single-shot value-fill is insufficient. |
+| `--mode tool-loop` | `code-exec` PLUS a critique-and-retry loop (`--max-loop-iters`, hard cap at 3). Diff of `output.xlsx` vs `input.xlsx` is fed back as structured critique for v2/v3. The grader scores the **FINAL** attempt only — no best-of-N cherry-pick. Honest gate: all iters produced real scripts, no timeouts, no two consecutive scripts identical. | Sheet-level tasks where `code-exec` stalls (e.g. 0 hard / 0.33 soft); honest because the FINAL attempt is graded, not the best one. |
+
 **This is not "what the skill does."** The skill is end-to-end for **your app**: it discovers what
 your app does, then **picks or builds the right test for *that* app**. SpreadsheetBench is one
 adapter — useful only if your app is spreadsheet-shaped. For any other app the agent should write a
@@ -22,9 +33,21 @@ reimplement or soften the grader.
 pip install -r requirements.txt   # openpyxl + openai; see requirements.txt
 ```
 Skip this and `spreadsheetbench.py` fails with `ModuleNotFoundError: openpyxl` (or `openai`)
-the moment a task is graded or `--mode api` runs. `sfn doctor` reports the Python lane status so
-you find this before a run, not during one.
+the moment a task is graded or `--mode api` runs. The local CLI reports the Python lane status so
+you find this before a run, not during one — invoke it from the templates root (the `sfn` binary
+is **not** on PATH; it's an npm script):
 
+```bash
+cd skills/solo-founder-nodes/templates && npm install && npm run sfn -- doctor
+```
+
+Or, for a Python-lane preflight without the CLI:
+
+```bash
+python -c "import openpyxl, openai, pptx, docx, reportlab" && echo 'python lane ok' || echo 'python lane missing libs — run: pip install -r run/requirements.txt'
+```
+
+**Step 1 — invoke the runner** (pick the mode that matches who's running the model):
 ```bash
 # full auto — a dev with a model key gets the whole run unattended:
 OPENAI_API_KEY=...  python spreadsheetbench.py --slice 10 --mode api --salt "$SOLO_LEDGER_SALT"
@@ -35,6 +58,15 @@ python spreadsheetbench.py --repo <clone> --slice 3 --mode agent --attempts-dir 
 # inspect held-out tasks so an agent can attempt them:
 python spreadsheetbench.py --repo <clone> --slice 3 --dump
 ```
+
+> **Using OpenRouter** (recommended for cheap open-source models like `z-ai/glm-5.2` or `deepseek/deepseek-v4-pro`)? Set:
+>
+> ```bash
+> export OPENAI_API_KEY=$OPENROUTER_API_KEY
+> export OPENAI_BASE_URL=https://openrouter.ai/api/v1
+> export SOLO_MODEL=z-ai/glm-5.2     # any OpenRouter slug; the openai SDK calls it transparently
+> ```
+
 It clones `RUCKBReasoning/SpreadsheetBench` (scope it via the policy `downloadAllowlist`), extracts the
 dataset, seals the slice (HMAC), attempts, grades with the official grader, and prints
 `HEADLINE … hard@all = <mean> over n=<n>` plus a `results.json`.
