@@ -37,6 +37,21 @@ async function main() {
       console.log(`node ${process.versions.node} — ${nodeOk ? "ok" : "TOO OLD (need >= 18)"}`);
       console.log(`deps installed: ${deps ? "yes" : "no — run: npm i"}`);
       console.log(`conformance probe present: ${existsSync(conformanceMjs) ? "yes" : "no"}`);
+      // Python lane (optional): the SpreadsheetBench adapter (run/spreadsheetbench.py) hard-requires
+      // openpyxl + openai. Report it RED-when-broken instead of staying silent-green — a missing
+      // Python lane is the cold gap that surfaces as ModuleNotFoundError mid-run. WARNING, not a gate:
+      // founders on the Node-only smoke/conformance lane shouldn't be blocked by absent Python.
+      const pyProbe = ["-c", "import openpyxl, openai"];
+      const tryPy = (bin: string) => spawnSync(bin, pyProbe, { stdio: "ignore" });
+      let pyRes = tryPy("python3");
+      if (pyRes.error) pyRes = tryPy("python"); // python3 not on PATH (common on Windows) → fall back
+      if (pyRes.error) {
+        console.log("python lane: WARNING — no python3/python on PATH (needed for run/spreadsheetbench.py; install: pip install -r run/requirements.txt)");
+      } else if (pyRes.status === 0) {
+        console.log("python lane: ok (openpyxl + openai importable)");
+      } else {
+        console.log("python lane: WARNING — python found but openpyxl/openai NOT importable; run: pip install -r run/requirements.txt");
+      }
       process.exit(nodeOk && deps ? 0 : 1);
     }
     case "smoke":

@@ -17,6 +17,14 @@ Wraps the real benchmark faithfully — it imports SpreadsheetBench's official `
 (OJ-style: a task passes `hard` only if **all** its test cases match at `answer_position`). It does NOT
 reimplement or soften the grader.
 
+**Step 0 — install the Python deps (once, before any `--mode` invocation):**
+```bash
+pip install -r requirements.txt   # openpyxl + openai; see requirements.txt
+```
+Skip this and `spreadsheetbench.py` fails with `ModuleNotFoundError: openpyxl` (or `openai`)
+the moment a task is graded or `--mode api` runs. `sfn doctor` reports the Python lane status so
+you find this before a run, not during one.
+
 ```bash
 # full auto — a dev with a model key gets the whole run unattended:
 OPENAI_API_KEY=...  python spreadsheetbench.py --slice 10 --mode api --salt "$SOLO_LEDGER_SALT"
