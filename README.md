@@ -57,6 +57,7 @@ Portable **SKILL.md** — works with any coding agent. Paste this into your agen
 - `skills/solo-founder-nodes/` — `SKILL.md` (loader entry) + `MASTER_SKILL.md` (full directive) + 7 phase playbooks in `nodes/` + `references/` (incl. `honest-lane.md`, `memory.md`, `design-bridge.md`).
 - **Design Bridge** — `references/design-bridge.md` + `templates/design/` — the UI/UX subroutine the **build** and **verify** phases call so the in-app surface can actually run the benchmark task.
 - **Memory substrate** — `references/memory.md` + `templates/memory/` — local-first, audit-safe memory so a resumed session re-hydrates instead of re-deriving.
+- **Research Spine** — `references/research-spine.md` + `templates/research/` — executable research receipts so each major implementation decision traces user need -> reference -> paper/benchmark -> eval metric -> proof artifact.
 - `docs/eval/nonbtb/` — a runnable deterministic example grader; `docs/eval/BTB_GENERALIZATION_DIAGNOSTIC.md` — the anti-overfit protocol.
 
 ## Context + control substrates
@@ -66,6 +67,19 @@ The loop now ships the missing self-direction pieces:
 - **Control plane**: persist loop/phase state, approval pauses, event triggers, budget stops, trace spans, worktree leases, and trace-sourced improvement candidates.
 
 Run `npm run smoke` in `skills/solo-founder-nodes/templates/` to prove these local invariants.
+
+## Research-backed implementation
+The loop now gates major architecture and product claims through `research-spine.json`.
+
+- `npm run sfn -- research init --goal "build a 3D model app from pictures" --domain 3d-generation`
+- `npm run sfn -- research verify research-spine.json`
+- `npm run sfn -- proof init --goal "fresh-user 3D app proof" --domain 3d-generation`
+- `npm run sfn -- compare top3d`
+
+The seeded 3D-agent lane points agents toward a realistic v1: provider-backed image/text-to-3D,
+Three.js viewer, deployment, persistence, full UI proof, and comparator scoring against Meshy, Tripo,
+Rodin/Hyper3D, and Luma. COLMAP/3DGS, CAD-native output, humanoid rigging, and motion tracking remain
+stretch lanes until separately proved.
 
 ## Memory substrate
 The loop **persists** what it learns so a founder resuming the next day does not re-derive it: the

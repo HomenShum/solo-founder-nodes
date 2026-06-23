@@ -2,12 +2,20 @@
 // A thin, shell-only wrapper over the SAME code the smoke proves — no new dependencies, no service.
 // It is just a convenience surface; every coding agent can run it because it is a shell command.
 import { spawnSync } from "node:child_process";
-import { existsSync } from "node:fs";
-import { dirname, join } from "node:path";
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { SoloLedger } from "../ledger/ledger";
 import { inspectGraphContext } from "../context/graphContext";
 import { SoloControlPlane } from "../control/controlPlane";
+import {
+  make3dAgentResearchPack,
+  researchDomains,
+  top3dComparisonRubric,
+  verifyResearchPack,
+  type ResearchDomain,
+  type ResearchPack,
+} from "../research/researchSpine";
 
 const here = dirname(fileURLToPath(import.meta.url)); // templates/bin
 const templates = join(here, "..");                   // templates
@@ -24,6 +32,31 @@ function flag(args: string[], name: string, fallback?: string) {
   return i >= 0 ? args[i + 1] : fallback;
 }
 
+function firstPositional(args: string[], fallback: string) {
+  for (let i = 0; i < args.length; i++) {
+    const prev = args[i - 1];
+    if (!args[i].startsWith("--") && !(prev && prev.startsWith("--"))) return args[i];
+  }
+  return fallback;
+}
+
+function readJson<T>(path: string): T {
+  return JSON.parse(readFileSync(path, "utf8")) as T;
+}
+
+function writeJson(path: string, value: unknown) {
+  writeFileSync(path, `${JSON.stringify(value, jbig, 2)}\n`, "utf8");
+}
+
+function parseDomain(value?: string): ResearchDomain {
+  if (value && researchDomains.includes(value as ResearchDomain)) return value as ResearchDomain;
+  throw new Error(`unsupported research domain '${value ?? ""}' (expected one of: ${researchDomains.join(", ")})`);
+}
+
+function slugify(input: string) {
+  return input.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 64) || "proof-run";
+}
+
 const HELP = `sfn — Solo Founder Nodes local CLI   (run via: npm run sfn -- <cmd>)
 
   doctor                      check node + deps readiness
@@ -33,6 +66,13 @@ const HELP = `sfn — Solo Founder Nodes local CLI   (run via: npm run sfn -- <c
   control start --project <p> --goal <g> [--budget <n>] [--root <path>]
   control status <loopId>     print durable loop status/resume summary
   control trigger --source <s> --key <k> --project <p> --goal <g> [--budget <n>]
+  research init --goal <g> --domain <d> [--out <file>]
+  research verify [file] [--max-age-days <n>]
+  proof init --goal <g> --domain <d> [--out <dir>]
+  proof start --run <dir>
+  proof collect --run <dir> --artifact <id> --path <path> [--sha256 <hash>]
+  proof verdict --run <dir>
+  compare top3d [--out <file>]  print/write the 3D provider comparison rubric
   seal --salt <s> <id...>     seal a held-out manifest (HMAC) — keep the salt OUT of the agent's reach
   ledger list                 list recorded eval runs
   ledger verify <runId>       re-verify a run's hash-chain (tamper check)
@@ -125,6 +165,144 @@ async function main() {
       }
       console.error("control: start | status <loopId> | trigger");
       process.exit(2);
+    }
+    case "research": {
+      const sub = rest[0];
+      if (sub === "init") {
+        const goal = flag(rest, "--goal");
+        const domain = parseDomain(flag(rest, "--domain", "3d-generation"));
+        const out = resolve(flag(rest, "--out") ?? "research-spine.json");
+        if (!goal) {
+          console.error("research init --goal <g> --domain <d> [--out <file>]");
+          process.exit(2);
+        }
+        const pack = make3dAgentResearchPack({ goal, domain });
+        writeJson(out, pack);
+        const verdict = verifyResearchPack(pack);
+        console.log(JSON.stringify({ out, verdict }, jbig, 2));
+        process.exit(verdict.ok ? 0 : 1);
+      }
+      if (sub === "verify") {
+        const file = resolve(firstPositional(rest.slice(1), "research-spine.json"));
+        const maxSourceAgeDays = Number(flag(rest, "--max-age-days", "365"));
+        const pack = readJson<ResearchPack>(file);
+        const verdict = verifyResearchPack(pack, { maxSourceAgeDays });
+        console.log(JSON.stringify({ file, verdict }, jbig, 2));
+        process.exit(verdict.ok ? 0 : 1);
+      }
+      console.error("research: init | verify");
+      process.exit(2);
+    }
+    case "proof": {
+      const sub = rest[0];
+      if (sub === "init") {
+        const goal = flag(rest, "--goal");
+        const domain = parseDomain(flag(rest, "--domain", "3d-generation"));
+        if (!goal) {
+          console.error("proof init --goal <g> --domain <d> [--out <dir>]");
+          process.exit(2);
+        }
+        const stamp = new Date().toISOString().replace(/[:.]/g, "-");
+        const out = resolve(flag(rest, "--out") ?? join("proof-runs", `${slugify(goal)}-${stamp}`));
+        mkdirSync(out, { recursive: true });
+        const pack = make3dAgentResearchPack({ goal, domain });
+        const manifest = {
+          schemaVersion: 1,
+          goal,
+          domain,
+          createdAt: new Date().toISOString(),
+          status: "initialized",
+          researchSpine: "research-spine.json",
+          collected: [] as Array<{ artifactId: string; path: string; sha256?: string }>,
+        };
+        writeJson(join(out, "research-spine.json"), pack);
+        writeJson(join(out, "proof-manifest.json"), manifest);
+        console.log(JSON.stringify({ out, manifest }, jbig, 2));
+        process.exit(0);
+      }
+      if (sub === "start") {
+        const runDir = flag(rest, "--run");
+        if (!runDir) {
+          console.error("proof start --run <dir>");
+          process.exit(2);
+        }
+        const manifestPath = join(resolve(runDir), "proof-manifest.json");
+        const manifest = readJson<Record<string, unknown>>(manifestPath);
+        manifest.status = "started";
+        manifest.startedAt = manifest.startedAt ?? new Date().toISOString();
+        writeJson(manifestPath, manifest);
+        console.log(JSON.stringify({ run: resolve(runDir), manifest }, jbig, 2));
+        process.exit(0);
+      }
+      if (sub === "collect") {
+        const runDir = flag(rest, "--run");
+        const artifactId = flag(rest, "--artifact");
+        const artifactPath = flag(rest, "--path");
+        const sha = flag(rest, "--sha256");
+        if (!runDir || !artifactId || !artifactPath) {
+          console.error("proof collect --run <dir> --artifact <id> --path <path> [--sha256 <hash>]");
+          process.exit(2);
+        }
+        const absRun = resolve(runDir);
+        const manifestPath = join(absRun, "proof-manifest.json");
+        const packPath = join(absRun, "research-spine.json");
+        const manifest = readJson<{ collected?: Array<{ artifactId: string; path: string; sha256?: string }>; [k: string]: unknown }>(manifestPath);
+        const pack = readJson<ResearchPack>(packPath);
+        if (!pack.proofArtifacts.some((a) => a.id === artifactId)) {
+          console.error(`unknown proof artifact '${artifactId}'`);
+          process.exit(2);
+        }
+        const collected = (manifest.collected ?? []).filter((a) => a.artifactId !== artifactId);
+        collected.push({ artifactId, path: artifactPath, ...(sha ? { sha256: sha } : {}) });
+        manifest.collected = collected;
+        manifest.status = "collecting";
+        for (const artifact of pack.proofArtifacts) {
+          if (artifact.id === artifactId) {
+            artifact.path = artifactPath;
+            if (sha) artifact.sha256 = sha;
+          }
+        }
+        writeJson(manifestPath, manifest);
+        writeJson(packPath, pack);
+        console.log(JSON.stringify({ run: absRun, collected }, jbig, 2));
+        process.exit(0);
+      }
+      if (sub === "verdict") {
+        const runDir = flag(rest, "--run");
+        if (!runDir) {
+          console.error("proof verdict --run <dir>");
+          process.exit(2);
+        }
+        const absRun = resolve(runDir);
+        const pack = readJson<ResearchPack>(join(absRun, "research-spine.json"));
+        const verdict = verifyResearchPack(pack, { requireProofArtifactPaths: true });
+        const missingPaths = pack.proofArtifacts
+          .filter((a) => a.required && a.path && !existsSync(resolve(absRun, a.path)))
+          .map((a) => `${a.id}:${a.path}`);
+        for (const missing of missingPaths) verdict.errors.push(`proof artifact path does not exist: ${missing}`);
+        verdict.ok = verdict.errors.length === 0;
+        writeJson(join(absRun, "proof-verdict.json"), verdict);
+        console.log(JSON.stringify({ run: absRun, verdict }, jbig, 2));
+        process.exit(verdict.ok ? 0 : 1);
+      }
+      console.error("proof: init | start | collect | verdict");
+      process.exit(2);
+    }
+    case "compare": {
+      const sub = rest[0];
+      if (sub !== "top3d") {
+        console.error("compare top3d [--out <file>]");
+        process.exit(2);
+      }
+      const rubric = top3dComparisonRubric();
+      const out = flag(rest, "--out");
+      if (out) {
+        writeJson(resolve(out), rubric);
+        console.log(JSON.stringify({ out: resolve(out), rubric }, jbig, 2));
+      } else {
+        console.log(JSON.stringify(rubric, jbig, 2));
+      }
+      process.exit(0);
     }
     case "seal": {
       const saltIdx = rest.indexOf("--salt");

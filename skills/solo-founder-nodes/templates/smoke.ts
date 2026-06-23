@@ -10,6 +10,7 @@ import { sealGold, contentGate } from "./ledger/contentGate";
 import { sha256 } from "./ledger/hash";
 import { inspectGraphContext, graphQueryPlan } from "./context/graphContext";
 import { SoloControlPlane } from "./control/controlPlane";
+import { make3dAgentResearchPack, top3dComparisonRubric, verifyResearchPack, type ResearchPack } from "./research/researchSpine";
 
 let pass = 0;
 let fail = 0;
@@ -21,6 +22,10 @@ function check(name: string, cond: boolean, detail = "") {
     fail++;
     console.log(`  ✗ ${name}${detail ? " — " + detail : ""}`);
   }
+}
+
+function clone<T>(value: T): T {
+  return JSON.parse(JSON.stringify(value)) as T;
 }
 
 async function main() {
@@ -155,6 +160,39 @@ async function main() {
   check("graph context counts nodes and edges", graphReceipt.nodeCount === 3 && graphReceipt.edgeCount === 2);
   const plan = graphQueryPlan("what connects composer to scorer?", graphReceipt);
   check("graph query plan is command-shaped", plan.command.includes("graphify query"));
+
+  // ---------------- Research spine: research-backed implementation gate ----------------
+  console.log("\nResearchSpine (research-backed decisions + proof target):");
+  const researchPack = make3dAgentResearchPack({
+    goal: "Fresh founder asks for an AI app that creates 3D models from pictures.",
+    generatedAt: "2026-06-23T00:00:00.000Z",
+  });
+  const researchVerdict = verifyResearchPack(researchPack, { now: new Date("2026-06-23T12:00:00.000Z") });
+  check("complete 3D-agent research pack passes", researchVerdict.ok, researchVerdict.errors.join("; "));
+
+  const missingSource = clone<ResearchPack>(researchPack);
+  missingSource.sources = missingSource.sources.filter((s) => s.id !== "instantmesh");
+  const missingSourceVerdict = verifyResearchPack(missingSource, { now: new Date("2026-06-23T12:00:00.000Z") });
+  check("missing source is rejected", missingSourceVerdict.ok === false && missingSourceVerdict.errors.some((e) => e.includes("instantmesh")));
+
+  const staleSource = clone<ResearchPack>(researchPack);
+  staleSource.sources[0].verifiedAt = "2020-01-01";
+  const staleSourceVerdict = verifyResearchPack(staleSource, { now: new Date("2026-06-23T12:00:00.000Z"), maxSourceAgeDays: 365 });
+  check("stale source is rejected", staleSourceVerdict.ok === false && staleSourceVerdict.errors.some((e) => e.includes("stale")));
+
+  const uncitedDecision = clone<ResearchPack>(researchPack);
+  uncitedDecision.decisions[0].researchSourceIds = [];
+  const uncitedDecisionVerdict = verifyResearchPack(uncitedDecision, { now: new Date("2026-06-23T12:00:00.000Z") });
+  check("uncited implementation decision is rejected", uncitedDecisionVerdict.ok === false && uncitedDecisionVerdict.errors.some((e) => e.includes("no researchSourceIds")));
+
+  const unsupportedClaim = clone<ResearchPack>(researchPack);
+  unsupportedClaim.claims[1].proofArtifactIds = [];
+  unsupportedClaim.claims[1].sourceIds = [];
+  const unsupportedClaimVerdict = verifyResearchPack(unsupportedClaim, { now: new Date("2026-06-23T12:00:00.000Z") });
+  check("unsupported major capability claim is rejected", unsupportedClaimVerdict.ok === false && unsupportedClaimVerdict.errors.some((e) => e.includes("major capability/result claim")));
+
+  const rubric = top3dComparisonRubric();
+  check("top3d comparator has 4 providers and 100 points", rubric.competitors.length === 4 && rubric.totalPoints === 100);
 
   // ---------------- SoloControlPlane: durable loop control ----------------
   console.log("\nSoloControlPlane (durable control plane):");

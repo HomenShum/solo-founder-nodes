@@ -10,11 +10,13 @@ Inputs:
 - The recorded harness run from Phase 7 scoring (task id, prompt, the expected/scored output, the citation it produced) — the per-task provenance record, not a summary.
 - The held-out + off-distribution slice membership, so verification samples across BOTH (not just the easy tuned tasks).
 - The live app surface to drive (local `npm run dev`, the dev Convex deployment, or the live prod URL) and the testid/DOM signal that encodes the answer.
+- `research-spine.json` and, for founder/customer proof runs, `proof-manifest.json`; these bind supported claims to the video/trace/deployment/assets/scorecard evidence.
 
 Outputs:
 - An in-app transfer proof per verified task: the prompt entered, the recorded network/Convex run, the DOM signal grepped from the rendered surface, and a screenshot.
 - A transfer ledger: `task_id | harness_result | in_app_result | match? | evidence_path`.
 - The final verdict line: REAL CAPABILITY (transfers) vs OVERFIT (scored offline, fails in-app), with the non-transferring task ids enumerated.
+- `proof-verdict.json` for proof-pack runs, created by `npm run sfn -- proof verdict --run <dir>`, so supported major claims have actual proof artifact paths.
 
 ## Procedure (agent-driven; human steers by comment)
 - **Control-plane preflight.** Load the `SoloControlPlane` loop summary and require a ready graph-context receipt. Query the graph for the real composer, upload, export, run-id, and scorer seams before driving the browser. Record every UI attempt as a trace span with screenshot/DOM/run-id attrs.
@@ -25,6 +27,7 @@ Outputs:
 4. Capture evidence: record the network/Convex run (HONEST PROVENANCE — the number must trace to a recorded run), grep the rendered DOM for the concrete content signal that encodes the answer (a testid value, the expected cell value, the citation string), and take a screenshot. Use the Claude Preview / Playwright capture seam.
 5. Compare to the harness result. Mark `match` only if the in-app answer AND its citation match what the harness scored. A correct answer with a missing/different citation is a PARTIAL — flag it, do not pass it.
 6. Write the transfer ledger and the verdict. Enumerate every non-transferring task id and the divergence class (wrong answer / missing citation / runtime error / blank shell / different code path).
+6a. **Seal research-backed proof claims.** For each supported major capability/result claim in `research-spine.json`, confirm the required proof artifacts exist (video, transcript, Playwright trace/video, deployed URL, generated assets, provider costs, scorecard as applicable). Run `npm run sfn -- proof verdict --run <dir>` for proof-pack runs; any missing artifact downgrades the claim to UNVERIFIED.
 7. HUMAN COMMENT POINT: if transfer fails, the user steers the next move by comment — loop back to Phase 7 (the harness was measuring something the app does not do), or back to the app wiring (the capability exists but the UI path is broken). Do NOT silently re-tune to make the number look good.
 8. **Write the in-app transfer proof to memory.** Persist to memory ([`../references/memory.md`](../references/memory.md), L2, kind `in_app_transfer`): per verified task the DOM signal, the screenshot path, the recorded run id, and the binary verdict; the suite-level REAL CAPABILITY vs OVERFIT line; and the enumerated non-transferring task ids + divergence class. Store split membership + the proof refs (screenshot/dom_signal/trace) only — NOT held-out task answers (quarantine). This closes the suite's memory loop so a future re-tune or app-wiring fix targets the non-transferring ids without re-running everything.
 
@@ -49,6 +52,7 @@ The prose in **Procedure** (steps 2-6) makes the in-app transfer doctrine human-
 - NO ANSWER-KEYS: confirm the in-app path contains no per-task detector or hardcoded output that the harness lacked (or vice-versa). If the app only works for the tuned task ids, that is overfit — fail it.
 - HELD-OUT: the verification sample must include held-out and off-distribution tasks, not only the tasks tuning optimized. Reporting transfer on tuned tasks alone is not transfer.
 - Never claim "verified in-app" on the basis of build success, `git push`, CLI exit codes, or CI-green. Live rendered DOM signal + screenshot, or it did not transfer.
+- Never claim "research-backed implementation" on citations alone. Major supported claims require both cited sources and proof artifacts; otherwise they remain `unsupported_assumption`, `rejected`, or UNVERIFIED.
 
 ## Design Bridge (subroutine — only when the task needs UI parity)
 If the verified task requires the rendered surface to MATCH a design (not just produce a correct value), run the Design Bridge verification before declaring transfer. This is the verify-side mirror of the build-phase Bridge: build constructs the surface, verify proves the surface renders the proof to spec. Full subroutine: [`../references/design-bridge.md`](../references/design-bridge.md).

@@ -11,6 +11,7 @@ research + writing phase; the agent drafts, the human steers the choice by comme
 **Reads:**
 - The graph-context receipt from Phase 1 (`GRAPH_REPORT.md` + `graph.json`). Query it before choosing benchmarks so the deliverable shape, UI seams, export paths, and agent/tool surfaces come from the app graph, not chat memory.
 - `capability-spec.md` (from Phase 1 / `discover`) — the app's agent functions and its real output shapes.
+- `research-spine.json` (from Phase 1 / `discover`) — the domain research, candidate eval metrics, and unsupported stretch claims. Benchmark choice must trace to these sources, not just to registry vibes.
 - `.claude/skills/solo-founder-nodes/references/benchmarks.md` — the starter registry (BankerToolBench, SpreadsheetBench, SWE-bench,
   WebArena/VisualWebArena/BrowserGym, GAIA, τ-bench, OSWorld) + the built-in choose-rubric.
 - Live web search — registries rot; agent benchmarks ship monthly. Always search for newer/closer benchmarks and confirm
@@ -22,6 +23,7 @@ off-distribution generalization split definitions, and the infra-weight call (wh
 
 ## Procedure (agent-driven; the human comments to steer)
 0. **Assert graph context ready.** Load the control-plane loop summary and require the graph receipt status to be `ready`. If it is missing/stale, return to Phase 1 to rebuild it before benchmark selection.
+0a. **Assert research spine ready.** Run `npm run sfn -- research verify research-spine.json` (or the equivalent validator) and stop if a major decision/claim lacks source backing. Carry the research-backed eval metrics into the benchmark rubric.
 1. **Re-read `capability-spec.md`** and extract two things: the **dominant agent function** (document-gen / spreadsheet /
    code / web-nav / tool-use / computer-use) and the **literal deliverable shape** the app emits (xlsx? a chat answer with
    citations? a code patch? a browser end-state?).

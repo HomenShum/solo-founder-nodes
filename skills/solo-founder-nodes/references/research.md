@@ -1,5 +1,10 @@
 # Research grounding — the anti-cheat doctrine, literature-backed
 
+For implementation steering, pair this anti-cheat literature map with the executable
+[`research-spine.md`](research-spine.md). This file explains why the honesty gates exist; the research
+spine verifies that each major product/architecture decision is backed by current papers, practical
+references, eval metrics, and proof artifacts.
+
 The [honest-lane doctrine](honest-lane.md) was **not** derived from the literature — it was hard-won
 from one overfit benchmark session (a fleet drove a benchmark to 0.96 via answer-keys while true
 held-out capability was ~0.008), then found to match recent eval-integrity research almost

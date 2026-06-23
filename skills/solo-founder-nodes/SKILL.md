@@ -55,4 +55,10 @@ worktree leases, improvement candidates). Specs:
 [`references/control-plane.md`](references/control-plane.md); templates in
 [`templates/context/`](templates/context/) and [`templates/control/`](templates/control/).
 
+**Research spine:** at `discover`, create or refresh `research-spine.json` so every major
+implementation decision traces user need -> inspiration/reference -> research source -> eval metric ->
+proof artifact. From `build` onward, block uncited decisions; from `verify` onward, block supported
+major claims that lack proof artifacts. Spec: [`references/research-spine.md`](references/research-spine.md);
+templates in [`templates/research/`](templates/research/).
+
 When running the harness directly, see [`templates/run/README.md`](templates/run/README.md) — its top-of-file mode-selection table prevents the most common misreport (quoting api-mode scores as your agent's performance).

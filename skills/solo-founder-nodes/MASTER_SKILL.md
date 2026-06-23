@@ -50,6 +50,17 @@ instead of waiting for the founder to steer. Doctrine: [`references/control-plan
 copyable implementation: [`templates/control/`](templates/control/). The control plane coordinates work;
 `SoloLedger` and the trust-root still derive the benchmark verdict.
 
+## Research spine (required for research-backed implementation)
+The agent must not turn a founder's domain prompt into unsupported architecture or product claims.
+At `discover`, create or refresh a `research-spine.json` with user needs, inspirational references,
+current research, implementation decisions, eval metrics, and required proof artifacts. From `build`
+onward, fail closed if a major implementation decision lacks a decision receipt citing at least one
+research source, one practical/reference source when available, and one eval metric. From `verify`
+onward, fail closed if a major capability/result claim lacks proof artifacts. Unsupported stretch lanes
+must be labeled `unsupported_assumption` or `rejected`, never sold as shipped capability. Doctrine:
+[`references/research-spine.md`](references/research-spine.md); copyable implementation:
+[`templates/research/`](templates/research/).
+
 ## The loop — run in order; read the playbook for each phase
 
 | # | Phase | Goal | Weight | Gate | Playbook |

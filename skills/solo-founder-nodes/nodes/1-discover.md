@@ -20,15 +20,19 @@ Turns a vague idea / running prototype / half-built app into a written, falsifia
 7. **Assumptions & deferrals** — every place the user did not specify, stated as an explicit assumption the human can overturn in one comment.
 8. **Open questions for the human** — the ≤5 decisions that would most change the spec.
 
+Also produces or refreshes `research-spine.json`: user needs, inspirational references, current
+research sources, candidate eval metrics, required proof artifacts, and unsupported stretch claims.
+
 ## Procedure (agent-driven; human steers by comment)
 0. **Start durable context.** If running unattended, create/resume a `SoloControlPlane` loop id. Build or refresh graph context (`graphify .` / `graphify update .`, or equivalent), then inspect `graphify-out/GRAPH_REPORT.md` + `graphify-out/graph.json` with `templates/context/graphContext.ts`. Store the ready receipt in control-plane state and memory. If graph tooling is unavailable, explicitly mark the graph receipt missing and continue discover only; later phases must not proceed until it is ready.
 1. **Map the repo.** Locate entry points, routes/pages, schema, and any existing agent harness (system prompts, tool defs, eval/bench scripts). Record exact paths. Do not summarize from the README alone — verify against code.
 2. **Walk the live UI** (if runnable). Click the real user flow read-only; note which deliverables the UI actually supports and where the agent plugs in. If not runnable, say so and mark UI claims unverified.
 3. **Research the domain.** Web-search the real workflows and end-user needs; learn what "done" means to a competent operator. Note 2–4 candidate public benchmarks that resemble the deliverables.
-4. **Draft `capability-spec.md`** with the eight sections above. Tag each claim `observed` (cite path/URL) or `assumed`. Keep deliverables concrete and user-tied, never abstract capabilities.
-5. **Surface the deferrals** as explicit assumptions plus ≤5 open questions — the smallest set whose answers would most change scope.
-6. **Hand to the human for comment.** The human edits scope/vision/personas inline or in a comment. The agent revises the spec to match; it does not defend its draft. Re-tag anything the human changed from `assumed` to `observed`/decided.
-7. **Stop here.** No benchmark selection, no install, no code change — those are later phases. Emit the path to `capability-spec.md` and the open-questions list.
+4. **Initialize the Research Spine.** Create `research-spine.json` (see [`../references/research-spine.md`](../references/research-spine.md)) before choosing architecture: each major user need gets candidate papers/benchmarks/datasets, practical references, eval metrics, proof artifacts, and stretch claims labeled `unsupported_assumption` or `rejected`.
+5. **Draft `capability-spec.md`** with the eight sections above. Tag each claim `observed` (cite path/URL) or `assumed`. Keep deliverables concrete and user-tied, never abstract capabilities.
+6. **Surface the deferrals** as explicit assumptions plus ≤5 open questions — the smallest set whose answers would most change scope.
+7. **Hand to the human for comment.** The human edits scope/vision/personas inline or in a comment. The agent revises the spec to match; it does not defend its draft. Re-tag anything the human changed from `assumed` to `observed`/decided.
+8. **Stop here.** No benchmark selection, no install, no code change — those are later phases. Emit the paths to `capability-spec.md` and `research-spine.json`, plus the open-questions list.
 
 ## Honesty guardrail (the slice that applies here)
 This phase sets up the later guardrails, so it must not contaminate them:
