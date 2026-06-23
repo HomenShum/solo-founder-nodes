@@ -29,6 +29,15 @@ import {
   type DesignSurfaceKind,
   type DesignTargetPlatform,
 } from "../design/designSkillBridge";
+import {
+  gstackRiskLevels,
+  gstackRoleRegistry,
+  recommendGstackLanes,
+  soloLoopPhases,
+  verifyGstackPlan,
+  type GstackRiskLevel,
+  type SoloLoopPhase,
+} from "../gstack/gstackBridge";
 
 const here = dirname(fileURLToPath(import.meta.url)); // templates/bin
 const templates = join(here, "..");                   // templates
@@ -91,6 +100,16 @@ function parseTargetPlatform(value?: string): DesignTargetPlatform {
   throw new Error(`unsupported design platform '${value ?? ""}' (expected one of: ${designTargetPlatforms.join(", ")})`);
 }
 
+function parseSoloPhase(value?: string): SoloLoopPhase {
+  if (value && soloLoopPhases.includes(value as SoloLoopPhase)) return value as SoloLoopPhase;
+  throw new Error(`unsupported phase '${value ?? ""}' (expected one of: ${soloLoopPhases.join(", ")})`);
+}
+
+function parseGstackRisk(value?: string): GstackRiskLevel {
+  if (value && gstackRiskLevels.includes(value as GstackRiskLevel)) return value as GstackRiskLevel;
+  throw new Error(`unsupported gstack risk '${value ?? ""}' (expected one of: ${gstackRiskLevels.join(", ")})`);
+}
+
 const HELP = `sfn — Solo Founder Nodes local CLI   (run via: npm run sfn -- <cmd>)
 
   doctor                      check node + deps readiness
@@ -109,6 +128,8 @@ const HELP = `sfn — Solo Founder Nodes local CLI   (run via: npm run sfn -- <c
   compare top3d [--out <file>]  print/write the 3D provider comparison rubric
   design registry [--out <file>]
   design recommend --surface <kind> [--stack <s>] [--runtime <r>] [--style <preset>] [--platform <p>] [--animation] [--visuals] [--mobile] [--shadcn] [--shadcn-mcp] [--out <file>]
+  gstack registry [--out <file>]
+  gstack recommend --phase <p> --goal <g> [--surface <s>] [--risk low|medium|high] [--ui] [--deploy] [--security] [--devex] [--docs] [--perf] [--mobile] [--out <file>]
   seal --salt <s> <id...>     seal a held-out manifest (HMAC) — keep the salt OUT of the agent's reach
   ledger list                 list recorded eval runs
   ledger verify <runId>       re-verify a run's hash-chain (tamper check)
@@ -377,6 +398,48 @@ async function main() {
         process.exit(verdict.ok ? 0 : 1);
       }
       console.error("design: registry | recommend");
+      process.exit(2);
+    }
+    case "gstack": {
+      const sub = rest[0];
+      if (sub === "registry") {
+        const registry = gstackRoleRegistry();
+        const out = flag(rest, "--out");
+        if (out) {
+          writeJson(resolve(out), registry);
+          console.log(JSON.stringify({ out: resolve(out), registry }, jbig, 2));
+        } else {
+          console.log(JSON.stringify(registry, jbig, 2));
+        }
+        process.exit(0);
+      }
+      if (sub === "recommend") {
+        const goal = flag(rest, "--goal");
+        if (!goal) {
+          console.error("gstack recommend --phase <p> --goal <g> [--surface <s>] [--risk low|medium|high] [--ui] [--deploy] [--security] [--devex] [--docs] [--perf] [--mobile] [--out <file>]");
+          process.exit(2);
+        }
+        const plan = recommendGstackLanes({
+          phase: parseSoloPhase(flag(rest, "--phase", "build")),
+          goal,
+          surfaceKind: flag(rest, "--surface", "unspecified"),
+          risk: parseGstackRisk(flag(rest, "--risk", "medium")),
+          hasUi: rest.includes("--ui"),
+          hasDeployment: rest.includes("--deploy"),
+          hasSecurityBoundary: rest.includes("--security"),
+          needsDevex: rest.includes("--devex"),
+          needsDocs: rest.includes("--docs"),
+          needsPerformance: rest.includes("--perf"),
+          needsMobile: rest.includes("--mobile"),
+        });
+        const verdict = verifyGstackPlan(plan);
+        const payload = { plan, verdict };
+        const out = flag(rest, "--out");
+        if (out) writeJson(resolve(out), payload);
+        console.log(JSON.stringify(out ? { out: resolve(out), ...payload } : payload, jbig, 2));
+        process.exit(verdict.ok ? 0 : 1);
+      }
+      console.error("gstack: registry | recommend");
       process.exit(2);
     }
     case "seal": {

@@ -8,6 +8,7 @@ Turns "I picked a benchmark" into "the runner, the dataset, and the verifier are
 - The target disk + free-space budget (ask if unset; the dogfood pins `D:`).
 - Which secrets the verifier needs (judge model API keys) and where they live (the dogfood reads them from Convex env, masked, never to disk).
 - Host facts: OS, Docker presence/version, Python, available disk — gathered read-only before proposing anything.
+- The gstack setup/deploy review lane when setup includes providers, deployment, secrets, or customer-facing infrastructure.
 
 ## Outputs (the artifact it produces)
 - A Python env with the deliverable writers installed: `pip install -r templates/run/requirements.txt` (the `--- BankerToolBench ---` block adds `python-pptx`, `python-docx`, `reportlab`; `openpyxl` is shared). Prove it: `python templates/run/bankertoolbench.py --selftest` writes one of each artifact type and exits 0 — the cheapest setup smoke, **no Docker / HF / judge key required**.
@@ -17,6 +18,7 @@ Turns "I picked a benchmark" into "the runner, the dataset, and the verifier are
 - A `SETUP.md` (or appended section) recording exact versions, image digests, dataset revision, disk paths, and the one-line smoke command — so Phase "honest provenance" can trace every later number back to this environment.
 
 ## Procedure (agent-driven; human steers by comment)
+0. **Run the portable gstack setup lane when infra is involved.** Run `npm run sfn -- gstack recommend --phase setup --goal "<goal>" --deploy --security --devex` before choosing databases, object storage, auth, deployment, or paid services. The plan must include `plan-eng-review`, `plan-devex-review`, `setup-deploy`, and `cso` when secrets or trust boundaries are involved. Carry the receipts into `SETUP.md`.
 1. **Probe read-only.** Agent reports OS, `docker version`, `python --version`, free space on the target disk, and whether Docker Desktop/WSL2 is running. No installs yet. *(Human comments the disk + budget if not already chosen.)*
 2. **Draft the plan as GUIDE.** Agent presents: every component to install, its size, its source link (Docker Desktop download, the runner repo, the HF dataset URL), the API-key console links for the verifier, and the exact commands — grouped by reversibility. Heavy/irreversible items are flagged for the Gate.
 3. **Install the portable writers + smoke (light, ungated).** `pip install -r templates/run/requirements.txt`, then `python templates/run/bankertoolbench.py --selftest`. This proves the four deliverable writers work BEFORE any heavy step and needs no Docker/HF/key. *(If `reportlab` won't build in your env, the pdf writer no-ops gracefully — note it as unverified rather than blocking.)*
@@ -31,6 +33,7 @@ Turns "I picked a benchmark" into "the runner, the dataset, and the verifier are
 - **HONEST PROVENANCE starts here.** The environment is the root of every later number — record image digest, dataset revision, and exact versions now, or every score downstream is unverifiable. Flag anything you could not pin (e.g. a `:latest` tag) as unverified.
 - **HELD-OUT integrity is a setup concern.** Download the *full* dataset and let Phase "run" carve the held-out + off-distribution slices; do not pre-filter the dataset to "tasks we like" at setup time — that quietly contaminates the held-out split before evaluation even begins.
 - **Verifier honesty.** The smoke task must show the verifier producing a genuine pass/fail/score with no hardcoded floor and a non-2xx/error surfaced as failure (not silently swallowed). A judge that always returns "pass" is a broken environment, not a passing one.
+- **GSTACK SETUP RECEIPTS:** provider, deployment, devex, and security decisions need explicit receipts when they affect customer/judge usability, secrets, data persistence, or paid services.
 
 ## Gate (heavy / irreversible — explicit approval required)
 The following do NOT run until the human explicitly approves, after seeing the plan + commands + links + size estimates from steps 2 & 5:

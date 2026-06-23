@@ -15,6 +15,7 @@ Inputs:
 - A parallel/throttled run wrapper around the runner. *(Dogfood: `scripts/bankertoolbench-nodeagent-parallel.ps1`. For the portable templates, loop `bankertoolbench.py` over slices yourself, throttled to your API budget.)*
 - The agent adapter from the prior phase (the thing that drives the real NodeRoom agent over a task).
 - `research-spine.json` from discover/build, so repeated failures are tied to research-backed hypotheses and unsupported stretch claims do not become hidden product promises.
+- The gstack operating-lane plan for iterate, so failures are investigated and reviewed instead of patched randomly.
 
 Outputs:
 - `docs/eval/solo-founder-nodes-scorecard.md` (+ a machine-readable `solo-founder-nodes-scorecard.json`): per-slice pass rate, per-failure-class counts, the one fix applied this iteration, the held-out/generalization delta, and an HONEST/UNVERIFIED flag per number.
@@ -22,6 +23,7 @@ Outputs:
 
 ## Procedure (agent-driven; human steers by comment)
 - **Control-plane preflight.** Load the `SoloControlPlane` loop summary first: current phase, graph receipt, budget spent, pending approvals, prior trace spans, active worktree leases, and open improvement candidates. If the graph receipt is missing/stale, stop and refresh context before choosing a fix.
+0a. **Run the portable gstack iterate lane.** Run `npm run sfn -- gstack recommend --phase iterate --goal "<goal>" --ui --perf` when failures touch the UI, agent loop, performance, or proof flow. The plan should include `investigate`, `review`, `qa-only`, and `retro`; UI failures should add `design-review`; performance/eval failures should add `benchmark`. Store the root-cause, review, QA, and retro receipts alongside the scorecard.
 0. **Load safe project memory (QUARANTINED read).** Pull from memory ([`../references/memory.md`](../references/memory.md), L2): the chosen shared-component target, prior fixes + their held-out/generalization deltas, the kill-threshold (min-delta + max-iterations), the failure-class clusters, and the split *hashes*. Read aggregate SCORES and failure CLASSES only — the held-out/generalization per-task CONTENTS must stay quarantined out of memory, or cross-session memory becomes an answer-key leak that silently defeats the anti-overfit design. Memory is a tuned-signal + scores store, not a held-out-content channel.
 1. **Self-test the grader.** Run `grade.py`'s self-test. If it doesn't pass, stop — a broken grader fakes every downstream number. (Re your honesty contract: the grader is the measuring instrument; calibrate it before measuring.)
 2. **Freeze the splits.** Confirm TUNED / HELD-OUT / GENERALIZATION membership from `BTB_GENERALIZATION_DIAGNOSTIC.md` and record the split hashes. HELD-OUT and GENERALIZATION are write-locked for this whole phase — you may read their pass/fail, never their per-task contents while fixing.
@@ -39,6 +41,7 @@ Outputs:
 - **MEMORY QUARANTINE:** write failure-CLASS and aggregate-SCORE memory only; NEVER write held-out/generalization task contents to memory (it would make cross-session memory an answer-key). See [`../references/memory.md`](../references/memory.md).
 - **HONEST PROVENANCE:** every scorecard cell links to a row in `docs/eval/runs/<ts>/`. Any number without a recorded run is marked UNVERIFIED, not reported as a result. The deterministic grader (no LLM on the scored path) is what keeps the score honest; reserve any LLM judge for triage suggestions only, never for the reported number.
 - **RESEARCH-BACKED IMPROVEMENT:** every accepted fix needs a decision receipt tying the failure class to a research-backed hypothesis and an eval metric. If the measured metric does not move on held-out/generalization, the receipt becomes evidence for rejecting that hypothesis.
+- **GSTACK INVESTIGATE BEFORE FIX:** repeated failures require an `investigate` receipt before code edits, a staff-review receipt before keeping the change, and a retro/learning receipt before memory is updated.
 
 ## Gate (heavy/irreversible — explicit approval required)
 The parallel runs spend API money. Before executing step 3 (and each re-measure in step 7), GUIDE → GENERATE → GATE:

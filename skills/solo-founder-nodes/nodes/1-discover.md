@@ -22,9 +22,13 @@ Turns a vague idea / running prototype / half-built app into a written, falsifia
 
 Also produces or refreshes `research-spine.json`: user needs, inspirational references, current
 research sources, candidate eval metrics, required proof artifacts, and unsupported stretch claims.
+Also produces or refreshes a gstack operating-lane receipt from
+`npm run sfn -- gstack recommend --phase discover --goal "<goal>"`, so vague founder intent is forced
+through office-hours/product review before the capability spec hardens.
 
 ## Procedure (agent-driven; human steers by comment)
 0. **Start durable context.** If running unattended, create/resume a `SoloControlPlane` loop id. Build or refresh graph context (`graphify .` / `graphify update .`, or equivalent), then inspect `graphify-out/GRAPH_REPORT.md` + `graphify-out/graph.json` with `templates/context/graphContext.ts`. Store the ready receipt in control-plane state and memory. If graph tooling is unavailable, explicitly mark the graph receipt missing and continue discover only; later phases must not proceed until it is ready.
+0a. **Run the portable gstack founder-review lane.** Run `npm run sfn -- gstack recommend --phase discover --goal "<goal>"` (see [`../references/gstack-bridge.md`](../references/gstack-bridge.md)). The plan must include `office-hours` and `plan-ceo-review`. Write the receipt into the capability-spec appendix: forcing questions, assumptions, alternate wedges, strategy verdict, scope mode, recommended wedge, and risks. This is a review method, not a Claude-only dependency.
 1. **Map the repo.** Locate entry points, routes/pages, schema, and any existing agent harness (system prompts, tool defs, eval/bench scripts). Record exact paths. Do not summarize from the README alone — verify against code.
 2. **Walk the live UI** (if runnable). Click the real user flow read-only; note which deliverables the UI actually supports and where the agent plugs in. If not runnable, say so and mark UI claims unverified.
 3. **Research the domain.** Web-search the real workflows and end-user needs; learn what "done" means to a competent operator. Note 2–4 candidate public benchmarks that resemble the deliverables.

@@ -7,8 +7,8 @@ keys, no Convex:**
 npm i && npm run smoke
 ```
 
-The smoke runs **30 assertions** that *prove* each anti-cheat/control-plane mechanism (and the chain detecting a
-tamper) — not a claim, a passing run.
+The smoke runs pass/fail assertions that *prove* each anti-cheat/control-plane/design/research/gstack
+mechanism (and the chain detecting a tamper) — not a claim, a passing run.
 
 ## CLI (`sfn`) — the universal shell entry
 A thin wrapper over the **same code the smoke proves** — pure shell, no new deps. It's the
@@ -21,6 +21,9 @@ npm run sfn -- conformance                  # the cross-agent portability probe 
 npm run sfn -- context inspect <app-root>   # inspect Graphify-style graph context readiness
 npm run sfn -- control start --project <p> --goal <g> --budget 5 --root <app-root>
 npm run sfn -- control status <loopId>      # resume summary: phase, approvals, traces, improvements
+npm run sfn -- research init --goal <g> --domain 3d-generation
+npm run sfn -- design recommend --surface saas-app --runtime codex
+npm run sfn -- gstack recommend --phase verify --goal <g> --ui --deploy --security
 npm run sfn -- seal --salt <s> <taskId...>  # seal a held-out manifest (HMAC) — keep the salt OUT of the agent's reach
 npm run sfn -- ledger list                  # list recorded eval runs
 npm run sfn -- ledger verify <runId>        # re-verify a run's hash-chain (tamper check)
@@ -40,7 +43,10 @@ npm run sfn -- ledger verify <runId>        # re-verify a run's hash-chain (tamp
   unless the app has a ready graph report + graph JSON, forcing query-first orientation.
 - **`control/` - `SoloControlPlane`**: durable loop state for triggers, checkpoints, approvals, budget
   stops, trace spans, worktree leases, and trace-sourced improvement candidates.
+- **`research/` - Research Spine**: research-backed decision receipts, claim gates, proof artifacts,
+  and 3D-agent comparison rubric.
 - **`design/`**: the design-bridge templates (brief / component contract / visual-regression checklist).
+- **`gstack/` - gstack Bridge**: portable CEO/eng/design/QA/security/release operating-review lanes.
 - **`smoke.ts`**: the proof.
 
 ## What runs vs. what you wire

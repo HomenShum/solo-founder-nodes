@@ -12,6 +12,7 @@ import { inspectGraphContext, graphQueryPlan } from "./context/graphContext";
 import { SoloControlPlane } from "./control/controlPlane";
 import { make3dAgentResearchPack, top3dComparisonRubric, verifyResearchPack, type ResearchPack } from "./research/researchSpine";
 import { designSkillRegistry, recommendDesignSkills, verifyDesignSkillPlan } from "./design/designSkillBridge";
+import { gstackRoleRegistry, recommendGstackLanes, verifyGstackPlan, type GstackReviewPlan } from "./gstack/gstackBridge";
 
 let pass = 0;
 let fail = 0;
@@ -230,6 +231,41 @@ async function main() {
   const badDesignPlan = { ...dashboardPlan, sequence: ["implementation", "design-brief", "browser-verify"] };
   const badDesignVerdict = verifyDesignSkillPlan(badDesignPlan);
   check("design order violation is rejected", badDesignVerdict.ok === false && badDesignVerdict.errors.some((e) => e.includes("before implementation")));
+
+  // ---------------- gstack bridge: portable operating-review lanes ----------------
+  console.log("\ngstackBridge (portable CEO/eng/design/QA/release roles):");
+  const gstackRegistry = gstackRoleRegistry();
+  check("gstack registry has portable specialist roles", gstackRegistry.length >= 20 && gstackRegistry.every((r) => r.agentLocked === false));
+  check("gstack registry covers CEO, eng, QA, security, release", ["plan-ceo-review", "plan-eng-review", "qa-only", "cso", "land-and-deploy"].every((id) => gstackRegistry.some((r) => r.id === id)));
+  const discoverGstack = recommendGstackLanes({
+    phase: "discover",
+    goal: "Fresh founder wants picture-to-3D app from screenshots.",
+  });
+  check("discover gstack plan requires office-hours + CEO review", discoverGstack.selectedRoleIds.includes("office-hours") && discoverGstack.selectedRoleIds.includes("plan-ceo-review"));
+  const buildGstack = recommendGstackLanes({
+    phase: "build",
+    goal: "Build the 3D app upload/chat/viewer UI.",
+    hasUi: true,
+    hasSecurityBoundary: true,
+    risk: "high",
+  });
+  const buildGstackVerdict = verifyGstackPlan(buildGstack);
+  check("high-risk UI build gstack plan selects eng/design/security/review/guard", ["plan-eng-review", "plan-design-review", "cso", "review", "guard"].every((id) => buildGstack.selectedRoleIds.includes(id)));
+  check("high-risk UI build gstack plan verifies", buildGstackVerdict.ok, buildGstackVerdict.errors.join("; "));
+  const verifyGstack = recommendGstackLanes({
+    phase: "verify",
+    goal: "Prove fresh-user 3D app flow on deployed URL.",
+    hasUi: true,
+    hasDeployment: true,
+    hasSecurityBoundary: true,
+    needsDevex: true,
+  });
+  const verifyGstackVerdict = verifyGstackPlan(verifyGstack);
+  check("deployed verification gstack plan selects live QA + release + canary", ["qa-only", "browse", "land-and-deploy", "canary"].every((id) => verifyGstack.selectedRoleIds.includes(id)));
+  check("deployed verification gstack plan verifies", verifyGstackVerdict.ok, verifyGstackVerdict.errors.join("; "));
+  const badGstackPlan: GstackReviewPlan = { ...verifyGstack, selectedRoleIds: verifyGstack.selectedRoleIds.filter((id) => id !== "land-and-deploy") };
+  const badGstackVerdict = verifyGstackPlan(badGstackPlan);
+  check("deployment proof without land-and-deploy is rejected", badGstackVerdict.ok === false && badGstackVerdict.errors.some((e) => e.includes("land-and-deploy")));
 
   // ---------------- SoloControlPlane: durable loop control ----------------
   console.log("\nSoloControlPlane (durable control plane):");

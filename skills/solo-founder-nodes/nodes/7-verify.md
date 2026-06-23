@@ -11,6 +11,7 @@ Inputs:
 - The held-out + off-distribution slice membership, so verification samples across BOTH (not just the easy tuned tasks).
 - The live app surface to drive (local `npm run dev`, the dev Convex deployment, or the live prod URL) and the testid/DOM signal that encodes the answer.
 - `research-spine.json` and, for founder/customer proof runs, `proof-manifest.json`; these bind supported claims to the video/trace/deployment/assets/scorecard evidence.
+- The gstack operating-lane plan for verification, especially live QA, security, release/deploy, canary, DX, docs, and retro receipts for founder/customer proof runs.
 
 Outputs:
 - An in-app transfer proof per verified task: the prompt entered, the recorded network/Convex run, the DOM signal grepped from the rendered surface, and a screenshot.
@@ -20,6 +21,7 @@ Outputs:
 
 ## Procedure (agent-driven; human steers by comment)
 - **Control-plane preflight.** Load the `SoloControlPlane` loop summary and require a ready graph-context receipt. Query the graph for the real composer, upload, export, run-id, and scorer seams before driving the browser. Record every UI attempt as a trace span with screenshot/DOM/run-id attrs.
+0a. **Run the portable gstack verification lane.** Run `npm run sfn -- gstack recommend --phase verify --goal "<goal>" --ui --deploy --security --devex` for founder/customer proof. The plan must include live QA (`qa` or `qa-only` plus browser evidence), `design-review` for UI parity, `cso` for security-boundary proof, `ship`/`land-and-deploy`/`canary` for deployed proof, and `retro` for learning. Missing receipts downgrade the claim to UNVERIFIED.
 0. **Load safe project memory (QUARANTINED read).** Pull from memory ([`../references/memory.md`](../references/memory.md), L2): the prior scorecard pointers, the held-out + off-distribution slice MEMBERSHIP (so the sample spans BOTH, not just easy tuned tasks), the live target (local dev / dev Convex / prod URL), the testid/DOM signal that encodes the answer, and any user-pinned task ids from prior sessions. Read split membership + scores only — never let held-out task ANSWERS leak from memory into the in-app run; the app must compute them live.
 1. Pull the Phase 7 provenance records. Select the verification sample: take a fixed N from the held-out split AND at least a few from the off-distribution generalization slice. HUMAN COMMENT POINT: the user can pin specific task ids ("// verify the 3 that scored highest + the 2 hardest") or accept the agent's sample.
 2. Bring up the live surface. Prefer the same target the user will demo on. Follow the live-DOM discipline: do NOT trust build/CLI/CI-green — fetch the actual rendered surface and confirm it is live before driving it (watch for Suspense/SSR blank shells and CDN-stale HTML).
@@ -28,6 +30,7 @@ Outputs:
 5. Compare to the harness result. Mark `match` only if the in-app answer AND its citation match what the harness scored. A correct answer with a missing/different citation is a PARTIAL — flag it, do not pass it.
 6. Write the transfer ledger and the verdict. Enumerate every non-transferring task id and the divergence class (wrong answer / missing citation / runtime error / blank shell / different code path).
 6a. **Seal research-backed proof claims.** For each supported major capability/result claim in `research-spine.json`, confirm the required proof artifacts exist (video, transcript, Playwright trace/video, deployed URL, generated assets, provider costs, scorecard as applicable). Run `npm run sfn -- proof verdict --run <dir>` for proof-pack runs; any missing artifact downgrades the claim to UNVERIFIED.
+6b. **Seal gstack operating receipts.** Confirm the verification gstack plan verifies with `verifyGstackPlan`: UI proof has live QA/design receipts, deployed proof has release/deploy/canary receipts, security-boundary proof has a CSO receipt, and the run leaves a retro/learning receipt. Any missing lane blocks the final "judge/customer usable" claim.
 7. HUMAN COMMENT POINT: if transfer fails, the user steers the next move by comment — loop back to Phase 7 (the harness was measuring something the app does not do), or back to the app wiring (the capability exists but the UI path is broken). Do NOT silently re-tune to make the number look good.
 8. **Write the in-app transfer proof to memory.** Persist to memory ([`../references/memory.md`](../references/memory.md), L2, kind `in_app_transfer`): per verified task the DOM signal, the screenshot path, the recorded run id, and the binary verdict; the suite-level REAL CAPABILITY vs OVERFIT line; and the enumerated non-transferring task ids + divergence class. Store split membership + the proof refs (screenshot/dom_signal/trace) only — NOT held-out task answers (quarantine). This closes the suite's memory loop so a future re-tune or app-wiring fix targets the non-transferring ids without re-running everything.
 
@@ -53,6 +56,7 @@ The prose in **Procedure** (steps 2-6) makes the in-app transfer doctrine human-
 - HELD-OUT: the verification sample must include held-out and off-distribution tasks, not only the tasks tuning optimized. Reporting transfer on tuned tasks alone is not transfer.
 - Never claim "verified in-app" on the basis of build success, `git push`, CLI exit codes, or CI-green. Live rendered DOM signal + screenshot, or it did not transfer.
 - Never claim "research-backed implementation" on citations alone. Major supported claims require both cited sources and proof artifacts; otherwise they remain `unsupported_assumption`, `rejected`, or UNVERIFIED.
+- Never claim "deployed/customer usable" without the gstack verification receipts: live QA, release/deploy, canary, security if applicable, docs/DX if applicable, and retro learning.
 
 ## Design Bridge (subroutine — only when the task needs UI parity)
 If the verified task requires the rendered surface to MATCH a design (not just produce a correct value), run the Design Bridge verification before declaring transfer. This is the verify-side mirror of the build-phase Bridge: build constructs the surface, verify proves the surface renders the proof to spec. Full subroutine: [`../references/design-bridge.md`](../references/design-bridge.md).

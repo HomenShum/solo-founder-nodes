@@ -57,6 +57,7 @@ Portable **SKILL.md** — works with any coding agent. Paste this into your agen
 - `skills/solo-founder-nodes/` — `SKILL.md` (loader entry) + `MASTER_SKILL.md` (full directive) + 7 phase playbooks in `nodes/` + `references/` (incl. `honest-lane.md`, `memory.md`, `design-bridge.md`).
 - **Design Bridge** — `references/design-bridge.md` + `templates/design/` — the UI/UX subroutine the **build** and **verify** phases call so the in-app surface can actually run the benchmark task.
 - **Design Skill Bridge** — `templates/design/designSkillBridge.ts` — selects portable design guidance across Claude-origin skills, shadcn, GSAP, UI UX Pro Max, Expo, Material 3, and design registries without locking the loop to Claude Code.
+- **gstack Bridge** — `references/gstack-bridge.md` + `templates/gstack/` — converts `garrytan/gstack` CEO/eng/design/QA/security/release roles into portable operating-review receipts, without requiring a Claude Code runtime.
 - **Memory substrate** — `references/memory.md` + `templates/memory/` — local-first, audit-safe memory so a resumed session re-hydrates instead of re-deriving.
 - **Research Spine** — `references/research-spine.md` + `templates/research/` — executable research receipts so each major implementation decision traces user need -> reference -> paper/benchmark -> eval metric -> proof artifact.
 - `docs/eval/nonbtb/` — a runnable deterministic example grader; `docs/eval/BTB_GENERALIZATION_DIAGNOSTIC.md` — the anti-overfit protocol.
@@ -93,6 +94,18 @@ The design bridge is now agent-agnostic:
 Claude-labeled skills can still be useful, but only as portable markdown/tooling references. The loop
 copies their concrete design decisions into `design-brief.md` and `component-contract.md`; implementation
 can run under Codex, Claude Code, Cursor, Windsurf, Copilot, or a generic coding agent.
+
+## Portable gstack operating lanes
+The loop also integrates `garrytan/gstack` as a portable specialist-review model:
+
+- `npm run sfn -- gstack registry`
+- `npm run sfn -- gstack recommend --phase discover --goal "3D model app from screenshots"`
+- `npm run sfn -- gstack recommend --phase build --goal "3D model app" --ui --security --risk high`
+- `npm run sfn -- gstack recommend --phase verify --goal "fresh-user proof" --ui --deploy --security --devex`
+
+These commands make the coding agent produce CEO/product, engineering, design, staff-review, QA,
+security, release, canary, docs, and retro receipts before it claims progress. Upstream gstack remains
+the inspiration source; Solo Founder Nodes owns the cross-agent gate.
 
 ## Memory substrate
 The loop **persists** what it learns so a founder resuming the next day does not re-derive it: the

@@ -61,6 +61,18 @@ must be labeled `unsupported_assumption` or `rejected`, never sold as shipped ca
 [`references/research-spine.md`](references/research-spine.md); copyable implementation:
 [`templates/research/`](templates/research/).
 
+## gstack operating lanes (portable operating review team)
+Use `garrytan/gstack` as an operating-method inspiration, not a Claude Code lock-in. Before accepting
+high-impact work, select the specialist review lanes with
+`npm run sfn -- gstack recommend ...` ([`templates/gstack/gstackBridge.ts`](templates/gstack/gstackBridge.ts)).
+The bridge maps gstack-style CEO/product, engineering, design, developer experience, staff review, QA,
+security, release, guardrail, docs, and retro roles onto this loop and requires receipts before claims
+can pass. Examples: `discover` needs office-hours + CEO review; UI `build` needs engineering + design
+review before implementation and staff review before landing; security-boundary work needs a CSO threat
+receipt; deployed `verify` needs live QA, release/deploy, and canary receipts. Doctrine:
+[`references/gstack-bridge.md`](references/gstack-bridge.md); copyable implementation:
+[`templates/gstack/`](templates/gstack/).
+
 ## The loop — run in order; read the playbook for each phase
 
 | # | Phase | Goal | Weight | Gate | Playbook |

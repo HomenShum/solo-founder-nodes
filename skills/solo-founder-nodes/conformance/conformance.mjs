@@ -32,7 +32,7 @@ ok("4 non-negotiables present", nn.every((n) => M.includes(n)), nn.filter((n) =>
 // 3. Progressive-disclosure playbooks + references all present (no missing links).
 const nodes = ["1-discover", "2-benchmark", "3-setup", "4-build", "5-adapter", "6-iterate", "7-verify"];
 ok("7 node playbooks present", nodes.every((n) => existsSync(join(skill, "nodes", `${n}.md`))));
-const refs = ["honest-lane", "memory", "context-substrate", "control-plane", "design-bridge", "benchmarks", "research", "research-spine"];
+const refs = ["honest-lane", "memory", "context-substrate", "control-plane", "design-bridge", "gstack-bridge", "benchmarks", "research", "research-spine"];
 ok("references present", refs.every((r) => existsSync(join(skill, "references", `${r}.md`))));
 
 // 4. Runnable substrate files present (Node + the smoke).
@@ -45,10 +45,12 @@ ok("templates substrate present", [
   "control/controlPlane.ts",
   "research/researchSpine.ts",
   "design/designSkillBridge.ts",
+  "gstack/gstackBridge.ts",
 ].every((f) => existsSync(join(skill, "templates", f))));
 ok("context/control directives present", /context-substrate/i.test(master) && /control-plane/i.test(master));
 ok("research-backed implementation directive present", /research-spine/i.test(master) && /research-backed implementation/i.test(master));
 ok("design skill portability directive present", /design skills are portable inputs/i.test(master) && /designSkillBridge/i.test(master));
+ok("gstack operating lanes directive present", /gstack/i.test(master) && /gstackBridge/i.test(master) && /portable operating/i.test(master));
 
 // 5. Portability declared (no single-agent lock-in): the directive names multiple agents / "any coding agent".
 const agents = ["claude code", "codex", "cursor", "windsurf", "trae", "openclaw", "hermes", "opencode", "kilo", "any coding agent"];

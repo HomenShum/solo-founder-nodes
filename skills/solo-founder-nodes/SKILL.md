@@ -67,4 +67,10 @@ templates in [`templates/research/`](templates/research/).
 skills, then copy the decisions into the Design Brief and Component Contract for whichever coding agent
 is running.
 
+**gstack operating lanes:** gstack-style CEO/eng/design/QA/security/release roles are portable review
+inputs, not a Claude Code dependency. Use
+[`templates/gstack/gstackBridge.ts`](templates/gstack/gstackBridge.ts) or
+`npm run sfn -- gstack recommend ...` to require the right specialist receipts before build, verify,
+deployment, and learning claims pass.
+
 When running the harness directly, see [`templates/run/README.md`](templates/run/README.md) — its top-of-file mode-selection table prevents the most common misreport (quoting api-mode scores as your agent's performance).
