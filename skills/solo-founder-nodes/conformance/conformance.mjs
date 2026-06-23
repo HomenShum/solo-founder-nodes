@@ -44,9 +44,11 @@ ok("templates substrate present", [
   "context/graphContext.ts",
   "control/controlPlane.ts",
   "research/researchSpine.ts",
+  "design/designSkillBridge.ts",
 ].every((f) => existsSync(join(skill, "templates", f))));
 ok("context/control directives present", /context-substrate/i.test(master) && /control-plane/i.test(master));
 ok("research-backed implementation directive present", /research-spine/i.test(master) && /research-backed implementation/i.test(master));
+ok("design skill portability directive present", /design skills are portable inputs/i.test(master) && /designSkillBridge/i.test(master));
 
 // 5. Portability declared (no single-agent lock-in): the directive names multiple agents / "any coding agent".
 const agents = ["claude code", "codex", "cursor", "windsurf", "trae", "openclaw", "hermes", "opencode", "kilo", "any coding agent"];

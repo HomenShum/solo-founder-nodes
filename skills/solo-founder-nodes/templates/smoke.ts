@@ -11,6 +11,7 @@ import { sha256 } from "./ledger/hash";
 import { inspectGraphContext, graphQueryPlan } from "./context/graphContext";
 import { SoloControlPlane } from "./control/controlPlane";
 import { make3dAgentResearchPack, top3dComparisonRubric, verifyResearchPack, type ResearchPack } from "./research/researchSpine";
+import { designSkillRegistry, recommendDesignSkills, verifyDesignSkillPlan } from "./design/designSkillBridge";
 
 let pass = 0;
 let fail = 0;
@@ -193,6 +194,31 @@ async function main() {
 
   const rubric = top3dComparisonRubric();
   check("top3d comparator has 4 providers and 100 points", rubric.competitors.length === 4 && rubric.totalPoints === 100);
+
+  // ---------------- Design skill bridge: agent-agnostic design intelligence ----------------
+  console.log("\nDesignSkillBridge (not Claude Code locked):");
+  const designRegistry = designSkillRegistry();
+  check("design registry has portable sources", designRegistry.length >= 7 && designRegistry.every((s) => s.agentLocked === false));
+  check("design registry includes Codex-compatible skills", designRegistry.some((s) => s.runtimeSupport.includes("codex") && s.id === "frontend-design"));
+  const dashboardPlan = recommendDesignSkills({
+    surfaceKind: "dashboard",
+    stack: "Next.js shadcn Tailwind",
+    runtime: "codex",
+    usesShadcn: true,
+  });
+  const dashboardVerdict = verifyDesignSkillPlan(dashboardPlan);
+  check("dashboard design plan selects shadcn + UI intelligence", dashboardPlan.selectedSkillIds.includes("shadcn-ui") && dashboardPlan.selectedSkillIds.includes("ui-ux-pro-max"));
+  check("dashboard design plan verifies", dashboardVerdict.ok, dashboardVerdict.errors.join("; "));
+  const mobilePlan = recommendDesignSkills({
+    surfaceKind: "mobile-app",
+    stack: "Expo React Native",
+    runtime: "codex",
+    needsMobileNative: true,
+  });
+  check("mobile design plan selects Expo/mobile skills", mobilePlan.selectedSkillIds.includes("mobile-app-ui-design") && mobilePlan.selectedSkillIds.includes("expo-skills"));
+  const badDesignPlan = { ...dashboardPlan, sequence: ["implementation", "design-brief", "browser-verify"] };
+  const badDesignVerdict = verifyDesignSkillPlan(badDesignPlan);
+  check("design order violation is rejected", badDesignVerdict.ok === false && badDesignVerdict.errors.some((e) => e.includes("before implementation")));
 
   // ---------------- SoloControlPlane: durable loop control ----------------
   console.log("\nSoloControlPlane (durable control plane):");

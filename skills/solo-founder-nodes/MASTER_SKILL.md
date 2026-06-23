@@ -93,6 +93,14 @@ prompts on existing tokens. Spec: [`references/design-bridge.md`](references/des
 copyable templates in [`templates/design/`](templates/design/) (design-brief, component-contract,
 visual-regression-checklist).
 
+**Design skills are portable inputs, not Claude Code lock-in.** Before calling any design MCP or
+writing UI code, select the relevant design guidance with `npm run sfn -- design recommend ...`
+([`templates/design/designSkillBridge.ts`](templates/design/designSkillBridge.ts)). Claude-origin
+frontend skills, shadcn skills, GSAP skills, UI UX Pro Max, Expo, Material 3, and design registries
+are consumed as markdown/tooling references that Codex, Claude Code, Cursor, Windsurf, Copilot, or a
+generic coding agent can apply. Do not require a Claude-only slash command or plugin to implement the
+surface; port the design decisions into the Design Brief and Component Contract.
+
 ## Memory substrate (local-first, audit-safe)
 Each phase **reads safe project memory at start** (decisions, approvals, benchmark choice, setup env,
 design constraints, prior rejected fixes) and **writes decision/provenance memory at end** — so a

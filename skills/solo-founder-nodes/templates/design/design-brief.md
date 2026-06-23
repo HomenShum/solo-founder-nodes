@@ -20,6 +20,12 @@ What the app cannot do today / what is broken about the current UI.
 - dark / light mode
 - accessibility constraints (contrast, focus order, hit targets, reduced motion)
 
+## Design skills / references
+- selected skills: &lt;ids from `npm run sfn -- design recommend ...`&gt;
+- runtime: &lt;codex / claude-code / cursor / windsurf / generic-agent&gt;
+- how each skill is used: &lt;direction / components / dashboard / animation / mobile&gt;
+- portability note: if a source is Claude-labeled, copy only the design guidance into this brief; do not require Claude Code to implement it
+
 ## Current UI
 - screenshot(s) of the current state: &lt;path&gt;
 - the exact code surfaces to change: &lt;files&gt;

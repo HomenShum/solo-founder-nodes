@@ -1,6 +1,6 @@
 # Visual Regression Checklist (Design Bridge — browser verify)
 
-> Run this LAST in the Design Bridge: brief → design → implement → **verify**. A surface is not done
+> Run this LAST in the Design Bridge: brief -> design-skill selection -> design -> implement -> **verify**. A surface is not done
 > until it is proven in a real rendered DOM, not just a build success or a static mock.
 
 For each component state in the contract:
@@ -12,6 +12,7 @@ For each component state in the contract:
 - [ ] **Mobile breakpoint** holds — no overflow, tap targets ≥ 44px, content reflows.
 - [ ] **Keyboard navigation** — focus order is correct, focus visible, no traps.
 - [ ] **Design tokens** — colors/spacing/typography come from the system; no hardcoded hex/px drift.
+- [ ] **Design-skill decisions** — selected skill guidance appears in the brief/contract as concrete decisions, not Claude-only commands.
 - [ ] **No console errors/warnings** during render and interaction.
 - [ ] **Transfer proof** — the surface reflects a real backend run / live data, not a static mock. Build success, CLI exit code, or CI-green do **not** count.
 

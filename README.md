@@ -56,6 +56,7 @@ Portable **SKILL.md** — works with any coding agent. Paste this into your agen
 ## Repo layout
 - `skills/solo-founder-nodes/` — `SKILL.md` (loader entry) + `MASTER_SKILL.md` (full directive) + 7 phase playbooks in `nodes/` + `references/` (incl. `honest-lane.md`, `memory.md`, `design-bridge.md`).
 - **Design Bridge** — `references/design-bridge.md` + `templates/design/` — the UI/UX subroutine the **build** and **verify** phases call so the in-app surface can actually run the benchmark task.
+- **Design Skill Bridge** — `templates/design/designSkillBridge.ts` — selects portable design guidance across Claude-origin skills, shadcn, GSAP, UI UX Pro Max, Expo, Material 3, and design registries without locking the loop to Claude Code.
 - **Memory substrate** — `references/memory.md` + `templates/memory/` — local-first, audit-safe memory so a resumed session re-hydrates instead of re-deriving.
 - **Research Spine** — `references/research-spine.md` + `templates/research/` — executable research receipts so each major implementation decision traces user need -> reference -> paper/benchmark -> eval metric -> proof artifact.
 - `docs/eval/nonbtb/` — a runnable deterministic example grader; `docs/eval/BTB_GENERALIZATION_DIAGNOSTIC.md` — the anti-overfit protocol.
@@ -80,6 +81,16 @@ The seeded 3D-agent lane points agents toward a realistic v1: provider-backed im
 Three.js viewer, deployment, persistence, full UI proof, and comparator scoring against Meshy, Tripo,
 Rodin/Hyper3D, and Luma. COLMAP/3DGS, CAD-native output, humanoid rigging, and motion tracking remain
 stretch lanes until separately proved.
+
+## Portable design skills
+The design bridge is now agent-agnostic:
+
+- `npm run sfn -- design registry`
+- `npm run sfn -- design recommend --surface dashboard --stack "Next.js shadcn" --runtime codex`
+
+Claude-labeled skills can still be useful, but only as portable markdown/tooling references. The loop
+copies their concrete design decisions into `design-brief.md` and `component-contract.md`; implementation
+can run under Codex, Claude Code, Cursor, Windsurf, Copilot, or a generic coding agent.
 
 ## Memory substrate
 The loop **persists** what it learns so a founder resuming the next day does not re-derive it: the

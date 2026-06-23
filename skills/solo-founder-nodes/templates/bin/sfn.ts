@@ -16,6 +16,15 @@ import {
   type ResearchDomain,
   type ResearchPack,
 } from "../research/researchSpine";
+import {
+  designAgentRuntimes,
+  designSkillRegistry,
+  designSurfaceKinds,
+  recommendDesignSkills,
+  verifyDesignSkillPlan,
+  type DesignAgentRuntime,
+  type DesignSurfaceKind,
+} from "../design/designSkillBridge";
 
 const here = dirname(fileURLToPath(import.meta.url)); // templates/bin
 const templates = join(here, "..");                   // templates
@@ -57,6 +66,16 @@ function slugify(input: string) {
   return input.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 64) || "proof-run";
 }
 
+function parseDesignRuntime(value?: string): DesignAgentRuntime {
+  if (value && designAgentRuntimes.includes(value as DesignAgentRuntime)) return value as DesignAgentRuntime;
+  throw new Error(`unsupported design runtime '${value ?? ""}' (expected one of: ${designAgentRuntimes.join(", ")})`);
+}
+
+function parseSurfaceKind(value?: string): DesignSurfaceKind {
+  if (value && designSurfaceKinds.includes(value as DesignSurfaceKind)) return value as DesignSurfaceKind;
+  throw new Error(`unsupported design surface '${value ?? ""}' (expected one of: ${designSurfaceKinds.join(", ")})`);
+}
+
 const HELP = `sfn — Solo Founder Nodes local CLI   (run via: npm run sfn -- <cmd>)
 
   doctor                      check node + deps readiness
@@ -73,6 +92,8 @@ const HELP = `sfn — Solo Founder Nodes local CLI   (run via: npm run sfn -- <c
   proof collect --run <dir> --artifact <id> --path <path> [--sha256 <hash>]
   proof verdict --run <dir>
   compare top3d [--out <file>]  print/write the 3D provider comparison rubric
+  design registry [--out <file>]
+  design recommend --surface <kind> [--stack <s>] [--runtime <r>] [--animation] [--mobile] [--shadcn] [--out <file>]
   seal --salt <s> <id...>     seal a held-out manifest (HMAC) — keep the salt OUT of the agent's reach
   ledger list                 list recorded eval runs
   ledger verify <runId>       re-verify a run's hash-chain (tamper check)
@@ -303,6 +324,40 @@ async function main() {
         console.log(JSON.stringify(rubric, jbig, 2));
       }
       process.exit(0);
+    }
+    case "design": {
+      const sub = rest[0];
+      if (sub === "registry") {
+        const registry = designSkillRegistry();
+        const out = flag(rest, "--out");
+        if (out) {
+          writeJson(resolve(out), registry);
+          console.log(JSON.stringify({ out: resolve(out), registry }, jbig, 2));
+        } else {
+          console.log(JSON.stringify(registry, jbig, 2));
+        }
+        process.exit(0);
+      }
+      if (sub === "recommend") {
+        const surfaceKind = parseSurfaceKind(flag(rest, "--surface", "saas-app"));
+        const runtime = parseDesignRuntime(flag(rest, "--runtime", "generic-agent"));
+        const plan = recommendDesignSkills({
+          surfaceKind,
+          runtime,
+          stack: flag(rest, "--stack", ""),
+          needsAnimation: rest.includes("--animation"),
+          needsMobileNative: rest.includes("--mobile"),
+          usesShadcn: rest.includes("--shadcn"),
+        });
+        const verdict = verifyDesignSkillPlan(plan);
+        const payload = { plan, verdict };
+        const out = flag(rest, "--out");
+        if (out) writeJson(resolve(out), payload);
+        console.log(JSON.stringify(out ? { out: resolve(out), ...payload } : payload, jbig, 2));
+        process.exit(verdict.ok ? 0 : 1);
+      }
+      console.error("design: registry | recommend");
+      process.exit(2);
     }
     case "seal": {
       const saltIdx = rest.indexOf("--salt");

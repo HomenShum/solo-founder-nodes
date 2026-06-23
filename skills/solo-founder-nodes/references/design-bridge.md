@@ -5,7 +5,7 @@ It runs **only** when a UI gap is **architectural/visual** and a design tool is 
 Build's bridge **constructs** the surface from the deliverable shape; Verify's bridge **proves**
 the rendered surface shows the cited answer. The purpose is **IN-APP TRANSFER**: the benchmark
 task must be triggerable and watchable in the **live** app, not just a private script. A design
-MCP / Figma is an **artifact generator + validator, NOT the source of product truth.**
+MCP / Figma / design skill is an **artifact generator + validator, NOT the source of product truth.**
 
 ## Runtime
 
@@ -13,13 +13,17 @@ UI gap detected →
 1. **Design Brief** (structured): the user job; the missing surface; required components;
    design-system **tokens**; layout / motion / accessibility constraints; **screenshots of the
    current UI**; the **exact code surfaces to change**.
-2. **Inspect / generate** via a design MCP **if connected** — Figma MCP gives structured access
+2. **Select portable design skills** — use `templates/design/designSkillBridge.ts` or
+   `npm run sfn -- design recommend ...` to choose direction/component/dashboard/animation/mobile
+   guidance. Skills may originate in Claude repositories, shadcn docs, GSAP, Expo, or design
+   registries, but the loop consumes them as markdown/tooling instructions any coding agent can read.
+3. **Inspect / generate** via a design MCP **if connected** — Figma MCP gives structured access
    to files/components/variables/layout and can generate code from selected frames and write back
-   to canvas; OpenAI Codex has an equivalent "Implement designs" skill that fetches Figma
-   context/assets/screenshots for visual parity.
-3. **Component Contract** — the explicit named states the implementation must satisfy.
-4. **Implement from the contract**, **REUSING existing components** (avoid one-off CSS drift).
-5. **Browser-verify** — Playwright screenshot, **DOM signal**, visual diff, interaction path,
+   to canvas; Codex, Claude Code, Cursor, Windsurf, and other agents can instead use screenshots,
+   design files, Open Design, or plain `DESIGN.md`/`SKILL.md` instructions for parity.
+4. **Component Contract** — the explicit named states the implementation must satisfy.
+5. **Implement from the contract**, **REUSING existing components** (avoid one-off CSS drift).
+6. **Browser-verify** — Playwright screenshot, **DOM signal**, visual diff, interaction path,
    **mobile breakpoint**, **design-token usage**.
 
 ## The strict order (guardrail)
@@ -38,6 +42,30 @@ Never reorder.
 
 Figma MCP quality depends heavily on **structured files + components + auto-layout**; some seat
 tiers have very **limited tool-call rate limits** — budget calls.
+
+## Portable design-skill notes
+
+- **Frontend direction skills** (for example Anthropic `frontend-design`) are used as brief inputs:
+  visual point of view, typography, density, and anti-generic decisions before code.
+- **Component-system skills** (for example shadcn/ui) are used when the repo already has that stack
+  or should install it behind the normal dependency gate.
+- **Dashboard/data skills** (for example UI UX Pro Max or dashboard registries) are used for dense,
+  operational surfaces where scanability beats landing-page composition.
+- **Animation skills** (for example GSAP skills) are used only when motion is part of the product
+  value; they do not replace reduced-motion and performance checks.
+- **Mobile/native skills** (for example Expo, Material 3, or mobile UI skills) are used only when the
+  target surface is actually native/mobile.
+
+Run:
+
+```bash
+npm run sfn -- design registry
+npm run sfn -- design recommend --surface dashboard --stack "Next.js shadcn" --runtime codex
+```
+
+The chosen skill list is a **design input**, not a runtime dependency. If a skill is Claude-labeled,
+port the instructions into the Design Brief / Component Contract and keep implementation in the user's
+actual coding agent.
 
 ## Figma / OpenDesign-MCP notes
 

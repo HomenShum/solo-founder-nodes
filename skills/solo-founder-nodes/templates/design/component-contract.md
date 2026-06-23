@@ -23,6 +23,11 @@ One sentence: what the component does and where it lives.
 - spacing / grid / breakpoints
 - motion / transitions (durations, easing) — respect reduced-motion
 
+## Design-skill inputs
+- selected skills: &lt;ids&gt;
+- decisions imported from those skills: &lt;brief, specific, implementation-ready rules&gt;
+- excluded guidance: &lt;Claude-only commands, unsupported dependencies, off-brand style moves&gt;
+
 ## Interactions
 - click / keyboard / focus behavior
 - what each action emits (callback / event / mutation)

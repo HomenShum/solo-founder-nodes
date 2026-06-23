@@ -61,6 +61,7 @@ If the verified task requires the rendered surface to MATCH a design (not just p
 - **Interaction** — drive the real interaction path (composer → trigger → result, evidence click-through to the source cell) the way a user would; no shims.
 - **Mobile breakpoint** — confirm the surface holds at the mobile viewport, not only desktop.
 - **Design-token usage** — confirm the surface uses the app's design tokens (no one-off CSS drift); compare against the design-system reference.
+- **Design-skill decisions** — confirm any selected design-skill guidance appears as concrete brief/contract decisions, not Claude-only commands or unrelated style drift.
 Order guardrail: the proof (correct cited answer) comes FIRST; design parity is verified SECOND. A pretty surface that shows the wrong answer still FAILS transfer.
 
 ## Gate

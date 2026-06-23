@@ -61,4 +61,10 @@ proof artifact. From `build` onward, block uncited decisions; from `verify` onwa
 major claims that lack proof artifacts. Spec: [`references/research-spine.md`](references/research-spine.md);
 templates in [`templates/research/`](templates/research/).
 
+**Design skills:** design guidance is not Claude Code locked. Use
+[`templates/design/designSkillBridge.ts`](templates/design/designSkillBridge.ts) or
+`npm run sfn -- design recommend ...` to select portable direction/component/dashboard/animation/mobile
+skills, then copy the decisions into the Design Brief and Component Contract for whichever coding agent
+is running.
+
 When running the harness directly, see [`templates/run/README.md`](templates/run/README.md) — its top-of-file mode-selection table prevents the most common misreport (quoting api-mode scores as your agent's performance).
