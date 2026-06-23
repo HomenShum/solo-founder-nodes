@@ -2,6 +2,11 @@ node_modules/
 package-lock.json
 .solo-ledger/
 .solo-memory/
+_sb_out/
+_probe_*.py
+*_run.log
+*_probe_capture.log
+results_*.json
 *.db
 *.db-wal
 *.db-shm
