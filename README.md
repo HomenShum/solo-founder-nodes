@@ -87,6 +87,8 @@ The design bridge is now agent-agnostic:
 
 - `npm run sfn -- design registry`
 - `npm run sfn -- design recommend --surface dashboard --stack "Next.js shadcn" --runtime codex`
+- `npm run sfn -- design recommend --surface marketing-site --style premium --visuals --animation --runtime codex`
+- `npm run sfn -- design recommend --surface mobile-app --platform ios --stack SwiftUI --runtime codex`
 
 Claude-labeled skills can still be useful, but only as portable markdown/tooling references. The loop
 copies their concrete design decisions into `design-brief.md` and `component-contract.md`; implementation

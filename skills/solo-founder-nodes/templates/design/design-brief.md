@@ -23,6 +23,9 @@ What the app cannot do today / what is broken about the current UI.
 ## Design skills / references
 - selected skills: &lt;ids from `npm run sfn -- design recommend ...`&gt;
 - runtime: &lt;codex / claude-code / cursor / windsurf / generic-agent&gt;
+- style preset: &lt;none / minimalist / industrial-brutalist / premium&gt;
+- target platform: &lt;web / ios / android / cross-platform&gt;
+- visual-content lane: &lt;none / Higgsfield image / Higgsfield video / product shots&gt;
 - how each skill is used: &lt;direction / components / dashboard / animation / mobile&gt;
 - portability note: if a source is Claude-labeled, copy only the design guidance into this brief; do not require Claude Code to implement it
 

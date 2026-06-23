@@ -198,24 +198,35 @@ async function main() {
   // ---------------- Design skill bridge: agent-agnostic design intelligence ----------------
   console.log("\nDesignSkillBridge (not Claude Code locked):");
   const designRegistry = designSkillRegistry();
-  check("design registry has portable sources", designRegistry.length >= 7 && designRegistry.every((s) => s.agentLocked === false));
+  check("design registry has portable sources", designRegistry.length >= 12 && designRegistry.every((s) => s.agentLocked === false));
   check("design registry includes Codex-compatible skills", designRegistry.some((s) => s.runtimeSupport.includes("codex") && s.id === "frontend-design"));
+  check("design registry includes visual/taste/native lanes", ["taste-minimalist-ui", "taste-industrial-brutalist-ui", "premium-frontend-ui", "higgsfield-skills", "swiftui-skills"].every((id) => designRegistry.some((s) => s.id === id)));
   const dashboardPlan = recommendDesignSkills({
     surfaceKind: "dashboard",
     stack: "Next.js shadcn Tailwind",
     runtime: "codex",
-    usesShadcn: true,
+    usesShadcnMcp: true,
   });
   const dashboardVerdict = verifyDesignSkillPlan(dashboardPlan);
   check("dashboard design plan selects shadcn + UI intelligence", dashboardPlan.selectedSkillIds.includes("shadcn-ui") && dashboardPlan.selectedSkillIds.includes("ui-ux-pro-max"));
   check("dashboard design plan verifies", dashboardVerdict.ok, dashboardVerdict.errors.join("; "));
+  const premiumVisualPlan = recommendDesignSkills({
+    surfaceKind: "marketing-site",
+    stack: "Next.js hero image background video",
+    runtime: "codex",
+    stylePreset: "premium",
+    needsVisualContent: true,
+    needsAnimation: true,
+  });
+  check("premium visual plan selects premium + Higgsfield + GSAP", ["premium-frontend-ui", "higgsfield-skills", "gsap-skills"].every((id) => premiumVisualPlan.selectedSkillIds.includes(id)));
   const mobilePlan = recommendDesignSkills({
     surfaceKind: "mobile-app",
-    stack: "Expo React Native",
+    stack: "Expo React Native SwiftUI",
     runtime: "codex",
     needsMobileNative: true,
+    targetPlatform: "ios",
   });
-  check("mobile design plan selects Expo/mobile skills", mobilePlan.selectedSkillIds.includes("mobile-app-ui-design") && mobilePlan.selectedSkillIds.includes("expo-skills"));
+  check("mobile design plan selects Expo/mobile/SwiftUI skills", mobilePlan.selectedSkillIds.includes("mobile-app-ui-design") && mobilePlan.selectedSkillIds.includes("expo-skills") && mobilePlan.selectedSkillIds.includes("swiftui-skills"));
   const badDesignPlan = { ...dashboardPlan, sequence: ["implementation", "design-brief", "browser-verify"] };
   const badDesignVerdict = verifyDesignSkillPlan(badDesignPlan);
   check("design order violation is rejected", badDesignVerdict.ok === false && badDesignVerdict.errors.some((e) => e.includes("before implementation")));

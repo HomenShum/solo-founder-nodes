@@ -55,12 +55,20 @@ tiers have very **limited tool-call rate limits** — budget calls.
   value; they do not replace reduced-motion and performance checks.
 - **Mobile/native skills** (for example Expo, Material 3, or mobile UI skills) are used only when the
   target surface is actually native/mobile.
+- **Taste presets** (for example minimalist, industrial/brutalist, or premium frontend skills) are
+  selected explicitly from the product audience; do not stack random styles together.
+- **Visual-content skills** (for example Higgsfield image/video generation) require auth/spend gates
+  and generated-media proof before the asset can count as shipped.
+- **iOS/SwiftUI skills** are used only for native Apple surfaces; do not treat mobile as a small web
+  dashboard.
 
 Run:
 
 ```bash
 npm run sfn -- design registry
 npm run sfn -- design recommend --surface dashboard --stack "Next.js shadcn" --runtime codex
+npm run sfn -- design recommend --surface marketing-site --style premium --visuals --animation --runtime codex
+npm run sfn -- design recommend --surface mobile-app --platform ios --stack SwiftUI --runtime codex
 ```
 
 The chosen skill list is a **design input**, not a runtime dependency. If a skill is Claude-labeled,

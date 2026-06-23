@@ -18,12 +18,16 @@ import {
 } from "../research/researchSpine";
 import {
   designAgentRuntimes,
+  designStylePresets,
   designSkillRegistry,
   designSurfaceKinds,
+  designTargetPlatforms,
   recommendDesignSkills,
   verifyDesignSkillPlan,
   type DesignAgentRuntime,
+  type DesignStylePreset,
   type DesignSurfaceKind,
+  type DesignTargetPlatform,
 } from "../design/designSkillBridge";
 
 const here = dirname(fileURLToPath(import.meta.url)); // templates/bin
@@ -76,6 +80,17 @@ function parseSurfaceKind(value?: string): DesignSurfaceKind {
   throw new Error(`unsupported design surface '${value ?? ""}' (expected one of: ${designSurfaceKinds.join(", ")})`);
 }
 
+function parseStylePreset(value?: string): DesignStylePreset | undefined {
+  if (!value) return undefined;
+  if (designStylePresets.includes(value as DesignStylePreset)) return value as DesignStylePreset;
+  throw new Error(`unsupported design style '${value}' (expected one of: ${designStylePresets.join(", ")})`);
+}
+
+function parseTargetPlatform(value?: string): DesignTargetPlatform {
+  if (value && designTargetPlatforms.includes(value as DesignTargetPlatform)) return value as DesignTargetPlatform;
+  throw new Error(`unsupported design platform '${value ?? ""}' (expected one of: ${designTargetPlatforms.join(", ")})`);
+}
+
 const HELP = `sfn — Solo Founder Nodes local CLI   (run via: npm run sfn -- <cmd>)
 
   doctor                      check node + deps readiness
@@ -93,7 +108,7 @@ const HELP = `sfn — Solo Founder Nodes local CLI   (run via: npm run sfn -- <c
   proof verdict --run <dir>
   compare top3d [--out <file>]  print/write the 3D provider comparison rubric
   design registry [--out <file>]
-  design recommend --surface <kind> [--stack <s>] [--runtime <r>] [--animation] [--mobile] [--shadcn] [--out <file>]
+  design recommend --surface <kind> [--stack <s>] [--runtime <r>] [--style <preset>] [--platform <p>] [--animation] [--visuals] [--mobile] [--shadcn] [--shadcn-mcp] [--out <file>]
   seal --salt <s> <id...>     seal a held-out manifest (HMAC) — keep the salt OUT of the agent's reach
   ledger list                 list recorded eval runs
   ledger verify <runId>       re-verify a run's hash-chain (tamper check)
@@ -341,13 +356,18 @@ async function main() {
       if (sub === "recommend") {
         const surfaceKind = parseSurfaceKind(flag(rest, "--surface", "saas-app"));
         const runtime = parseDesignRuntime(flag(rest, "--runtime", "generic-agent"));
+        const targetPlatform = parseTargetPlatform(flag(rest, "--platform", "web"));
         const plan = recommendDesignSkills({
           surfaceKind,
           runtime,
           stack: flag(rest, "--stack", ""),
           needsAnimation: rest.includes("--animation"),
+          needsVisualContent: rest.includes("--visuals"),
           needsMobileNative: rest.includes("--mobile"),
           usesShadcn: rest.includes("--shadcn"),
+          usesShadcnMcp: rest.includes("--shadcn-mcp"),
+          stylePreset: parseStylePreset(flag(rest, "--style")),
+          targetPlatform,
         });
         const verdict = verifyDesignSkillPlan(plan);
         const payload = { plan, verdict };

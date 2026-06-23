@@ -29,7 +29,16 @@ export type DesignSkillKind =
   | "animation"
   | "mobile"
   | "native"
-  | "registry";
+  | "registry"
+  | "style-preset"
+  | "visual-content"
+  | "ios-native";
+
+export const designStylePresets = ["minimalist", "industrial-brutalist", "premium"] as const;
+export type DesignStylePreset = (typeof designStylePresets)[number];
+
+export const designTargetPlatforms = ["web", "ios", "android", "cross-platform"] as const;
+export type DesignTargetPlatform = (typeof designTargetPlatforms)[number];
 
 export interface DesignSkillSource {
   id: string;
@@ -49,8 +58,12 @@ export interface DesignSkillRecommendationInput {
   stack?: string;
   runtime?: DesignAgentRuntime;
   needsAnimation?: boolean;
+  needsVisualContent?: boolean;
   needsMobileNative?: boolean;
   usesShadcn?: boolean;
+  usesShadcnMcp?: boolean;
+  stylePreset?: DesignStylePreset;
+  targetPlatform?: DesignTargetPlatform;
 }
 
 export interface DesignSkillPlan {
@@ -90,8 +103,8 @@ export function designSkillRegistry(): DesignSkillSource[] {
       agentLocked: false,
       runtimeSupport: ["claude-code", "codex", "cursor", "windsurf", "copilot", "opencode", "generic-agent"],
       bestFor: ["dashboard", "saas-app", "data-app", "component-system", "3d-app"],
-      useAs: "Component composition and project-aware shadcn/ui rules: use existing components, CLI, tokens, and registry patterns.",
-      portabilityNote: "Treat the skill as shadcn project knowledge. The component rules are independent of the assistant vendor.",
+      useAs: "Component composition, MCP/registry lookup, project-aware shadcn/ui rules, tokens, and install patterns.",
+      portabilityNote: "Treat the skill and MCP as shadcn project knowledge. The component rules are independent of the assistant vendor.",
     },
     {
       id: "ui-ux-pro-max",
@@ -116,6 +129,54 @@ export function designSkillRegistry(): DesignSkillSource[] {
       bestFor: ["animation-heavy", "marketing-site", "portfolio", "3d-app"],
       useAs: "Animation correctness, timelines, ScrollTrigger, framework usage, and performance rules.",
       portabilityNote: "Official GSAP skills state support for multiple agents including Codex, Cursor, Windsurf, Copilot, and Claude Code.",
+    },
+    {
+      id: "taste-minimalist-ui",
+      title: "Minimalist UI taste preset",
+      url: "https://www.ui-skills.com/skills/leonxlnx/minimalist-skill/",
+      kind: "style-preset",
+      origin: "Leonxlnx/taste-skill",
+      agentLocked: false,
+      runtimeSupport: ["claude-code", "codex", "cursor", "windsurf", "copilot", "generic-agent"],
+      bestFor: ["marketing-site", "portfolio", "saas-app", "component-system"],
+      useAs: "Editorial minimal interfaces: monochrome restraint, typographic contrast, flat grids, and fewer decorative effects.",
+      portabilityNote: "Use as taste constraints in the brief/contract; do not depend on a Claude-only invocation.",
+    },
+    {
+      id: "taste-industrial-brutalist-ui",
+      title: "Industrial Brutalist UI taste preset",
+      url: "https://github.com/Leonxlnx/taste-skill",
+      kind: "style-preset",
+      origin: "Leonxlnx/taste-skill",
+      agentLocked: false,
+      runtimeSupport: ["claude-code", "codex", "cursor", "windsurf", "copilot", "generic-agent"],
+      bestFor: ["marketing-site", "portfolio", "saas-app", "animation-heavy"],
+      useAs: "High-contrast industrial/brutalist visual language when the product needs a deliberately sharp point of view.",
+      portabilityNote: "Use as aesthetic constraints, not as permission to ignore usability, accessibility, or product fit.",
+    },
+    {
+      id: "premium-frontend-ui",
+      title: "Premium Frontend UI",
+      url: "https://github.com/github/awesome-copilot/blob/main/skills/premium-frontend-ui/SKILL.md",
+      kind: "style-preset",
+      origin: "github/awesome-copilot",
+      agentLocked: false,
+      runtimeSupport: ["copilot", "codex", "claude-code", "cursor", "windsurf", "generic-agent"],
+      bestFor: ["marketing-site", "portfolio", "saas-app", "animation-heavy", "3d-app"],
+      useAs: "Immersive premium frontend craft: typography, motion, interaction depth, and high-performance polish.",
+      portabilityNote: "Although authored for Copilot, it is an Agent Skill markdown pattern that can be consumed by other agents.",
+    },
+    {
+      id: "higgsfield-skills",
+      title: "Higgsfield AI Skills",
+      url: "https://github.com/higgsfield-ai/skills",
+      kind: "visual-content",
+      origin: "higgsfield-ai/skills",
+      agentLocked: false,
+      runtimeSupport: ["claude-code", "codex", "cursor", "windsurf", "generic-agent"],
+      bestFor: ["marketing-site", "portfolio", "animation-heavy", "3d-app"],
+      useAs: "Generate or score hero images, product shots, background video clips, and cinematic visual assets when the app needs original media.",
+      portabilityNote: "Requires Higgsfield account/CLI/MCP setup behind the normal install/auth/spend gate; the skills are cross-agent markdown skills.",
     },
     {
       id: "awesome-design-skills",
@@ -165,12 +226,25 @@ export function designSkillRegistry(): DesignSkillSource[] {
       useAs: "Expo and React Native UI/deploy/debug guidance when the target app is native or Expo.",
       portabilityNote: "Expo documents these skills as usable with Claude Code, Cursor, Codex, and other AI agents.",
     },
+    {
+      id: "swiftui-skills",
+      title: "SwiftUI skills",
+      url: "https://github.com/ameyalambat128/swiftui-skills",
+      kind: "ios-native",
+      origin: "ameyalambat128/swiftui-skills",
+      agentLocked: false,
+      runtimeSupport: ["claude-code", "codex", "cursor", "windsurf", "generic-agent"],
+      bestFor: ["mobile-app"],
+      useAs: "Native iOS/SwiftUI implementation guidance: layout, state, platform conventions, accessibility, and Apple-native UI behavior.",
+      portabilityNote: "The installer can target Codex/Claude-style skill paths; use as SwiftUI guidance when the target is truly native iOS.",
+    },
   ];
 }
 
 export function recommendDesignSkills(input: DesignSkillRecommendationInput): DesignSkillPlan {
   const runtime = input.runtime ?? "generic-agent";
   const stack = (input.stack ?? "").toLowerCase();
+  const targetPlatform = input.targetPlatform ?? "web";
   const ids = new Set<string>();
   const warnings: string[] = [];
 
@@ -180,18 +254,29 @@ export function recommendDesignSkills(input: DesignSkillRecommendationInput): De
   if (input.surfaceKind === "dashboard" || input.surfaceKind === "data-app" || input.surfaceKind === "saas-app") {
     ids.add("ui-ux-pro-max");
   }
-  if (input.usesShadcn || stack.includes("shadcn") || stack.includes("tailwind") || input.surfaceKind === "dashboard" || input.surfaceKind === "saas-app" || input.surfaceKind === "3d-app") {
+  if (input.usesShadcn || input.usesShadcnMcp || stack.includes("shadcn") || stack.includes("tailwind") || input.surfaceKind === "dashboard" || input.surfaceKind === "saas-app" || input.surfaceKind === "3d-app") {
     ids.add("shadcn-ui");
   }
   if (input.needsAnimation || input.surfaceKind === "animation-heavy") {
     ids.add("gsap-skills");
   }
-  if (input.surfaceKind === "mobile-app" || input.needsMobileNative || stack.includes("react native") || stack.includes("expo") || stack.includes("swiftui")) {
+  if (input.needsVisualContent || stack.includes("higgsfield") || stack.includes("hero image") || stack.includes("background video")) {
+    ids.add("higgsfield-skills");
+  }
+  if (input.stylePreset === "minimalist") ids.add("taste-minimalist-ui");
+  if (input.stylePreset === "industrial-brutalist") ids.add("taste-industrial-brutalist-ui");
+  if (input.stylePreset === "premium") ids.add("premium-frontend-ui");
+
+  if (input.surfaceKind === "mobile-app" || input.needsMobileNative || targetPlatform !== "web" || stack.includes("react native") || stack.includes("expo") || stack.includes("swiftui")) {
     ids.add("mobile-app-ui-design");
-    if (stack.includes("expo") || stack.includes("react native")) ids.add("expo-skills");
-    if (stack.includes("android") || stack.includes("material") || stack.includes("flutter")) ids.add("material-3");
+    if (targetPlatform === "cross-platform" || stack.includes("expo") || stack.includes("react native")) ids.add("expo-skills");
+    if (targetPlatform === "android" || stack.includes("android") || stack.includes("material") || stack.includes("flutter")) ids.add("material-3");
+    if (targetPlatform === "ios" || stack.includes("ios") || stack.includes("swiftui") || stack.includes("swift")) ids.add("swiftui-skills");
   }
   if (ids.size === 0 || input.surfaceKind === "component-system") ids.add("awesome-design-skills");
+
+  if (input.usesShadcnMcp) warnings.push("shadcn MCP/registry lookup must be verified against the installed project; do not invent unavailable components");
+  if (input.needsVisualContent) warnings.push("visual generation requires auth/spend approval and generated media proof before it can count as shipped");
 
   const registry = designSkillRegistry();
   const selected = [...ids].filter((id) => registry.some((s) => s.id === id));

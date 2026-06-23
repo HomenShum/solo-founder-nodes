@@ -26,6 +26,8 @@ One sentence: what the component does and where it lives.
 ## Design-skill inputs
 - selected skills: &lt;ids&gt;
 - decisions imported from those skills: &lt;brief, specific, implementation-ready rules&gt;
+- style/platform decisions: &lt;style preset, mobile platform, shadcn registry/MCP result&gt;
+- generated-media assets: &lt;paths + prompt + license/usage notes, or none&gt;
 - excluded guidance: &lt;Claude-only commands, unsupported dependencies, off-brand style moves&gt;
 
 ## Interactions
