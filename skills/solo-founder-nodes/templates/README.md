@@ -7,7 +7,7 @@ keys, no Convex:**
 npm i && npm run smoke
 ```
 
-The smoke runs **17 assertions** that *prove* each anti-cheat mechanism (and the chain detecting a
+The smoke runs **30 assertions** that *prove* each anti-cheat/control-plane mechanism (and the chain detecting a
 tamper) — not a claim, a passing run.
 
 ## CLI (`sfn`) — the universal shell entry
@@ -16,8 +16,11 @@ agent-agnostic surface: every coding agent can run it.
 
 ```
 npm run sfn -- doctor                       # node + deps readiness
-npm run sfn -- smoke                        # the substrate proof (expect 17 passed, 0 failed)
+npm run sfn -- smoke                        # the substrate proof (expect all assertions to pass)
 npm run sfn -- conformance                  # the cross-agent portability probe (PASS + receipt)
+npm run sfn -- context inspect <app-root>   # inspect Graphify-style graph context readiness
+npm run sfn -- control start --project <p> --goal <g> --budget 5 --root <app-root>
+npm run sfn -- control status <loopId>      # resume summary: phase, approvals, traces, improvements
 npm run sfn -- seal --salt <s> <taskId...>  # seal a held-out manifest (HMAC) — keep the salt OUT of the agent's reach
 npm run sfn -- ledger list                  # list recorded eval runs
 npm run sfn -- ledger verify <runId>        # re-verify a run's hash-chain (tamper check)
@@ -33,12 +36,17 @@ npm run sfn -- ledger verify <runId>        # re-verify a run's hash-chain (tamp
     independent refute-by-default verifier.
 - **`memory/` — `SoloMemory`**: local-first SQLite + FTS5 recall + the **S13** content gate
   (rejects held-out gold regardless of the caller's self-declared `benchmarkSafety` label).
+- **`context/` - `GraphContext`**: Graphify-style receipt inspector. Post-discover phases fail closed
+  unless the app has a ready graph report + graph JSON, forcing query-first orientation.
+- **`control/` - `SoloControlPlane`**: durable loop state for triggers, checkpoints, approvals, budget
+  stops, trace spans, worktree leases, and trace-sourced improvement candidates.
 - **`design/`**: the design-bridge templates (brief / component contract / visual-regression checklist).
 - **`smoke.ts`**: the proof.
 
 ## What runs vs. what you wire
 - **Runs out of the box (generic, local):** the gate / split-sealing / memory-leak taint / hash-chain,
-  the memory engine + content gate. (The deterministic grader is at `../../../docs/eval/nonbtb/grade.py`.)
+  the memory engine + content gate, graph-context receipt checks, and the durable control plane. (The
+  deterministic grader is at `../../../docs/eval/nonbtb/grade.py`.)
 - **You wire (app-coupled — by design, because they touch *your* harness):**
   - **S10/S11 receipts** must be produced by your harness — instrument your materializer to log the
     call-stack-leaf per deliverable, and your planner to write the signed transport row. The contract is

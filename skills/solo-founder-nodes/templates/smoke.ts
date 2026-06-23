@@ -1,12 +1,15 @@
 // Turnkey proof of the local substrates. Run: npm i && npm run smoke
 // Every S-mechanism is a pass/fail assertion; the process exits non-zero if any fails.
 import { createClient } from "@libsql/client";
+import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { SoloLedger } from "./ledger/ledger";
 import { SoloMemory } from "./memory/localMemory";
 import { sealGold, contentGate } from "./ledger/contentGate";
 import { sha256 } from "./ledger/hash";
+import { inspectGraphContext, graphQueryPlan } from "./context/graphContext";
+import { SoloControlPlane } from "./control/controlPlane";
 
 let pass = 0;
 let fail = 0;
@@ -125,6 +128,116 @@ async function main() {
     labelThrew = true;
   }
   check("honor-system heldout_forbidden label still rejected", labelThrew);
+
+  // ---------------- Graph context: query-first orientation ----------------
+  console.log("\nGraphContext (query-first self-orientation):");
+  const graphRoot = mkdtempSync(join(tmpdir(), "solo-smoke-graph-"));
+  const graphDir = join(graphRoot, "graphify-out");
+  mkdirSync(graphDir, { recursive: true });
+  writeFileSync(join(graphDir, "GRAPH_REPORT.md"), "# Smoke graph\n\nGod nodes: Composer, Exporter, OfficialScorer\n", "utf8");
+  writeFileSync(
+    join(graphDir, "graph.json"),
+    JSON.stringify({
+      nodes: [
+        { id: "Composer", community: "ui" },
+        { id: "Exporter", community: "ui" },
+        { id: "OfficialScorer", community: "eval" },
+      ],
+      edges: [
+        { source: "Composer", target: "Exporter" },
+        { source: "Exporter", target: "OfficialScorer" },
+      ],
+    }),
+    "utf8",
+  );
+  const graphReceipt = inspectGraphContext({ projectRoot: graphRoot });
+  check("graph context receipt is ready", graphReceipt.status === "ready", graphReceipt.staleReasons.join(","));
+  check("graph context counts nodes and edges", graphReceipt.nodeCount === 3 && graphReceipt.edgeCount === 2);
+  const plan = graphQueryPlan("what connects composer to scorer?", graphReceipt);
+  check("graph query plan is command-shaped", plan.command.includes("graphify query"));
+
+  // ---------------- SoloControlPlane: durable loop control ----------------
+  console.log("\nSoloControlPlane (durable control plane):");
+  const controlDb = join(tmpdir(), `solo-smoke-control-${process.pid}-${Date.now()}.db`);
+  const control = new SoloControlPlane({ dbUrl: `file:${controlDb}` });
+  await control.init();
+
+  const missingContextLoop = await control.startLoop({ projectId: "smoke", goal: "missing context should block", budgetUsd: 1 });
+  let missingContextBlocked = false;
+  try {
+    await control.startPhase(missingContextLoop.loopId, "benchmark");
+  } catch {
+    missingContextBlocked = true;
+  }
+  check("post-discover phase requires graph context", missingContextBlocked);
+
+  const trigger = await control.ingestTrigger({
+    source: "cron",
+    idempotencyKey: "nightly-1",
+    projectId: "smoke",
+    goal: "run unattended loop",
+    budgetUsd: 1,
+    payload: { schedule: "nightly" },
+  });
+  const triggerAgain = await control.ingestTrigger({
+    source: "cron",
+    idempotencyKey: "nightly-1",
+    projectId: "smoke",
+    goal: "run unattended loop",
+    budgetUsd: 1,
+    payload: { schedule: "nightly" },
+  });
+  check("event trigger is idempotent", trigger.duplicate === false && triggerAgain.duplicate === true && trigger.loopId === triggerAgain.loopId);
+
+  await control.attachContext(trigger.loopId, graphReceipt);
+  const discover = await control.startPhase(trigger.loopId, "discover");
+  await control.checkpointPhase(discover.phaseRunId, { graphReport: graphReceipt.reportPath });
+  await control.completePhase(discover.phaseRunId, { graphReady: true });
+  const benchmark = await control.startPhase(trigger.loopId, "benchmark");
+  check("phase checkpoint starts after graph context", benchmark.attempt === 1);
+
+  const approval = await control.requestApproval(trigger.loopId, "setup", { command: "pip install -r run/requirements.txt", spendUsd: 0 });
+  check("approval request pauses loop", (await control.getLoop(trigger.loopId))?.status === "paused");
+  await control.decideApproval(approval.approvalId, { decision: "approve", note: "local install allowed" });
+  check("approval decision resumes loop", (await control.getLoop(trigger.loopId))?.status === "queued");
+
+  const spendOk = await control.spend(trigger.loopId, 0.2, "model smoke");
+  const trace = await control.recordTraceSpan(trigger.loopId, {
+    phase: "iterate",
+    name: "held-out clean probe",
+    status: "error",
+    startedAt: 100,
+    endedAt: 175,
+    tokens: 1200,
+    costUsd: 0.1,
+    attrs: { failureCluster: "missing exporter selector" },
+  });
+  const improve = await control.proposeImprovement({
+    loopId: trigger.loopId,
+    sourceTraceId: trace.traceId,
+    title: "Make live-browser selector contract explicit",
+    hypothesis: "The verifier failed because the app adapter guessed selectors.",
+    patchHint: "Add selector receipts to the live browser adapter.",
+  });
+  const spendBlocked = await control.spend(trigger.loopId, 2, "overspend");
+  check("budget meter allows in-policy spend", spendOk.allowed === true);
+  check("budget meter blocks overspend", spendBlocked.allowed === false && (await control.getLoop(trigger.loopId))?.status === "paused");
+  check("trace-sourced improvement is queued", improve.improvementId.startsWith("improve_"));
+
+  const lease = await control.leaseWorktree(trigger.loopId, "reviewer", "D:/tmp/reviewer", "codex/reviewer");
+  let duplicateLeaseBlocked = false;
+  try {
+    await control.leaseWorktree(trigger.loopId, "reviewer", "D:/tmp/reviewer2", "codex/reviewer2");
+  } catch {
+    duplicateLeaseBlocked = true;
+  }
+  await control.releaseWorktree(lease.leaseId);
+  check("active worktree leases are exclusive per purpose", duplicateLeaseBlocked);
+
+  const resumedControl = new SoloControlPlane({ dbUrl: `file:${controlDb}` });
+  await resumedControl.init();
+  const resumed = await resumedControl.resumeSummary(trigger.loopId);
+  check("control state survives a fresh instance", resumed.loop.context?.status === "ready" && resumed.traceSummary.count === 1 && resumed.improvements.length === 1);
 
   console.log(`\n=== ${pass} passed, ${fail} failed ===\n`);
   if (fail > 0) process.exit(1);

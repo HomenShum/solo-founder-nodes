@@ -6,6 +6,8 @@ import { existsSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { SoloLedger } from "../ledger/ledger";
+import { inspectGraphContext } from "../context/graphContext";
+import { SoloControlPlane } from "../control/controlPlane";
 
 const here = dirname(fileURLToPath(import.meta.url)); // templates/bin
 const templates = join(here, "..");                   // templates
@@ -17,11 +19,20 @@ const jbig = (_k: string, v: unknown) => (typeof v === "bigint" ? Number(v) : v)
 const sh = (cmd: string, args: string[], cwd: string, shell = false) =>
   spawnSync(cmd, args, { cwd, stdio: "inherit", shell }).status ?? 1;
 
+function flag(args: string[], name: string, fallback?: string) {
+  const i = args.indexOf(name);
+  return i >= 0 ? args[i + 1] : fallback;
+}
+
 const HELP = `sfn — Solo Founder Nodes local CLI   (run via: npm run sfn -- <cmd>)
 
   doctor                      check node + deps readiness
-  smoke                       run the substrate proof (expect: 17 passed, 0 failed)
+  smoke                       run the substrate proof (expect all assertions to pass)
   conformance                 run the cross-agent portability probe (PASS + receipt)
+  context inspect [root]      inspect Graphify-style graph context receipt
+  control start --project <p> --goal <g> [--budget <n>] [--root <path>]
+  control status <loopId>     print durable loop status/resume summary
+  control trigger --source <s> --key <k> --project <p> --goal <g> [--budget <n>]
   seal --salt <s> <id...>     seal a held-out manifest (HMAC) — keep the salt OUT of the agent's reach
   ledger list                 list recorded eval runs
   ledger verify <runId>       re-verify a run's hash-chain (tamper check)
@@ -61,6 +72,60 @@ async function main() {
       process.exit(sh("npm", ["run", "smoke"], templates, true));
     case "conformance":
       process.exit(sh(process.execPath, [conformanceMjs, ...rest], skill, false));
+    case "context": {
+      if (rest[0] !== "inspect") {
+        console.error("context: inspect [root]");
+        process.exit(2);
+      }
+      const root = rest[1] ?? process.cwd();
+      const receipt = inspectGraphContext({ projectRoot: root });
+      console.log(JSON.stringify(receipt, jbig, 2));
+      process.exit(receipt.status === "ready" ? 0 : 1);
+    }
+    case "control": {
+      const sub = rest[0];
+      const control = new SoloControlPlane();
+      await control.init();
+      if (sub === "start") {
+        const projectId = flag(rest, "--project");
+        const goal = flag(rest, "--goal");
+        const budgetUsd = Number(flag(rest, "--budget", "5"));
+        const root = flag(rest, "--root");
+        if (!projectId || !goal) {
+          console.error("control start --project <p> --goal <g> [--budget <n>] [--root <path>]");
+          process.exit(2);
+        }
+        const context = root ? inspectGraphContext({ projectRoot: root }) : undefined;
+        const started = await control.startLoop({ projectId, goal, budgetUsd, context });
+        console.log(JSON.stringify(started, jbig, 2));
+        process.exit(0);
+      }
+      if (sub === "status") {
+        const loopId = rest[1];
+        if (!loopId) {
+          console.error("control status <loopId>");
+          process.exit(2);
+        }
+        console.log(JSON.stringify(await control.resumeSummary(loopId), jbig, 2));
+        process.exit(0);
+      }
+      if (sub === "trigger") {
+        const source = flag(rest, "--source");
+        const idempotencyKey = flag(rest, "--key");
+        const projectId = flag(rest, "--project");
+        const goal = flag(rest, "--goal");
+        const budgetUsd = Number(flag(rest, "--budget", "5"));
+        if (!source || !idempotencyKey || !projectId || !goal) {
+          console.error("control trigger --source <s> --key <k> --project <p> --goal <g> [--budget <n>]");
+          process.exit(2);
+        }
+        const result = await control.ingestTrigger({ source, idempotencyKey, projectId, goal, budgetUsd });
+        console.log(JSON.stringify(result, jbig, 2));
+        process.exit(0);
+      }
+      console.error("control: start | status <loopId> | trigger");
+      process.exit(2);
+    }
     case "seal": {
       const saltIdx = rest.indexOf("--salt");
       const salt = saltIdx >= 0 ? rest[saltIdx + 1] : process.env.SOLO_LEDGER_SALT;

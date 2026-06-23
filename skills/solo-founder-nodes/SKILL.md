@@ -46,4 +46,13 @@ decisions, approvals, rejected fixes) and at END write decision/provenance memor
 held-out task contents (store split hashes + aggregate scores only). Substrate + contract:
 [`references/memory.md`](references/memory.md); templates in [`templates/memory/`](templates/memory/).
 
+**Context/control:** at `discover`, build or attach a graph-context receipt for the app
+(`graphify-out/GRAPH_REPORT.md` + `graphify-out/graph.json`, or equivalent). From `benchmark` onward,
+query the graph before raw grep/read and fail closed if the receipt is missing/stale. Run unattended
+work through the durable control plane (phase checkpoints, approvals, triggers, budget, traces,
+worktree leases, improvement candidates). Specs:
+[`references/context-substrate.md`](references/context-substrate.md) and
+[`references/control-plane.md`](references/control-plane.md); templates in
+[`templates/context/`](templates/context/) and [`templates/control/`](templates/control/).
+
 When running the harness directly, see [`templates/run/README.md`](templates/run/README.md) — its top-of-file mode-selection table prevents the most common misreport (quoting api-mode scores as your agent's performance).

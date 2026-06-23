@@ -12,6 +12,17 @@
     "codeChanges": true,
     "localRuns": true
   },
+  "context": {
+    "graphDir": "graphify-out",
+    "requireReadyAfterDiscover": true,
+    "updateAfterCodeChanges": true
+  },
+  "controlPlane": {
+    "dbUrlEnv": "SOLO_CONTROL_DB_URL",
+    "defaultDbUrl": "file:.solo-control/control.db",
+    "requirePhaseCheckpoints": true,
+    "requireTraceSpans": true
+  },
   "hardStops": [
     "publishPublic",
     "overBudget",

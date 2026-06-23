@@ -88,9 +88,10 @@ export const rememberInputSchema = z.object({
   metadata: z.record(z.any()).default({}),
 });
 
-export type RememberInput = z.infer<typeof rememberInputSchema>;
+export type RememberInput = z.input<typeof rememberInputSchema>;
+export type ParsedRememberInput = z.output<typeof rememberInputSchema>;
 
-export type MemoryRecord = RememberInput & {
+export type MemoryRecord = ParsedRememberInput & {
   id: string;
   rowid?: number;
   createdAt: string;

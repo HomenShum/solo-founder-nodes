@@ -22,6 +22,11 @@ A single config the agent reads at the start — see [`../templates/autonomy.pol
 With the policy set, the agent executes the loop end-to-end and pauses only on a hard-stop or a real
 failure. No per-step nagging.
 
+The durable runtime is `templates/control/SoloControlPlane`: it records the loop id, phase checkpoints,
+approval pauses, idempotent triggers, budget spend, trace spans, worktree leases, and improvement
+candidates. That is the difference between "the chat is trying to keep going" and "the loop can resume
+from durable state without the founder steering every turn." See [`control-plane.md`](control-plane.md).
+
 ## The one carve-out — and why it ENABLES the autonomy
 The agent does every step and produces every artifact — but the **honesty referee runs out of its
 reach**: the held-out seal (the salt), the gate derivation, the grader's sealed-gold, and the

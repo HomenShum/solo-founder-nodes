@@ -34,6 +34,22 @@ Phases that install heavy infra (Docker, Harbor, HuggingFace), spend API money, 
 are **guide -> generate -> gate**: present the plan + exact commands + links, dry-run if possible, and
 get explicit approval **before** executing.
 
+## Context substrate + control plane (required for full autonomy)
+The agent must not rely on chat context alone. At `discover`, build or refresh a graph-context receipt
+for the app (`graphify-out/GRAPH_REPORT.md` + `graphify-out/graph.json`, or an equivalent code graph).
+From `benchmark` onward, fail closed if the receipt is missing or stale. Query the graph before raw
+grep/read for architecture, adapter, UI, benchmark, export, persistence, or scorer questions. Store the
+receipt and important query refs in memory, never held-out task contents. Doctrine:
+[`references/context-substrate.md`](references/context-substrate.md); copyable inspector:
+[`templates/context/`](templates/context/).
+
+Run the loop through a durable control plane when unattended: one loop id, phase checkpoints, approval
+requests, trigger idempotency, budget/spend, trace spans, worktree leases, and improvement candidates.
+This is how the agent pauses/resumes, survives a fresh session, and hill-climbs from observed failures
+instead of waiting for the founder to steer. Doctrine: [`references/control-plane.md`](references/control-plane.md);
+copyable implementation: [`templates/control/`](templates/control/). The control plane coordinates work;
+`SoloLedger` and the trust-root still derive the benchmark verdict.
+
 ## The loop — run in order; read the playbook for each phase
 
 | # | Phase | Goal | Weight | Gate | Playbook |

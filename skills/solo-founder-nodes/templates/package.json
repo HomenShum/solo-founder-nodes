@@ -3,7 +3,7 @@
   "private": true,
   "type": "module",
   "version": "0.1.0",
-  "description": "Turnkey local-first reference of the Solo Founder Nodes substrates: SoloMemory (audit-safe memory) + SoloLedger (honest-lane eval ledger that DERIVES the gate, not accepts it). One command: npm i && npm run smoke.",
+  "description": "Turnkey local-first reference of the Solo Founder Nodes substrates: GraphContext, SoloControlPlane, SoloMemory, and SoloLedger. One command: npm i && npm run smoke.",
   "scripts": {
     "smoke": "tsx smoke.ts",
     "sfn": "tsx bin/sfn.ts"

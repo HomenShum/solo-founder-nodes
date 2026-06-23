@@ -59,6 +59,14 @@ Portable **SKILL.md** — works with any coding agent. Paste this into your agen
 - **Memory substrate** — `references/memory.md` + `templates/memory/` — local-first, audit-safe memory so a resumed session re-hydrates instead of re-deriving.
 - `docs/eval/nonbtb/` — a runnable deterministic example grader; `docs/eval/BTB_GENERALIZATION_DIAGNOSTIC.md` — the anti-overfit protocol.
 
+## Context + control substrates
+The loop now ships the missing self-direction pieces:
+
+- **Context substrate**: inspect `graphify-out/GRAPH_REPORT.md` + `graphify-out/graph.json`, require a ready graph receipt after discover, and query the graph before raw file search.
+- **Control plane**: persist loop/phase state, approval pauses, event triggers, budget stops, trace spans, worktree leases, and trace-sourced improvement candidates.
+
+Run `npm run smoke` in `skills/solo-founder-nodes/templates/` to prove these local invariants.
+
 ## Memory substrate
 The loop **persists** what it learns so a founder resuming the next day does not re-derive it: the
 capability spec, the benchmark choice + the **frozen** held-out split **hashes**, scorecards and

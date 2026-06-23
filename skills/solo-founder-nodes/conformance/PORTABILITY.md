@@ -14,9 +14,9 @@ what makes it portable — and the conformance probe checks for it.
 ## What is PROVEN vs. what you run
 | Layer | How it's proven | Status |
 |---|---|---|
-| **Substrate is identical everywhere** | `templates/` is plain Node/Python; `npm i && npm run smoke` → **17 passed, 0 failed** with zero agent involvement | ✅ proven (reproducible by anyone) |
+| **Substrate is identical everywhere** | `templates/` is plain Node/Python; `npm i && npm run smoke` → **30 passed, 0 failed** with zero agent involvement | ✅ proven (reproducible by anyone) |
 | **No agent-specific coupling** | `conformance/conformance.mjs` checks markdown-only directive + no lock-in + portability declared | ✅ proven |
-| **A specific agent can ingest + run it** | run `node conformance/conformance.mjs` under that agent's shell → PASS receipt | ✅ Claude Code (receipt `2d6d21cd`); others = run the probe |
+| **A specific agent can ingest + run it** | run `node conformance/conformance.mjs` under that agent's shell → PASS receipt | ✅ Claude Code (receipt `468f7aef456c64e8`); others = run the probe |
 
 We do **not** claim "we drove all nine." The proof model is: the agent-agnostic core is proven once;
 each agent self-certifies by running the probe. The matrix below is the loading guide + an honest
@@ -31,7 +31,7 @@ verified column.
 ## Per-agent matrix (loading mechanism + honest verification state)
 | Agent | Primary loading | Verified by us |
 |---|---|---|
-| **Claude Code** | A — `.claude/skills/<name>/SKILL.md` auto-discovered | ✅ probe PASS, receipt `2d6d21cd`, smoke 17/17 |
+| **Claude Code** | A — `.claude/skills/<name>/SKILL.md` auto-discovered | ✅ probe PASS, receipt `468f7aef456c64e8`, smoke 30/30 |
 | **Codex (OpenAI)** | A/B — Codex Skills / `AGENTS.md`, else C | ▢ run the probe |
 | **Trae IDE** | A/C — `SKILL.md` per the standard, else bootstrap | ▢ run the probe |
 | **OpenClaw** | A/C — `SKILL.md` per the cross-vendor standard | ▢ run the probe |

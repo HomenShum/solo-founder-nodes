@@ -10,6 +10,7 @@ import {
   type MemoryHit,
   type MemoryRecord,
   type MemorySearchOptions,
+  type ParsedRememberInput,
   rememberInputSchema,
   type RememberInput,
 } from "./types";
@@ -31,14 +32,14 @@ type SoloMemoryArgs = {
   // being persisted under ANY benchmarkSafety label. Build it from a sealed corpus (ledger/contentGate.ts),
   // out of the agent's reach. This is the derive-don't-accept fix for memory: the quarantine no longer
   // trusts the caller's self-declared label.
-  heldOutGuard?: (input: RememberInput) => string | null;
+  heldOutGuard?: (input: ParsedRememberInput) => string | null;
 };
 
 export class SoloMemory {
   private readonly db: Client;
   private readonly events: JsonlEventLog;
   private readonly embeddingProvider?: EmbeddingProvider;
-  private readonly heldOutGuard?: (input: RememberInput) => string | null;
+  private readonly heldOutGuard?: (input: ParsedRememberInput) => string | null;
 
   constructor(args: SoloMemoryArgs = {}) {
     const url = args.dbUrl ?? process.env.SOLO_MEMORY_DB_URL ?? "file:.solo-memory/memory.db";
@@ -260,7 +261,7 @@ export class SoloMemory {
     if (!ftsQuery) return [];
 
     const phaseFilter = options.phase ? `AND m.phase = ?` : "";
-    const args: unknown[] = [ftsQuery, options.projectId];
+    const args: string[] = [ftsQuery, options.projectId];
 
     if (options.phase) args.push(options.phase);
 
@@ -411,7 +412,7 @@ export class SoloMemory {
     });
   }
 
-  private assertBenchmarkSafe(input: RememberInput) {
+  private assertBenchmarkSafe(input: ParsedRememberInput) {
     if (input.benchmarkSafety === "heldout_forbidden") {
       this.events.append({
         id: `evt_${nanoid(12)}`,
@@ -441,7 +442,7 @@ export class SoloMemory {
     }
   }
 
-  private renderForEmbedding(input: RememberInput) {
+  private renderForEmbedding(input: ParsedRememberInput) {
     return [
       `phase: ${input.phase}`,
       `kind: ${input.kind}`,
