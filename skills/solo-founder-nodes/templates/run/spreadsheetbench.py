@@ -36,6 +36,31 @@ import os, sys, json, argparse, hashlib, hmac, subprocess, tarfile
 REPO_URL = "https://github.com/RUCKBReasoning/SpreadsheetBench.git"  # scope via your autonomy allowlist
 
 
+# R37 ValueDiagnostic prompt-addendum. Injected into BOTH the v1 generator
+# (code_exec_script) and the critique retry (critique_and_retry) so the gotchas
+# are surfaced UPFRONT, not just on retry. This is a generic instruction-level
+# hint (date-endpoint inclusivity + empty-cell predicate + VID synthesis) — it
+# never quotes the golden answer for any specific task, so the honest-lane
+# invariant (critique sees probe-vs-input, never probe-vs-golden) is preserved.
+R37_PROMPT_ADDENDUM = (
+    "Known gotchas — apply BEFORE writing rows:\n"
+    "  - DATE-RANGE FILTERS ARE INCLUSIVE ON BOTH ENDS. When the task is a "
+    "date-range filter (e.g. \"2019 to 2023\"), treat both endpoints as INCLUSIVE — "
+    "use `YEAR(d) >= 2019 AND YEAR(d) <= 2023`, never `< 2023`. Before writing "
+    "rows, build a small histogram of the years you are about to keep and CONFIRM "
+    "every named endpoint year (here: 2019 and 2023) appears at least once. If an "
+    "endpoint year has zero rows, your predicate is wrong — fix it before saving.\n"
+    "  - \"EMPTY\" / \"NULL\" / \"NOT EMPTY\" CELLS HAVE TWO REPRESENTATIONS. In "
+    "Excel the same column can hold both real `None` AND literal `' '` (single-"
+    "space string) for what a human reads as \"empty\". Your predicate must accept "
+    "BOTH: `v is None or (isinstance(v, str) and v.strip() == '')`. Do NOT require "
+    "the row's ID column to be populated — Excel sheets frequently have only the "
+    "first N rows of an identifier column filled. A SEQUENCE / VID column must be "
+    "DERIVED FROM ROW POSITION (`vid = row_index - 1`), not read from the input. "
+    "Apply the same VID-synthesis rule to EVERY output sheet, not just one.\n"
+)
+
+
 def ensure_dataset(repo, dataset, allowlist):
     if not os.path.isdir(repo):
         if allowlist and not any(h in REPO_URL for h in allowlist):
@@ -181,6 +206,21 @@ def main():
                     help="max critique-and-retry iterations in --mode tool-loop (default 3, hard cap)")
     a = ap.parse_args()
 
+    # HONEST_STATUS: --max-loop-iters has a hard cap of 3. If the caller asked for more,
+    # warn LOUDLY on stderr (so a stdout pipe redirect can't swallow it) and clamp. The cap
+    # prevents best-of-N cherry-picking that would inflate scores without reflecting real
+    # agent capability — the grader scores the FINAL attempt only.
+    requested_loop_iters = max(1, int(a.max_loop_iters))
+    clamped_max_loop_iters = min(requested_loop_iters, 3)
+    if requested_loop_iters > 3:
+        print(
+            f"WARNING: --max-loop-iters={requested_loop_iters} exceeds the honesty cap of 3; "
+            f"clamping to {clamped_max_loop_iters}. The cap prevents best-of-N cherry-picking "
+            f"that would inflate scores without reflecting real agent capability.",
+            file=sys.stderr,
+            flush=True,
+        )
+
     dpath = ensure_dataset(a.repo, a.dataset, a.allowlist.split(","))
     grader = import_official_grader(a.repo)
     tasks = load_tasks(dpath)
@@ -267,7 +307,7 @@ def main():
             continue
         # ---- tool-loop: code-exec + critique-and-retry up to --max-loop-iters ----
         if a.mode == "tool-loop":
-            max_iters = max(1, min(int(a.max_loop_iters), 3))  # hard cap at 3 for honesty
+            max_iters = clamped_max_loop_iters  # honesty-clamped at arg-parse (warning emitted there)
             # One script applies to all test cases; we iterate the script (not per-tc) using
             # test case 1 as the critique probe. The final script is then executed against
             # every test case and graded — no per-tc best-of-N.
@@ -282,7 +322,9 @@ def main():
                 if not (cur_script and has_openpyxl and has_argv):
                     iter_records.append({"iter": it + 1, "scripted": False,
                                           "timeout": False, "duplicate": False,
-                                          "diff_summary": "no-script"})
+                                          "diff_summary": "no-script",
+                                          "scriptText": cur_script or "",
+                                          "scriptSha1": _script_sha1(cur_script or "")})
                     break
                 # Probe on test case 1.
                 probe_in = tc_path(dpath, tid, 1, "input")
@@ -300,7 +342,11 @@ def main():
                     any_iter_timeout = True
                 diff = diff_workbook_against_input(probe_in, probe_out, t["answer_position"]) \
                     if os.path.isfile(probe_out) else {"no_output": True, "in_answer": [],
-                                                       "out_of_answer": [], "answer_covered": False}
+                                                       "out_of_answer": [], "answer_covered": False,
+                                                       "value_signal": {"cellsModified": 0,
+                                                                          "valuesLookDegenerate": False,
+                                                                          "exampleValues": [],
+                                                                          "degenerateReason": "no-output"}}
                 iter_records.append({
                     "iter": it + 1,
                     "scripted": True,
@@ -310,6 +356,15 @@ def main():
                     "stderr_tail": st.get("stderr_tail", ""),
                     "duplicate": False,
                     "diff_summary": _short_diff_summary(diff),
+                    # Structured value-distance signal (R37 substrate improvement).
+                    # Honest-lane: derived from probe-vs-INPUT only, never probe-vs-golden.
+                    # camelCase key per the task spec; field never absent on a real probe.
+                    "valueSignal": diff.get("value_signal", {
+                        "cellsModified": 0, "valuesLookDegenerate": False,
+                        "exampleValues": [], "degenerateReason": "",
+                    }),
+                    "scriptText": cur_script,
+                    "scriptSha1": _script_sha1(cur_script),
                 })
                 # Stop early on timeout -- no point retrying, we already failed the timeout honesty gate.
                 if timed_out:
@@ -327,7 +382,9 @@ def main():
                 if not next_script or next_script.strip() == cur_script.strip():
                     iter_records.append({"iter": it + 2, "scripted": bool(next_script),
                                           "timeout": False, "duplicate": True,
-                                          "diff_summary": "model-did-not-change-script"})
+                                          "diff_summary": "model-did-not-change-script",
+                                          "scriptText": next_script or "",
+                                          "scriptSha1": _script_sha1(next_script or "")})
                     break
                 scripts.append(next_script)
             # Execute the FINAL script against every test case — this is what gets graded.
@@ -527,6 +584,7 @@ def code_exec_script(task, dpath, grader):
         f"Instruction:\n{task['instruction']}\n\n"
         f"instruction_type: {task['instruction_type']}\n"
         f"answer_position : {task['answer_position']}\n\n"
+        f"{R37_PROMPT_ADDENDUM}\n"
         f"Representative input preview (test case 1, first rows):\n{json.dumps(pv, default=str)[:6000]}\n\n"
         "Return ONLY the python code, no fences, no prose."
     )
@@ -739,9 +797,81 @@ def diff_workbook_against_input(in_path, out_path, answer_position, max_deltas=8
                 else:
                     if len(out_of_answer) < max_deltas:
                         out_of_answer.append(rec)
+    value_signal = _value_signal_from_diff(in_answer, out_of_answer)
     return {"in_answer": in_answer, "out_of_answer": out_of_answer,
             "answer_covered": answer_covered, "sheets_added": sheets_added,
-            "sheets_removed": sheets_removed, "no_output": False}
+            "sheets_removed": sheets_removed, "no_output": False,
+            "value_signal": value_signal}
+
+
+def _value_signal_from_diff(in_answer, out_of_answer):
+    """Honest-lane value-distance signal.
+
+    Computed ONLY from probe-vs-INPUT (the diff rows already carry `before` = input value,
+    `after` = probe value). We NEVER touch the golden answer workbook here — that would
+    leak the answer key into the critique loop. The critique loop is therefore allowed to
+    see 'you wrote N cells of values, here are 5 examples' but never 'the expected value
+    at H3 is X'.
+
+    Returns:
+      {
+        "cellsModified":         int,   # how many answer-position cells the script CHANGED
+        "valuesLookDegenerate":  bool,  # heuristic: all-None, all-zero, all-blank, all-identical,
+                                        # or every cell still equals its input (script no-op'd)
+        "exampleValues":         [str], # first 5 probe values, as 'Sheet!Cell=value' strings.
+                                        # 'after' only — i.e. what the script wrote. We DO
+                                        # surface input ('before') in the diff already; we do
+                                        # NOT surface the golden answer here or anywhere.
+        "degenerateReason":      str,   # short tag explaining valuesLookDegenerate
+      }
+    """
+    rows = in_answer or []
+    cells_modified = len(rows)
+    examples = []
+    for d in rows[:5]:
+        sheet = d.get("sheet") or ""
+        cell = d.get("cell") or "?"
+        av = d.get("after")
+        # Keep the example string short but informative — values can be long strings or
+        # repr(datetime). Cap at 60 chars including the prefix.
+        val_str = "" if av is None else str(av)
+        if len(val_str) > 40:
+            val_str = val_str[:37] + "..."
+        prefix = f"{sheet}!{cell}" if sheet else cell
+        examples.append(f"{prefix}={val_str}")
+
+    degenerate = False
+    reason = ""
+    if not rows:
+        # No answer-position cells modified at all — degenerate in the trivial sense.
+        # The existing `answer_covered=False` path already flags this, so leave the
+        # heuristic itself False to avoid double-shouting.
+        degenerate = False
+        reason = "no-cells-written"
+    else:
+        afters = [d.get("after") for d in rows]
+        befores = [d.get("before") for d in rows]
+        # All None / all empty-string / all zero / all identical / every cell still ==
+        # its own input value (script wrote the SAME value the input already had — a no-op
+        # under value equality, which would not appear in `in_answer` because diff filters
+        # bv == av out, so this last branch is rare-but-possible if `==` differs from the
+        # equality the diff used; kept for safety).
+        if all(v is None for v in afters):
+            degenerate, reason = True, "all-None"
+        elif all(isinstance(v, str) and v.strip() == "" for v in afters):
+            degenerate, reason = True, "all-blank-string"
+        elif all(isinstance(v, (int, float)) and v == 0 for v in afters):
+            degenerate, reason = True, "all-zero"
+        elif len(rows) >= 3 and len({_coerce(v) for v in afters}) == 1:
+            degenerate, reason = True, "all-identical"
+        elif rows and all(_coerce(a) == _coerce(b) for a, b in zip(afters, befores)):
+            degenerate, reason = True, "all-equal-to-input"
+    return {
+        "cellsModified": cells_modified,
+        "valuesLookDegenerate": degenerate,
+        "exampleValues": examples,
+        "degenerateReason": reason,
+    }
 
 
 def _expand_range(a1_range):
@@ -777,15 +907,40 @@ def _coerce(v):
         return repr(v)
 
 
+def _script_sha1(script):
+    """First 16 chars of the SHA1 of the script text — enough to detect tampering or
+    duplicate-script collisions without quoting the whole bytes. Returns "" for empty input.
+
+    Why store this alongside scriptText: a downstream tamper-check (or human spot-check)
+    can recompute sha1(scriptText)[:16] and confirm the persisted bytes match the digest.
+    Storing only one of the two would let a slipped edit go undetected; storing both is
+    the honest minimum.
+    """
+    if not script:
+        return ""
+    return hashlib.sha1(script.encode("utf-8")).hexdigest()[:16]
+
+
 def _short_diff_summary(diff):
-    """Human-readable one-line summary of a diff dict, for the iter records."""
+    """Human-readable one-line summary of a diff dict, for the iter records.
+
+    NOTE: this returns a STRING (kept for back-compat with anything that read iter_records
+    line-by-line). The structured `valueSignal` is attached separately on the record dict
+    by the caller; see the tool-loop iter_records build path.
+    """
     if diff.get("no_output"):
         return "no-output"
+    vs = diff.get("value_signal") or {}
+    vs_tail = ""
+    if vs:
+        vs_tail = (f" cellsModified={vs.get('cellsModified', 0)} "
+                   f"valuesLookDegenerate={vs.get('valuesLookDegenerate', False)}")
     return (f"in_answer={len(diff.get('in_answer', []))} "
             f"out_of_answer={len(diff.get('out_of_answer', []))} "
             f"answer_covered={diff.get('answer_covered')} "
             f"sheets_added={diff.get('sheets_added')} "
-            f"sheets_removed={diff.get('sheets_removed')}")
+            f"sheets_removed={diff.get('sheets_removed')}"
+            f"{vs_tail}")
 
 
 def critique_and_retry(task, dpath, grader, prev_script, diff):
@@ -818,15 +973,41 @@ def critique_and_retry(task, dpath, grader, prev_script, diff):
         rule_hits.append("All in-answer deltas appear to be on row 1 — only the header was "
                           "written. The data rows below must be populated too.")
 
+    # ---- R37 substrate improvement: VALUE-DISTANCE STEERING SIGNAL ----
+    # The diff already carries `value_signal` (cellsModified, valuesLookDegenerate,
+    # exampleValues). Surface a short "you wrote these values" line in the critique
+    # WITHOUT ever quoting the golden answer. The model must re-read the instruction
+    # and reason about whether the values it wrote are actually what was asked for.
+    # Honest-lane invariant: examples are pulled from probe-vs-INPUT, never from the
+    # golden — we do NOT load the answer workbook here at all.
+    vs = diff.get("value_signal") or {}
+    if vs.get("exampleValues"):
+        examples_line = ", ".join(vs["exampleValues"][:5])
+        rule_hits.append(
+            f"You wrote {vs.get('cellsModified', 0)} cell(s) of values. Examples: "
+            f"[{examples_line}]. Re-read the instruction and consider whether each "
+            "value is what the instruction asked for — not just whether the cell "
+            "location is right. (Cell locations may be correct while values are wrong.)"
+        )
+    if vs.get("valuesLookDegenerate"):
+        rule_hits.append(
+            f"The values you wrote look DEGENERATE ({vs.get('degenerateReason', '')}). "
+            "This usually means the predicate filtered everything out, you wrote a "
+            "default/sentinel instead of computing, or the script copied the input "
+            "unchanged. Re-derive the values, do not just relocate cells."
+        )
+
     prompt = (
         "Your previous Python script for this SpreadsheetBench task did not produce the "
         "expected output. Read the observed diff and write a CORRECTED script.\n\n"
         f"Instruction:\n{task['instruction']}\n\n"
         f"instruction_type: {task['instruction_type']}\n"
         f"answer_position : {task['answer_position']}\n\n"
+        f"{R37_PROMPT_ADDENDUM}\n"
         f"Representative input preview (test case 1, first rows):\n"
         f"{json.dumps(pv, default=str)[:4000]}\n\n"
-        "Observed diff of YOUR previous output vs the input:\n"
+        "Observed diff of YOUR previous output vs the input "
+        "(note: this is probe-vs-INPUT only; the grader's expected answer is NOT shown):\n"
         f"{json.dumps(diff, default=str)[:3000]}\n\n"
         "Critique (rules your previous script violated):\n"
         + ("\n".join(f"  - {h}" for h in rule_hits) if rule_hits else
