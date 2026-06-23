@@ -37,20 +37,23 @@ async function main() {
       console.log(`node ${process.versions.node} — ${nodeOk ? "ok" : "TOO OLD (need >= 18)"}`);
       console.log(`deps installed: ${deps ? "yes" : "no — run: npm i"}`);
       console.log(`conformance probe present: ${existsSync(conformanceMjs) ? "yes" : "no"}`);
-      // Python lane (optional): the SpreadsheetBench adapter (run/spreadsheetbench.py) hard-requires
-      // openpyxl + openai. Report it RED-when-broken instead of staying silent-green — a missing
-      // Python lane is the cold gap that surfaces as ModuleNotFoundError mid-run. WARNING, not a gate:
-      // founders on the Node-only smoke/conformance lane shouldn't be blocked by absent Python.
-      const pyProbe = ["-c", "import openpyxl, openai"];
+      // Python lane (optional): run/spreadsheetbench.py hard-requires openpyxl + openai; the BTB
+      // deliverable writers in run/deliverables.py also need python-pptx (imports as `pptx`),
+      // python-docx (imports as `docx`), and reportlab. Probe ALL five so the lane can't report
+      // "ok" while 3 of 4 BTB writers silently no-op (they lazy-import and degrade gracefully).
+      // Report RED-when-broken instead of silent-green — a missing import is the cold gap that
+      // surfaces as a vanished deliverable. WARNING, not a gate: founders on the Node-only
+      // smoke/conformance lane shouldn't be blocked by absent Python.
+      const pyProbe = ["-c", "import openpyxl, openai, pptx, docx, reportlab"];
       const tryPy = (bin: string) => spawnSync(bin, pyProbe, { stdio: "ignore" });
       let pyRes = tryPy("python3");
       if (pyRes.error) pyRes = tryPy("python"); // python3 not on PATH (common on Windows) → fall back
       if (pyRes.error) {
-        console.log("python lane: WARNING — no python3/python on PATH (needed for run/spreadsheetbench.py; install: pip install -r run/requirements.txt)");
+        console.log("python lane: WARNING — no python3/python on PATH (needed for run/spreadsheetbench.py + run/bankertoolbench.py; install: pip install -r run/requirements.txt)");
       } else if (pyRes.status === 0) {
-        console.log("python lane: ok (openpyxl + openai importable)");
+        console.log("python lane: ok (openpyxl + openai + pptx + docx + reportlab importable)");
       } else {
-        console.log("python lane: WARNING — python found but openpyxl/openai NOT importable; run: pip install -r run/requirements.txt");
+        console.log("python lane: WARNING — python found but one of {openpyxl, openai, pptx, docx, reportlab} NOT importable; run: pip install -r run/requirements.txt  (BTB writers silently no-op without pptx/docx/reportlab)");
       }
       process.exit(nodeOk && deps ? 0 : 1);
     }
