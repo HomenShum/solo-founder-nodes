@@ -61,6 +61,38 @@ R37_PROMPT_ADDENDUM = (
 )
 
 
+# Sheet-Level critique addendum. ONLY injected into critique_and_retry when
+# task["instruction_type"] indicates a Sheet-Level Manipulation task (i.e. the
+# instruction asks for multiple output sheets). Captures the partition-by-criterion
+# semantics gap R39 surfaced on cheap models: the v1 script ran, valueSignal was
+# non-degenerate, BUT the rows ended up on the wrong sheet because the critique
+# never named that each output sheet is a PARTITION of the source, decided by a
+# row-level predicate, not by row index. Generic for any multi-output sheet task —
+# no golden values, no task-specific words, no row counts. Cell-Level tasks get
+# only the R37 generic value-distance signal.
+SHEET_LEVEL_CRITIQUE_ADDENDUM = (
+    "Sheet-Level partition semantics — re-check BEFORE saving:\n"
+    "  - When the instruction asks for MULTIPLE OUTPUT SHEETS, the output sheets "
+    "are a PARTITION of the source rows: every source row that matches the "
+    "instruction's filter belongs to EXACTLY ONE output sheet, never zero and "
+    "never more than one. Which sheet a row lands on is decided by a PREDICATE "
+    "the instruction names — re-read the instruction and identify that predicate "
+    "explicitly before writing.\n"
+    "  - The predicate is almost always a COLUMN CONDITION on the row itself "
+    "(e.g. a status column being empty vs non-empty, a category column equaling "
+    "or containing a value, a date column falling inside vs outside a range, a "
+    "numeric column above vs below a threshold) — NOT row index, NOT source "
+    "order, NOT \"first N rows go here, rest go there\". If you cannot name the "
+    "column and the test, you have not understood the partition yet.\n"
+    "  - After writing, verify two invariants: (1) COVERAGE — every source row "
+    "that satisfies the instruction's filter appears on exactly one output "
+    "sheet, with no source row dropped that should have been kept; (2) "
+    "EXCLUSION — no output sheet contains rows that fail its own predicate, "
+    "and no row appears on more than one output sheet. If either invariant "
+    "fails, fix the predicate (not the row count) and re-derive both sheets.\n"
+)
+
+
 def ensure_dataset(repo, dataset, allowlist):
     if not os.path.isdir(repo):
         if allowlist and not any(h in REPO_URL for h in allowlist):
@@ -997,6 +1029,16 @@ def critique_and_retry(task, dpath, grader, prev_script, diff):
             "unchanged. Re-derive the values, do not just relocate cells."
         )
 
+    # Sheet-Level Manipulation tasks (multiple output sheets) need the partition-semantics
+    # addendum on top of R37's generic value-distance signal. Cell-Level tasks only need
+    # R37 — appending the partition addendum to those would be off-topic noise. R39 gap:
+    # cheap models' v1 script ran and valueSignal was non-degenerate, but rows ended up
+    # on the wrong sheet because the critique never named partition-by-criterion semantics.
+    is_sheet_level = "Sheet-Level Manipulation" in str(task.get("instruction_type", ""))
+    sheet_level_block = (
+        f"{SHEET_LEVEL_CRITIQUE_ADDENDUM}\n" if is_sheet_level else ""
+    )
+
     prompt = (
         "Your previous Python script for this SpreadsheetBench task did not produce the "
         "expected output. Read the observed diff and write a CORRECTED script.\n\n"
@@ -1004,6 +1046,7 @@ def critique_and_retry(task, dpath, grader, prev_script, diff):
         f"instruction_type: {task['instruction_type']}\n"
         f"answer_position : {task['answer_position']}\n\n"
         f"{R37_PROMPT_ADDENDUM}\n"
+        f"{sheet_level_block}"
         f"Representative input preview (test case 1, first rows):\n"
         f"{json.dumps(pv, default=str)[:4000]}\n\n"
         "Observed diff of YOUR previous output vs the input "
