@@ -1,6 +1,6 @@
 # Design bridge — UI/UX subroutine for in-app transfer
 
-A **subroutine** invoked **inside Build (phase 4) and Verify (phase 7)** — **not a new phase**.
+A **subroutine** invoked **inside Build (phase 4) and Verify (phase 6)** — **not a new phase**.
 It runs for **every UI-facing build/proof**. Design tools are optional artifact generators; the
 design-quality receipt is mandatory.
 Build's bridge **constructs** the surface from the deliverable shape; Verify's bridge **proves**

@@ -47,8 +47,8 @@ export const loopPhaseRequirements: Record<LoopPhase, PhaseRequirementId[]> = {
   setup: ["setup-gate", "phase-memory"],
   build: ["agent-api-contract", "design-quality", "phase-memory"],
   adapter: ["adapter-contract", "official-scorer-binding", "phase-memory"],
-  iterate: ["failure-hypothesis", "rework-ledger", "phase-memory"],
   verify: ["proof-verdict", "fresh-room-receipt", "phase-memory"],
+  iterate: ["failure-hypothesis", "rework-ledger", "phase-memory"],
 };
 
 export function makeLoopRunReceipt(input: {

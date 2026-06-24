@@ -73,7 +73,7 @@ npm run sfn -- ledger verify <runId>        # re-verify a run's hash-chain (tamp
   and 3D-agent comparison rubric.
 - **`loop/` - RALPH Loop Ledger + Loop Runner**: `.solo/loop-state.json`, `events.jsonl`, milestone
   receipt directories, start-anywhere gates, and executable phase receipts for discover -> benchmark ->
-  setup -> build -> adapter -> iterate -> verify, with proof-verdict enforcement.
+  setup -> build -> adapter -> verify -> iterate, with proof-verdict enforcement before rework.
 - **`agentApi/` - Agent-ready API gate**: semantic tool contracts, provider-schema parity, and
   structured failure/recovery checks.
 - **`proof/` - Fresh-room proof receipts**: live browser proof receipts with trace/video/screenshots,

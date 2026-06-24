@@ -1,6 +1,6 @@
 /**
  * uiCoverage.ts — portable type/interface for the UI coverage report emitted by adapters
- * implementing the 7-step Fresh-Room Live Browser Contract (see `nodes/7-verify.md`).
+ * implementing the 7-step Fresh-Room Live Browser Contract (see `nodes/6-verify.md`).
  *
  * Mirrors the CONTRACT shape used in NodeRoom's dogfood `src/eval/officialBenchmarkUiCoverage.ts`
  * (sibling to the existing `src/eval/officialBenchmarkTaskCoverage.ts`). This file ships only

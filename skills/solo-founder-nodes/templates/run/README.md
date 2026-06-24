@@ -17,7 +17,7 @@ adapter — useful only if your app is spreadsheet-shaped. For any other app the
 sibling adapter (in-app real-task set, BankerToolBench, SWE-bench, your own held-out set, …) using
 this file's *shape*.
 
-What the shape is — the loop's **iterate/verify** phase as runnable code: clone the benchmark from
+What the shape is — the loop's **verify** phase as runnable code: clone the benchmark from
 the autonomy allowlist → **seal a held-out slice** → attempt each held-out task with the **model in
 the loop** → grade with the **benchmark's OWN grader** (or your own deterministic grader for an
 in-app eval set) → write an **honest headline**. The harness contains no per-task answers; a row
@@ -178,7 +178,7 @@ every dev gets the same full-auto experience.
 
 The python adapter above proves the agent passes the **harness**. The TypeScript sibling
 [`liveBrowserRoom.ts`](./liveBrowserRoom.ts) proves the agent passes the **live app** — the
-in-app transfer non-negotiable from `nodes/7-verify.md`, made executable. A founder runs both
+in-app transfer non-negotiable from `nodes/6-verify.md`, made executable. A founder runs both
 lanes; only the live-browser lane can flip a row's `live_browser_room_passed` ledger bit, and
 only `clean && live_browser_room_passed` rows count toward the headline mean.
 

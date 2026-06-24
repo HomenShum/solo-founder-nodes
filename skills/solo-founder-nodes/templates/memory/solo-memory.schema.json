@@ -12,7 +12,7 @@
     "userId": { "type": "string", "description": "Optional founder id for L3 cross-project preferences." },
     "phase": {
       "type": "string",
-      "enum": ["discover", "benchmark", "setup", "build", "adapter", "iterate", "verify", "runtime", "design", "coach"]
+      "enum": ["discover", "benchmark", "setup", "build", "adapter", "verify", "iterate", "runtime", "design", "coach"]
     },
     "kind": {
       "type": "string",

@@ -8,7 +8,7 @@ import { dirname } from "node:path";
 import { CONTROL_SCHEMA_SQL } from "./schema";
 import { type GraphContextReceipt, requireGraphContext } from "../context/graphContext";
 
-export const loopPhases = ["discover", "benchmark", "setup", "build", "adapter", "iterate", "verify"] as const;
+export const loopPhases = ["discover", "benchmark", "setup", "build", "adapter", "verify", "iterate"] as const;
 export type LoopPhase = (typeof loopPhases)[number];
 export type LoopStatus = "queued" | "running" | "paused" | "blocked" | "completed";
 export type ApprovalDecision = "approve" | "edit" | "reject" | "respond";

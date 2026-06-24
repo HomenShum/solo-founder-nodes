@@ -2,7 +2,7 @@
  * liveBrowserRoom.ts — REFERENCE ADAPTER (shape only, sibling to spreadsheetbench.py)
  *
  * This file is the executable form of the 7-step Fresh-Room Live Browser Contract from
- * `nodes/7-verify.md`. It is NOT a runnable harness — it is the shape every per-app adapter
+ * `nodes/6-verify.md`. It is NOT a runnable harness — it is the shape every per-app adapter
  * copies, the way `spreadsheetbench.py` is the shape every per-benchmark python adapter copies.
  * Each app writes its own concrete sibling (`liveBrowserRoom.spreadsheetbench.ts`,
  * `liveBrowserRoom.bankertoolbench.ts`, `liveBrowserRoom.noderoom.ts`, …) implementing these
@@ -240,7 +240,7 @@ export type RunLiveBrowserContract = (args: {
 // --------------------------------------------------------------------------------------------
 // Suite-level coverage roll-up — every adapter ALSO emits one of these per track so the
 // top-level `strictUiCoverageReady` flag can be derived from real receipts, not from "we ran
-// it once on the easy task." See `nodes/7-verify.md` "Coverage contract".
+// it once on the easy task." See `nodes/6-verify.md` "Coverage contract".
 // --------------------------------------------------------------------------------------------
 
 export type EmitUiCoverage = (args: {

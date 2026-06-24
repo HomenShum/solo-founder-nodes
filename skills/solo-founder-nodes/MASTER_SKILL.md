@@ -29,7 +29,7 @@ by **comment**. If the user defers, proceed on explicit, stated assumptions and 
 **Full autonomy (the goal).** Under a founder **autonomy policy** ([`references/autonomy.md`](references/autonomy.md))
 - model + key, a budget cap, a download allowlist, auto-approve installs/code - the agent runs the
 WHOLE loop unattended on the founder's behalf: download the dataset, wire the harness, run the model,
-iterate, and verify in the live app, pausing only on a hard-stop (over budget, untrusted download,
+verify in the live app, and iterate from proof failures, pausing only on a hard-stop (over budget, untrusted download,
 public publish, deleting data, credentials). The carve-out that makes this safe: **the agent does
 every step and produces every proof, but never grades / seals / verifies itself - the referee (seal
 salt, gate derivation, sealed-gold, independent verifier) lives out of its reach**
@@ -173,11 +173,12 @@ deployed `verify` needs live QA, release/deploy, and canary receipts. Doctrine:
 | 3 | setup | stand up the eval env (Docker/Harbor/HF/verifier) | heavy | yes | `nodes/3-setup.md` |
 | 4 | build | build the missing agent + UI/UX pieces (calls the **Design Bridge** subroutine for the UI) | per-stack | yes | `nodes/4-build.md` |
 | 5 | adapter | wire the app real agent into the harness (no answer-keys) | medium | yes | `nodes/5-adapter.md` |
-| 6 | iterate | run tuned + held-out + generalization; fix the smallest shared component; re-measure | medium | cost | `nodes/6-iterate.md` |
-| 7 | verify | run the same task in the live app UI; browser-confirm transfer (**Design Bridge** verifies the rendered surface) | medium | no | `nodes/7-verify.md` |
+| 6 | verify | run the same task in the live app UI; browser-confirm transfer (**Design Bridge** verifies the rendered surface) | medium | no | `nodes/6-verify.md` |
+| 7 | iterate | route proof failures back to discover / benchmark / setup / build / adapter, apply one research-backed fix, and re-run verification | medium | cost | `nodes/7-iterate.md` |
 
-Discover + benchmark define *what good is*; setup + build + adapter make it runnable; iterate + verify
-make it real. Phases 6-7 are the loop you repeat.
+Discover + benchmark define *what good is*; setup + build + adapter make it runnable; verify proves
+what happened in the live UI; iterate decides which earlier phase must change and repeats the proof.
+Phases 6-7 are the loop you repeat, in that order: proof first, fix second.
 
 When running the harness directly, see [`templates/run/README.md`](templates/run/README.md). Its
 top-of-file mode-selection table prevents the most common misreport: quoting api-mode scores as your
@@ -185,7 +186,7 @@ agent's performance.
 
 ## Design Bridge (subroutine - invoked by build + verify)
 
-Not a phase. A subroutine **build** (phase 4) and **verify** (phase 7) call when a UI gap is
+Not a phase. A subroutine **build** (phase 4) and **verify** (phase 6) call when a UI gap is
 architectural/visual and a design tool (Figma MCP, Codex "Implement designs") is connected. **Order is
 the guardrail:** structured Design Brief FIRST (user job, missing surface, required components, design
 tokens, layout/motion/a11y constraints, current-UI screenshots, the exact code surfaces to change) ->
@@ -236,9 +237,9 @@ resuming next day re-hydrates instead of re-deriving. What each phase reads/writ
 capability spec + open questions; benchmark -> rubric + the **frozen** split policy/hashes; setup ->
 env provenance (image digest, dataset revision, disk paths, smoke baseline); build -> template choice
 + wired seam + TODO stubs; adapter -> adapter path + routed model_id + the honest-baseline writer
-mode; iterate -> per-iteration fixes + held-out/generalization **deltas** + failure clusters +
-kill-threshold progress; verify -> the DOM signal, screenshot path, run id, transfer ledger, and
-verdict.
+mode; verify -> the DOM signal, screenshot path, run id, transfer ledger, generated/exported artifacts,
+proof verdict, and failure classes; iterate -> the routed phase to revisit, the research-backed fix,
+the rework entry, the held-out/generalization **deltas**, and kill-threshold progress.
 
 **FOUR LEVELS:** L0 phase-scratch (discarded after the phase); L1 project (spec, benchmark choice,
 stack facts, approved decisions, commands, design constraints, runner paths); L2 evaluation (split

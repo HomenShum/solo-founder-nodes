@@ -7,7 +7,7 @@ directive and run the substrate, which are the only two things the skill require
 > Clone `https://github.com/HomenShum/solo-founder-agent-builder` (or read its raw files). To prove you
 > can run Solo Founder Nodes locally:
 > 1. Read `skills/solo-founder-nodes/SKILL.md` -> `MASTER_SKILL.md` and report back the 7-phase loop
->    (`discover -> benchmark -> setup -> build -> adapter -> iterate -> verify`) and the four non-negotiables
+>    (`discover -> benchmark -> setup -> build -> adapter -> verify -> iterate`) and the four non-negotiables
 >    (HELD-OUT / NO ANSWER-KEYS / IN-APP TRANSFER / HONEST PROVENANCE).
 > 2. In `skills/solo-founder-nodes/templates/`, run `npm i && npm run smoke` and paste the last line
 >    (expect `98 passed, 0 failed` on the current substrate).

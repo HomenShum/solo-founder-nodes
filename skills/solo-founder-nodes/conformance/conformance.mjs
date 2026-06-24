@@ -30,8 +30,9 @@ const nn = ["HELD-OUT", "NO ANSWER-KEYS", "IN-APP TRANSFER", "HONEST PROVENANCE"
 ok("4 non-negotiables present", nn.every((n) => M.includes(n)), nn.filter((n) => !M.includes(n)).join(", ") || "all present");
 
 // 3. Progressive-disclosure playbooks + references all present (no missing links).
-const nodes = ["1-discover", "2-benchmark", "3-setup", "4-build", "5-adapter", "6-iterate", "7-verify"];
+const nodes = ["1-discover", "2-benchmark", "3-setup", "4-build", "5-adapter", "6-verify", "7-iterate"];
 ok("7 node playbooks present", nodes.every((n) => existsSync(join(skill, "nodes", `${n}.md`))));
+ok("phase order is verify then iterate", /adapter\s*\|\s*wire[\s\S]*\|\s*6\s*\|\s*verify[\s\S]*\|\s*7\s*\|\s*iterate/i.test(master));
 const refs = ["honest-lane", "memory", "context-substrate", "control-plane", "cli-command-center", "design-bridge", "gstack-bridge", "benchmarks", "research", "research-spine"];
 ok("references present", refs.every((r) => existsSync(join(skill, "references", `${r}.md`))));
 

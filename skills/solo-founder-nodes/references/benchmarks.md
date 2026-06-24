@@ -4,7 +4,7 @@ The `recommend` phase maps the app's agent functions (from `capability-spec.md`)
 benchmark. **This list rots** — agent benchmarks ship monthly. Always also **web-search for newer
 or closer benchmarks** at use time, and confirm the chosen one still exists + its harness runs.
 Prefer a benchmark whose *deliverable shape* matches the app's real output (spreadsheet → spreadsheet
-benchmark, web UI → browser benchmark), because that is what makes in-app transfer (phase 8) meaningful.
+benchmark, web UI → browser benchmark), because that is what makes in-app transfer (phase 6) meaningful.
 
 | Benchmark | Tests which agent functions | Deliverable shape | Infra weight | Recommend when the app… |
 |---|---|---|---|---|

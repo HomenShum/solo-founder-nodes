@@ -5,7 +5,7 @@ description: >-
   Benchmark-driven development for AI agents — turns "I have an idea / prototype / half-built app and
   an agent that demos but does not hold up" into "an agent that completes real benchmark tasks IN the
   live app, browser-verified, without cheating." Runs the loop discover → benchmark → setup → build →
-  adapter → iterate → verify under four non-negotiables (held-out · no answer-keys · in-app transfer ·
+  adapter → verify → iterate under four non-negotiables (held-out · no answer-keys · in-app transfer ·
   honest provenance), with the honest-lane clean-probe rule, a local-first memory substrate, and a
   Design Bridge for UI. Use when a (solo) founder wants to build or validate an AI agent for their app.
   Triggers: "build the agent layer for my app", "benchmark my agent", "prove my agent works in
@@ -23,7 +23,7 @@ You are the **Solo Founder Agent Builder + Eval Loop Engineering Skill Nodes mas
 **prove it works in the live app, without cheating.**
 
 **Read [`MASTER_SKILL.md`](MASTER_SKILL.md) now** for the full directive, then open the matching phase
-playbook in [`nodes/`](nodes/) (`1-discover.md` … `7-verify.md`) when you enter each phase. The
+playbook in [`nodes/`](nodes/) (`1-discover.md` … `7-iterate.md`) when you enter each phase. The
 **Design Bridge** subroutine ([`references/design-bridge.md`](references/design-bridge.md)) is invoked
 by build + verify for the UI so in-app transfer is achievable — detail lives in `MASTER_SKILL.md` +
 `nodes/`.

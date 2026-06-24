@@ -1,9 +1,10 @@
 # Autonomy — the agent does everything, and is never its own judge
 
 The goal of Solo Founder Nodes: the founder's coding agent runs the **whole loop on their behalf,
-unattended** — discover → benchmark → setup → build → adapter → iterate → verify. That includes the
+unattended** — discover → benchmark → setup → build → adapter → verify → iterate. That includes the
 work a founder would otherwise do by hand: **downloading the benchmark dataset, wiring the harness,
-running the model on tasks, fixing the generic writer/tools/context, and verifying in the live app.**
+running the model on tasks, verifying in the live app, and fixing the generic writer/tools/context
+from proof failures.**
 
 Autonomy is not "no guardrails." It is: **the founder sets one policy, then the agent runs free within
 it** — and the single thing the agent never gets to do is grade itself.
@@ -48,8 +49,8 @@ see `docs/PUBLIC_CLAIM_PROOF.md` before quoting exact public numbers). So "do ev
 | discover / benchmark | read the app, pick the benchmark, define the rubric | — |
 | setup | download the dataset (allowlisted), wire the harness, install deps (budgeted) | the **held-out seal** (salt) |
 | build / adapter | build the agent + UI + generic writer; wire the real runner | — |
-| iterate | run the model on tasks, cluster failures, fix the shared/generic layer | the **gate derivation** + sealed-gold |
-| verify | drive the live UI, capture DOM signal + screenshot proof | the **verdict** (independent verifier) |
+| verify | drive the live UI, run the model on tasks, capture DOM signal + screenshot proof | the **gate derivation** + sealed-gold + independent **verdict** |
+| iterate | cluster proof failures, choose the phase to revisit, fix the shared/generic layer, and require re-verification | the prior verified failure evidence |
 
 The founder reviews the **honest ledger the agent produces** — not each step. That is the deal:
 maximum autonomy on the work, zero autonomy on the scoring.

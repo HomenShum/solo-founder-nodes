@@ -9,7 +9,7 @@ import { SoloMemory } from "./memory/localMemory";
 import { sealGold, contentGate } from "./ledger/contentGate";
 import { sha256 } from "./ledger/hash";
 import { inspectGraphContext, graphQueryPlan } from "./context/graphContext";
-import { SoloControlPlane } from "./control/controlPlane";
+import { SoloControlPlane, loopPhases } from "./control/controlPlane";
 import { make3dAgentResearchPack, top3dComparisonRubric, verifyResearchPack, type ResearchPack } from "./research/researchSpine";
 import { designSkillRegistry, makeDesignFullFlow, recommendDesignSkills, verifyDesignFullFlow, verifyDesignSkillPlan, type DesignFullFlowPlan } from "./design/designSkillBridge";
 import { defaultDesignQualityCriteria, makeDesignQualityReceipt, verifyDesignQualityReceipt, type DesignQualityGateInput } from "./design/designQualityGate";
@@ -682,6 +682,7 @@ async function main() {
     goal: "prove a fresh-room 3D app flow",
     createdAt: "2026-06-24T00:00:00.000Z",
   });
+  check("loop phase order verifies before iterate", loopPhases.join(" -> ") === "discover -> benchmark -> setup -> build -> adapter -> verify -> iterate");
   const loopFiles: Record<string, string> = {};
   const makeLoopFile = (name: string, body = "ok") => {
     loopFiles[name] = touch(`loop/${name}`, body);

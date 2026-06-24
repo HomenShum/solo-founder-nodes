@@ -2,7 +2,7 @@
 
 ## What this phase does
 Turns the agent **capability spec** into a committed **benchmark choice** and a written **rubric**. You pick the external
-standard the app's agent must meet — chosen so its output *shape* matches what the app actually produces, so that Phase 8
+standard the app's agent must meet — chosen so its output *shape* matches what the app actually produces, so that Phase 6
 in-app transfer is meaningful — and you define "what good looks like" as an un-gameable, deterministic-where-possible rubric
 with a held-out split designed in from the start. No infra is stood up, no money spent, no code touched. This is a reading +
 research + writing phase; the agent drafts, the human steers the choice by comment.
@@ -31,7 +31,7 @@ off-distribution generalization split definitions, and the infra-weight call (wh
    citations? a code patch? a browser end-state?).
 2. **Load the registry** `.claude/skills/solo-founder-nodes/references/benchmarks.md` and shortlist by **deliverable shape first, then
    function** (per the registry's choose-rubric). Shape match is non-negotiable: a spreadsheet app scored against GAIA short
-   answers can't transfer to its own UI in Phase 8.
+   answers can't transfer to its own UI in Phase 6.
 3. **Web-search for newer/closer benchmarks** ("<domain> agent benchmark 2026", "<deliverable> eval harness", leaderboards).
    Verify each candidate (a) still exists, (b) has a runnable harness, (c) has a license you can use. Note found-but-rejected
    ones so the choice is auditable.
@@ -41,11 +41,11 @@ off-distribution generalization split definitions, and the infra-weight call (wh
 5. **Author the rubric — "what good looks like."** Always include the four un-gameable axes, made concrete for this app:
    **correctness** (matches expected end-state), **formula-vs-hardcode** (computed, not a literal answer baked in),
    **citation-resolves** (every cited source actually contains the claim), **no-fabrication** (no invented numbers/sources).
-   Prefer a **deterministic, no-LLM grader** for each axis where possible so the Phase 6–7 loop is cheap and un-gameable.
+   Prefer a **deterministic, no-LLM grader** for each axis where possible so the Phase 6 verify + Phase 7 iterate loop is cheap and un-gameable.
    Add app-specific pass criteria only if they're observable and objective.
 6. **Define the splits now, not later.** Specify the **held-out split** (tasks the loop may NEVER tune on) and an
    **off-distribution generalization slice** (tasks deliberately unlike the tuned set — different inputs, harder variants,
-   adversarial cases). State the sampling rule and the freeze point so Phase 6 inherits them.
+   adversarial cases). State the sampling rule and the freeze point so Phase 6 verify inherits them.
 7. **Write `benchmark-choice.md`** and present it. **Human steers by comment:** confirm/override the benchmark, adjust the
    rubric weights, tighten the generalization slice, or change the fast-signal-vs-graduation call. If the user defers, proceed
    on explicit stated assumptions and surface them for confirmation.
