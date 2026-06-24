@@ -32,7 +32,11 @@ export type ResearchAssetManifest = {
     notProductionReady: true;
     exactReplicaExport: false;
     humanUseApproved: false;
-    commercialUseApproved: false;
+    commercialDeploymentDecision: {
+      owner: "user";
+      agentApproval: false;
+      requiresUserDueDiligence: string[];
+    };
     requiresReviewBeforeUse: string[];
   };
   proof: {
@@ -93,7 +97,16 @@ export function makeResearchOnlyAsset(input: {
       notProductionReady: true,
       exactReplicaExport: false,
       humanUseApproved: false,
-      commercialUseApproved: false,
+      commercialDeploymentDecision: {
+        owner: "user",
+        agentApproval: false,
+        requiresUserDueDiligence: [
+          "rights/license review",
+          "freedom-to-operate review where relevant",
+          "deployment security/reliability review",
+          "safety review before physical or human use",
+        ],
+      },
       requiresReviewBeforeUse: [
         "rights provenance review",
         "originality delta review",
@@ -110,7 +123,7 @@ export function makeResearchOnlyAsset(input: {
         "Procedural scaffold, not photoreal reconstruction.",
         "Generated from filtered functional/text spec only.",
         "No exact replica mesh, source texture, logo, or decorative contour is carried forward.",
-        "Not approved for commercial distribution, physical fabrication, safety-critical use, or human use.",
+        "Commercial/deployment decision is user-owned; the agent does not approve commercial distribution, deployment, physical fabrication, safety-critical use, or human use.",
       ],
     },
   };
@@ -149,7 +162,9 @@ export function verifyResearchAssetManifest(
   if (manifest.restrictions.notProductionReady !== true) errors.push("research asset must be marked notProductionReady");
   if (manifest.restrictions.exactReplicaExport !== false) errors.push("research asset must not allow exactReplicaExport");
   if (manifest.restrictions.humanUseApproved !== false) errors.push("research asset must not approve human use");
-  if (manifest.restrictions.commercialUseApproved !== false) errors.push("research asset must not approve commercial use");
+  if (manifest.restrictions.commercialDeploymentDecision?.owner !== "user") errors.push("commercial/deployment decision owner must be user");
+  if (manifest.restrictions.commercialDeploymentDecision?.agentApproval !== false) errors.push("agent must not approve commercial/deployment use");
+  if ((manifest.restrictions.commercialDeploymentDecision?.requiresUserDueDiligence ?? []).length < 3) errors.push("commercial/deployment decision must list user due-diligence checks");
   if ((manifest.restrictions.requiresReviewBeforeUse ?? []).length < 3) errors.push("research asset must list review gates before use");
 
   if (manifest.proof.generatedFromFilteredSpec !== true) errors.push("research asset must be generated from filtered spec");

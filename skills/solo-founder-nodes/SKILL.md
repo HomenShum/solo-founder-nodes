@@ -90,7 +90,8 @@ media, real-world factual references, or transformed inspiration only after a co
 functional geometry/material map, protected-expression filter, originality delta, and provenance
 receipt exist. For personal research scaffolds, use `npm run sfn -- 3d make-asset ...`; it creates a
 deterministic OBJ proof artifact from filtered spec/text and must remain personal-research-only, not
-production-ready, not commercial-use approved, not human-use approved, and not an exact replica export.
+production-ready, not human-use approved, and not an exact replica export. Commercial/deployment use
+is a user-owned external decision after their due diligence; the agent must not claim to approve it.
 
 **Engineering invention harness:** for urgent, safety-critical, medical, life-support, field-repair, or
 "life and death" engineering requests, use

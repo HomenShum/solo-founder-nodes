@@ -695,14 +695,16 @@ async function main() {
   });
   const assetVerdict = verifyResearchAssetManifest(researchAsset, { baseDir: assetRoot });
   check("research asset maker emits verified OBJ artifact", assetVerdict.ok && researchAsset.output.primaryAssetPath.endsWith(".obj"), assetVerdict.errors.join("; "));
-  check("research asset maker marks asset personal research only", researchAsset.restrictions.personalResearchOnly === true && researchAsset.restrictions.humanUseApproved === false && researchAsset.restrictions.exactReplicaExport === false);
+  check("research asset maker keeps commercial/deployment decision user-owned", researchAsset.restrictions.personalResearchOnly === true && researchAsset.restrictions.humanUseApproved === false && researchAsset.restrictions.exactReplicaExport === false && researchAsset.restrictions.commercialDeploymentDecision.owner === "user" && researchAsset.restrictions.commercialDeploymentDecision.agentApproval === false);
   const unsafeAsset = clone(researchAsset);
   unsafeAsset.source.rawReplicaUsed = true as false;
   unsafeAsset.restrictions.exactReplicaExport = true as false;
   unsafeAsset.restrictions.humanUseApproved = true as false;
+  unsafeAsset.restrictions.commercialDeploymentDecision.owner = "agent" as "user";
+  unsafeAsset.restrictions.commercialDeploymentDecision.agentApproval = true as false;
   unsafeAsset.proof.containsMeshFromReplica = true as false;
   const unsafeAssetVerdict = verifyResearchAssetManifest(unsafeAsset, { baseDir: assetRoot });
-  check("research asset maker rejects raw replica, exact export, and human-use claims", unsafeAssetVerdict.ok === false && unsafeAssetVerdict.errors.some((e) => e.includes("raw replica")) && unsafeAssetVerdict.errors.some((e) => e.includes("exactReplicaExport")) && unsafeAssetVerdict.errors.some((e) => e.includes("human use")) && unsafeAssetVerdict.errors.some((e) => e.includes("mesh from replica")));
+  check("research asset maker rejects raw replica, exact export, agent commercial approval, and human-use claims", unsafeAssetVerdict.ok === false && unsafeAssetVerdict.errors.some((e) => e.includes("raw replica")) && unsafeAssetVerdict.errors.some((e) => e.includes("exactReplicaExport")) && unsafeAssetVerdict.errors.some((e) => e.includes("human use")) && unsafeAssetVerdict.errors.some((e) => e.includes("commercial/deployment")) && unsafeAssetVerdict.errors.some((e) => e.includes("mesh from replica")));
 
   console.log("\nEngineeringInventionHarness (study replica -> first-principles -> safety proof):");
   const engineeringHarness = makeEngineeringInventionHarness({
