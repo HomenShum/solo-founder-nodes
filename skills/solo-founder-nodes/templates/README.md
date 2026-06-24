@@ -49,8 +49,10 @@ npm run sfn -- agent-api verify --contract agent-api-contract.json
 npm run sfn -- fresh-room verify --receipt docs/eval/fresh-room/<case-id>/latest.json
 npm run sfn -- fresh-user init --case fresh-3d-001 --prompt "I want a 3D model app from pictures"
 npm run sfn -- trust verify --receipt trust-root-receipt.json
+npm run sfn -- intent ralph-plan --goal "build a hiring operations agent" --domain workflow-ops-agent --out intent-ralph.json
+npm run sfn -- intent ralph-verify --receipt intent-ralph.json --base docs/proof
 npm run sfn -- 3d plan --goal "first-party picture/text to 3D app"
-npm run sfn -- 3d part-research-plan --goal "coherent eyewear 3D asset" --out part-research.json
+npm run sfn -- 3d part-research-plan --goal "coherent eyewear 3D asset" --out part-research.json  # 3D-specific adapter
 npm run sfn -- 3d part-research-verify --receipt part-research.json --base docs/proof
 npm run sfn -- 3d quality-plan --goal "game-ready picture to 3D asset" --target game --industry-grade
 npm run sfn -- 3d quality-verify --receipt asset-quality-receipt.json
@@ -101,6 +103,10 @@ npm run sfn -- ledger verify <runId>        # re-verify a run's hash-chain (tamp
   setup -> build -> adapter -> verify -> iterate, with proof-verdict enforcement before rework.
 - **`phase/` - nested phase RALPH**: each major phase has its own R/A/L/P/H receipt gates, and
   verified failures route back to the earliest broken phase instead of patching blindly.
+- **`intent/` - generic Intent RALPH**: turns any founder request into workstream/capability loops
+  with research, alignment/dependencies, live-build plan, proof evidence, and hardening labels. This
+  is the default nested loop for all domains; 3D, engineering, design, and other adapters add stricter
+  checks on top.
 - **`agentApi/` - Agent-ready API gate**: semantic tool contracts, provider-schema parity, and
   structured failure/recovery checks.
 - **`proof/` - Fresh-room and full proof receipts**: live browser proof receipts with trace/video/screenshots,
@@ -111,7 +117,7 @@ npm run sfn -- ledger verify <runId>        # re-verify a run's hash-chain (tamp
 - **`threeD/` - First-party 3D app lane**: reference-media intake, rights/provenance gate,
   first-principles component breakdown/originality delta, capture/reconstruction/3DGS/local
   generation/depth fallback/export/viewer-action plan with providers as comparator/fallback only.
-  Includes a nested part-research RALPH gate (`partResearchRalph.ts`) that forces every component to
+  Includes a 3D-specific part-research RALPH adapter (`partResearchRalph.ts`) that forces every component to
   carry researched function, assembly interfaces, local geometry/material, proof evidence, and
   hardening labels before composition. Also includes a deterministic personal-research-only OBJ asset
   maker for proof scaffolds and an industry-grade asset quality gate that rejects

@@ -73,6 +73,14 @@ complete; missing research/proof receipts route to `needs_research` or `needs_ve
 `npm run sfn -- phase verify --phase <phase>` and route verified failures with
 `npm run sfn -- phase route --to <phase> --reason <why>`. No Phase 6 proof means no Phase 7 fix.
 
+**Intent RALPH:** for any founder request, decompose the user intent into domain workstreams and run
+`npm run sfn -- intent ralph-plan ...` then `npm run sfn -- intent ralph-verify ...`. Every
+workstream needs research, alignment/dependency contracts, live-build artifact plan, proof evidence,
+and hardening/blocked-claim receipts before the skill can claim completion. Domain adapters such as
+3D part research add stricter checks but do not replace the generic loop. Spec:
+[`references/intent-ralph.md`](references/intent-ralph.md); implementation:
+[`templates/intent/intentRalph.ts`](templates/intent/intentRalph.ts).
+
 **Research spine:** at `discover`, create or refresh `research-spine.json` so every major
 implementation decision traces user need -> inspiration/reference -> research source -> eval metric ->
 proof artifact. From `build` onward, block uncited decisions; from `verify` onward, block supported
@@ -95,9 +103,9 @@ an optional deployment/listing lane, not a required 3D generation provider. Prov
 `fresh-user`, `proof full-verify`, and `trust verify` receipts before saying a nontechnical founder or
 judge can use it end to end. Block unverified exact extraction of protected social/movie/game/textbook assets.
 Educational purpose is context, not automatic permission. Support user-owned/licensed/public-domain
-media, real-world factual references, or transformed inspiration only after a component tree,
-functional geometry/material map, protected-expression filter, originality delta, and provenance
-receipt exist. Then run part-research RALPH with
+media, real-world factual references, or transformed inspiration only after the generic intent RALPH
+receipt, a component tree, functional geometry/material map, protected-expression filter, originality
+delta, and provenance receipt exist. Then run the 3D part-research adapter with
 `npm run sfn -- 3d part-research-plan ...` and
 `npm run sfn -- 3d part-research-verify ...` so every component has researched function, assembly
 interfaces, local geometry/material, proof evidence, and blocked-claim hardening before the asset can

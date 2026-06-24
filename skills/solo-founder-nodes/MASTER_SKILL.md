@@ -145,6 +145,15 @@ implementation: [`templates/loop/`](templates/loop/).
 `verify` must emit the failure route, and `iterate` must consume that verified evidence to route back
 to the earliest broken phase. Do not patch from vibes; no Phase 6 proof means no Phase 7 fix.
 
+**Intent RALPH (generic user-intent decomposition):** the skill is not tied to any one proof domain.
+After `discover`, decompose the founder request into major workstreams/capabilities and run
+`npm run sfn -- intent ralph-plan --goal "<goal>" --domain <domain> --out intent-ralph.json`, then
+`npm run sfn -- intent ralph-verify --receipt intent-ralph.json`. Each workstream must carry nested
+`R` research, `A` alignment/dependency contracts, `L` live-build artifact plan, `P` proof evidence,
+and `H` hardening/blocked-claim receipts. Domain adapters such as 3D part research may add stricter
+checks; they do not replace the generic intent loop. Doctrine: [`references/intent-ralph.md`](references/intent-ralph.md);
+copyable implementation: [`templates/intent/intentRalph.ts`](templates/intent/intentRalph.ts).
+
 ## Research spine (required for research-backed implementation)
 
 The agent must not turn a founder's domain prompt into unsupported architecture or product claims. At
@@ -171,8 +180,8 @@ modes are user-owned or licensed media, public-domain/compatible-license media, 
 object reference, or transformed inspiration with similarity/provenance receipts. Before generation,
 produce a component tree, functional geometry/material map, protected-expression filter, and
 originality delta so the output is an original design from abstracted components. Use
-`npm run sfn -- 3d plan ...` and `npm run sfn -- 3d verify ...`. Then run the
-**part-research RALPH** gate before any mesh is treated as coherent:
+`npm run sfn -- 3d plan ...` and `npm run sfn -- 3d verify ...`. For this domain, run the
+**3D part-research RALPH adapter** before any mesh is treated as coherent:
 `npm run sfn -- 3d part-research-plan --goal "<goal>" --components <component-tree.json> --out part-research.json`
 and `npm run sfn -- 3d part-research-verify --receipt part-research.json`. This nested loop expands
 each component into `R` research, `A` assembly/interface constraints, `L` local geometry/material,

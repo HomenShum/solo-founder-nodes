@@ -35,6 +35,11 @@ import {
   phaseRalphGates,
   verifyPhaseRalph,
 } from "./phase/phaseRalph";
+import {
+  intentRalphStages,
+  makeIntentRalphReceipt,
+  verifyIntentRalphReceipt,
+} from "./intent/intentRalph";
 import { makeThreeDComparatorRubric, makeThreeDPlan, verifyThreeDPlan } from "./threeD/threeDLoop";
 import { makeThreeDAssetQualityPlan, verifyThreeDAssetQualityReceipt, type ThreeDAssetQualityReceipt } from "./threeD/assetQualityGate";
 import {
@@ -773,6 +778,39 @@ async function main() {
   const threeDComparator = makeThreeDComparatorRubric();
   check("3D comparator scores first-party and provider outputs on same rubric", threeDComparator.providers.length >= 4 && threeDComparator.passRule.includes("not the default product architecture"));
   check("3D comparator stays a 100-point rubric", threeDComparator.metrics.reduce((sum, metric) => sum + metric.points, 0) === 100);
+
+  console.log("\nIntentRalph (generic nested loop for any user intent):");
+  const genericIntentReceipt = makeIntentRalphReceipt({
+    goal: "Build a founder-requested hiring operations agent from a vague prompt.",
+    domain: "workflow-ops-agent",
+    generatedAt: "2026-06-24T00:00:00.000Z",
+    status: "completed",
+  });
+  for (const loop of genericIntentReceipt.workstreamLoops) {
+    for (const stage of intentRalphStages) {
+      for (const evidencePath of loop.stages[stage].evidencePaths) {
+        touch(evidencePath, `# ${loop.label} ${stage}\n`);
+      }
+    }
+  }
+  const genericIntentVerdict = verifyIntentRalphReceipt(genericIntentReceipt, { baseDir: proofRoot });
+  check(
+    "generic intent RALPH passes complete research/alignment/build/proof/hardening evidence",
+    genericIntentVerdict.ok && genericIntentReceipt.workstreamLoops.every((loop) => intentRalphStages.every((stage) => loop.stages[stage].status === "completed")),
+    genericIntentVerdict.errors.join("; "),
+  );
+  const missingIntentResearch = clone(genericIntentReceipt);
+  missingIntentResearch.workstreamLoops[0].researchSourceIds = [];
+  const missingIntentResearchVerdict = verifyIntentRalphReceipt(missingIntentResearch, { baseDir: proofRoot });
+  check("generic intent RALPH rejects uncited workstreams", missingIntentResearchVerdict.ok === false && missingIntentResearchVerdict.errors.some((e) => e.includes("research sources")));
+  const missingIntentInterface = clone(genericIntentReceipt);
+  missingIntentInterface.workstreamLoops[0].interfaces = [];
+  const missingIntentInterfaceVerdict = verifyIntentRalphReceipt(missingIntentInterface, { baseDir: proofRoot });
+  check("generic intent RALPH rejects missing dependency/interface contracts", missingIntentInterfaceVerdict.ok === false && missingIntentInterfaceVerdict.errors.some((e) => e.includes("dependency/interface")));
+  const relaxedIntentRestrictions = clone(genericIntentReceipt);
+  relaxedIntentRestrictions.restrictions.productionUseUserOwnedDecision = false as true;
+  const relaxedIntentVerdict = verifyIntentRalphReceipt(relaxedIntentRestrictions, { baseDir: proofRoot });
+  check("generic intent RALPH rejects agent-owned production/commercial approval", relaxedIntentVerdict.ok === false && relaxedIntentVerdict.errors.some((e) => e.includes("user-owned")));
 
   console.log("\nThreeDPartResearchRalph (per-component function + assembly research loop):");
   const partResearchReceipt = makeThreeDPartResearchRalphReceipt({

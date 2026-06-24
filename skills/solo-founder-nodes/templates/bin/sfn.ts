@@ -85,6 +85,13 @@ import {
 } from "../setup/openrouterAgentHosts";
 import { makeLoopRunReceipt, verifyLoopRunReceipt, type LoopRunReceipt } from "../loop/loopRunner";
 import {
+  makeIntentRalphReceipt,
+  verifyIntentRalphReceipt,
+  type IntentRalphReceipt,
+  type IntentRalphStageStatus,
+  type IntentWorkstreamInput,
+} from "../intent/intentRalph";
+import {
   assertLoopPhase,
   assertPhaseRalphStage,
   completePhaseRalphReceipt,
@@ -417,11 +424,13 @@ const HELP = `sfn - Solo Founder Nodes local CLI   (run via: npm run sfn -- <cmd
   proof full-verify --receipt <file> [--base <dir>]
   proof publish --run <dir> [--out <file>]
   compare top3d [--out <file>]  print/write the 3D provider comparison rubric
+  intent ralph-plan --goal <g> [--domain <d>] [--workstreams <file>] [--completed] [--out <file>]
+  intent ralph-verify --receipt <file> [--base <dir>] [--no-files]
   3d init|plan --goal <g> [--out <file>]
   3d verify --file <file>
   3d compare [--out <file>]
-  3d part-research-plan --goal <g> [--object-category <c>] [--components <file>] [--completed] [--out <file>]
-  3d part-research-verify --receipt <file> [--base <dir>] [--no-files]
+  3d part-research-plan --goal <g> [--object-category <c>] [--components <file>] [--completed] [--out <file>]  3D shortcut over the generic intent RALPH idea
+  3d part-research-verify --receipt <file> [--base <dir>] [--no-files]  3D shortcut over the generic intent RALPH idea
   3d quality-plan --goal <g> [--target viewer|game|cad|character|scene|marketplace] [--claim personal-research-scaffold|prototype|industry-grade] [--industry-grade] [--out <file>]
   3d quality-verify --receipt <file> [--base <dir>]
   3d make-asset --goal <g> --project-id <id> --out-dir <dir> [--functional-spec <file>] [--deconstruction-receipt <file>]
@@ -1298,6 +1307,46 @@ async function main() {
         process.exit(verdict.ok === true ? 0 : 1);
       }
       console.error("proof: init | start | receipt | collect | verify | verdict | full-init | full-verify | publish");
+      process.exit(2);
+    }
+    case "intent": {
+      const sub = rest[0];
+      if (sub === "ralph-plan" || sub === "plan") {
+        const goal = flag(rest, "--goal");
+        if (!goal) {
+          console.error("intent ralph-plan --goal <g> [--domain <d>] [--workstreams <file>] [--completed] [--out <file>]");
+          process.exit(2);
+        }
+        const workstreamsPath = flag(rest, "--workstreams");
+        const workstreams = workstreamsPath ? readJson<IntentWorkstreamInput[]>(resolve(workstreamsPath)) : undefined;
+        const status: IntentRalphStageStatus = rest.includes("--completed") ? "completed" : "planned";
+        const receipt = makeIntentRalphReceipt({
+          goal,
+          domain: flag(rest, "--domain", "general"),
+          workstreams,
+          status,
+        });
+        const out = flag(rest, "--out");
+        if (out) writeJson(resolve(out), receipt);
+        console.log(JSON.stringify(out ? { out: resolve(out), receipt } : receipt, jbig, 2));
+        process.exit(0);
+      }
+      if (sub === "ralph-verify" || sub === "verify") {
+        const receiptPath = flag(rest, "--receipt");
+        if (!receiptPath) {
+          console.error("intent ralph-verify --receipt <file> [--base <dir>] [--no-files]");
+          process.exit(2);
+        }
+        const abs = resolve(receiptPath);
+        const receipt = readJson<IntentRalphReceipt>(abs);
+        const verdict = verifyIntentRalphReceipt(receipt, {
+          baseDir: flag(rest, "--base") ? resolve(flag(rest, "--base")!) : dirname(abs),
+          requireFiles: !rest.includes("--no-files"),
+        });
+        console.log(JSON.stringify({ receipt: abs, verdict }, jbig, 2));
+        process.exit(verdict.ok ? 0 : 1);
+      }
+      console.error("intent: ralph-plan --goal <g> [--domain <d>] [--workstreams <file>] [--completed] [--out <file>] | ralph-verify --receipt <file> [--base <dir>] [--no-files]");
       process.exit(2);
     }
     case "compare": {

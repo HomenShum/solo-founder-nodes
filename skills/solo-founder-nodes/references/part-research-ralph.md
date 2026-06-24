@@ -1,5 +1,10 @@
 # Part-Research RALPH for 3D Assets
 
+This is a 3D domain adapter over the generic [`intent-ralph.md`](intent-ralph.md) loop. Use
+`intent ralph-plan/verify` for ordinary founder requests; use this stricter 3D adapter only when the
+user intent includes generated/reconstructed 3D assets, CAD-like composition, scenes, game assets,
+or reference-media-to-3D workflows.
+
 The first-principles component tree is not enough. A 3D app can list plausible parts and still output
 a nonsense mesh if the agent never researches what each part must do, how it attaches, or what proof
 would make it usable. For 3D generation, run a nested `R/A/L/P/H` loop per component before composing
