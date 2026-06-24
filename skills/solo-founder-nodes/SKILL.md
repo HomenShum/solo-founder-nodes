@@ -81,6 +81,14 @@ and hardening/blocked-claim receipts before the skill can claim completion. Doma
 [`references/intent-ralph.md`](references/intent-ralph.md); implementation:
 [`templates/intent/intentRalph.ts`](templates/intent/intentRalph.ts).
 
+**Idea tweaks:** when the founder sends more screenshots, competitor references, roadmap bullets,
+provider/storage preferences, design inspiration, or "also..." requirements after the loop starts,
+run `npm run sfn -- tweak intake --goal "<goal>" --input <text-or-file> --domain <domain>` and
+`npm run sfn -- tweak verify --receipt <file>`. The receipt reroutes the loop to the earliest affected
+phase and names the proof updates required. Spec: [`references/idea-tweaks.md`](references/idea-tweaks.md);
+implementation: [`templates/tweaks/ideaTweak.ts`](templates/tweaks/ideaTweak.ts). No silent scope
+creep.
+
 **Component RALPH:** if the requested deliverable is compositional, run
 `npm run sfn -- component init --goal "<goal>" --domain <domain> --project .` and then
 `npm run sfn -- component proof --all --project .`. Each production-critical component needs its own

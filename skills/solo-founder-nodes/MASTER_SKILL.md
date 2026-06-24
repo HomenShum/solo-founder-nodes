@@ -154,6 +154,18 @@ and `H` hardening/blocked-claim receipts. Domain adapters such as 3D part resear
 checks; they do not replace the generic intent loop. Doctrine: [`references/intent-ralph.md`](references/intent-ralph.md);
 copyable implementation: [`templates/intent/intentRalph.ts`](templates/intent/intentRalph.ts).
 
+**Idea tweaks (cheap founder-screenshot delta intake):** founder scope changes are expected. When the
+user adds screenshots, competitor links, "also..." requirements, roadmap bullets, storage/provider
+preferences, design references, or safety/commercial boundaries after the loop has started, run
+`npm run sfn -- tweak intake --goal "<goal>" --input <text-or-file> --domain <domain> --out idea-tweaks.json`
+and then `npm run sfn -- tweak verify --receipt idea-tweaks.json`. The tweak receipt classifies each
+new idea as a capability delta, names the earliest phase to revisit, and lists the receipts/proofs
+that must be updated. It must feed Intent RALPH, Component RALPH, design flow, setup matrix, agent chat
+UX, and live proof only when those deltas require it. Do not silently absorb scope changes into a
+final answer. Doctrine: [`references/idea-tweaks.md`](references/idea-tweaks.md); copyable
+implementation: [`templates/tweaks/ideaTweak.ts`](templates/tweaks/ideaTweak.ts). Doctrine:
+**No silent scope creep; every tweak is implemented, deferred, or blocked with proof.**
+
 **Component RALPH (nested proof for compositional outputs):** if the output is compositional, the
 agent must create `.solo/ledgers/component-ralph.json` with `npm run sfn -- component init --goal
 "<goal>" --domain <domain> --project .`, then prove each production-critical component through its

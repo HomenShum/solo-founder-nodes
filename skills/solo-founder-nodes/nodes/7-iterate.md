@@ -46,6 +46,11 @@ Outputs:
 0. **Control-plane preflight.** Load the loop state, graph-context receipt, proof verdict, recent
    `SoloEvent` records, budget, approvals, and open rework items. If Phase 6 has not produced a proof
    verdict and fresh-room receipt, stop; iteration has no verified evidence.
+0a. **Capture new founder tweaks before choosing a fix.** If the latest user message adds scope,
+   screenshots, roadmap bullets, competitor/design references, provider/storage choices, or safety/use
+   constraints, run `npm run sfn -- tweak intake --goal "<goal>" --input <text-or-file> --domain <domain>`
+   and `npm run sfn -- tweak verify --receipt <file>`. Treat the tweak receipt as routing evidence:
+   it may send the loop back to discover, setup, build, adapter, or verify before any rework is kept.
 1. **Classify the verified failure.** Use Phase 6 artifacts to assign one route:
    - `discover`: the real user need, screenshot interpretation, or unsupported-claim labeling was
      wrong.

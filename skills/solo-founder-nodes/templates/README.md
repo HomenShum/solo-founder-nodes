@@ -49,6 +49,8 @@ npm run sfn -- agent-api verify --contract agent-api-contract.json
 npm run sfn -- fresh-room verify --receipt docs/eval/fresh-room/<case-id>/latest.json
 npm run sfn -- fresh-user init --case fresh-3d-001 --prompt "I want a 3D model app from pictures"
 npm run sfn -- trust verify --receipt trust-root-receipt.json
+npm run sfn -- tweak intake --goal <g> --input new-founder-notes.txt --domain <domain> --out idea-tweaks.json
+npm run sfn -- tweak verify --receipt idea-tweaks.json
 npm run sfn -- intent ralph-plan --goal "build a hiring operations agent" --domain workflow-ops-agent --out intent-ralph.json
 npm run sfn -- intent ralph-verify --receipt intent-ralph.json --base docs/proof
 npm run sfn -- component init --goal "build a coherent 3D asset app" --domain 3d-generation --project .
@@ -110,6 +112,9 @@ npm run sfn -- ledger verify <runId>        # re-verify a run's hash-chain (tamp
   with research, alignment/dependencies, live-build plan, proof evidence, and hardening labels. This
   is the default nested loop for all domains; 3D, engineering, design, and other adapters add stricter
   checks on top.
+- **`tweaks/` - Idea Tweaks**: turns new founder screenshots/comments/roadmap bullets into structured
+  deltas, earliest-phase reroutes, required receipt updates, and proof obligations. This keeps pivots
+  cheap without allowing silent scope creep.
 - **`component-ralph/` - generic Component RALPH**: creates `.solo/ledgers/component-ralph.json`
   for compositional outputs and blocks parent L/P/H claims until production-critical child components
   have R/A/L/P/H receipts and proof gates. This is generic; 3D part research is one adapter on top.

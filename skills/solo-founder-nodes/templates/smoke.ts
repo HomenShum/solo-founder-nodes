@@ -40,6 +40,7 @@ import {
   makeIntentRalphReceipt,
   verifyIntentRalphReceipt,
 } from "./intent/intentRalph";
+import { makeIdeaTweakReceipt, verifyIdeaTweakReceipt } from "./tweaks/ideaTweak";
 import {
   componentLedgerPath,
   componentRalphStages,
@@ -820,6 +821,35 @@ async function main() {
   relaxedIntentRestrictions.restrictions.productionUseUserOwnedDecision = false as true;
   const relaxedIntentVerdict = verifyIntentRalphReceipt(relaxedIntentRestrictions, { baseDir: proofRoot });
   check("generic intent RALPH rejects agent-owned production/commercial approval", relaxedIntentVerdict.ok === false && relaxedIntentVerdict.errors.some((e) => e.includes("user-owned")));
+
+  console.log("\nIdeaTweak (cheap founder-screenshot delta intake):");
+  const tweakReceipt = makeIdeaTweakReceipt({
+    goal: "Update a founder 3D asset app from new screenshot/chat ideas.",
+    domain: "3d-generation",
+    createdAt: "2026-06-24T00:00:00.000Z",
+    messages: [
+      "The user can brush over the item they want, crop everything around it, and generate the 3D model from that crop.",
+      "Roadmap: create 3D model from pictures, animate that 3D model using laptop camera, put all generated assets in the same environment, voice feature for agents/models and chat transcription.",
+      "I saw Spline, Framer, Emergent, and Bruno Simon interactive 3D websites and want the web design flow to feel that pretty.",
+      "Use S3 to store 3D assets alongside photos for this hackathon demo, but no provider API should be required for the core demo.",
+      "Personal research only; commercial or deployable use is up to the user.",
+    ],
+  });
+  const tweakVerdict = verifyIdeaTweakReceipt(tweakReceipt);
+  check("idea tweak receipt verifies screenshot-style additions", tweakVerdict.ok, tweakVerdict.errors.join("; "));
+  check(
+    "idea tweak extracts brush, storage, camera, voice, design-reference, provider, and rights deltas",
+    ["source-brush-isolation", "asset-inventory-storage", "camera-animation-lane", "voice-chat-transcript", "interactive-web-3d-reference", "provider-optional-first-party-core", "rights-safe-originality"].every((id) =>
+      tweakReceipt.deltas.some((delta) => delta.id === id),
+    ),
+  );
+  check("idea tweak reroutes to earliest changed phase and requires proof/judge rerun", tweakReceipt.reroute.earliestPhase === "discover" && tweakReceipt.requiredActions.updateLiveProof && tweakReceipt.requiredActions.rerunFreshContextJudge);
+  check("idea tweak forces component/design/setup updates only when deltas require them", tweakReceipt.requiredActions.updateComponentRalph && tweakReceipt.requiredActions.updateDesignFlow && tweakReceipt.requiredActions.updateSetupMatrix);
+  const weakTweak = clone(tweakReceipt);
+  weakTweak.parentLoopGate.tweakRequiresProof = false as true;
+  weakTweak.requiredActions.rerunFreshContextJudge = false;
+  const weakTweakVerdict = verifyIdeaTweakReceipt(weakTweak);
+  check("idea tweak rejects silent scope creep without proof and fresh judge rerun", weakTweakVerdict.ok === false && weakTweakVerdict.errors.some((e) => e.includes("require proof")) && weakTweakVerdict.errors.some((e) => e.includes("fresh-context judge")));
 
   console.log("\nComponentRalph (generic nested loop for compositional outputs):");
   const chairComponents = decomposeComponentsFromText({ text: "wooden chair from an image into a GLB asset", domain: "3d-generation" });

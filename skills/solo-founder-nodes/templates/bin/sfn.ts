@@ -92,6 +92,11 @@ import {
   type IntentWorkstreamInput,
 } from "../intent/intentRalph";
 import {
+  makeIdeaTweakReceipt,
+  verifyIdeaTweakReceipt,
+  type IdeaTweakReceipt,
+} from "../tweaks/ideaTweak";
+import {
   componentLedgerPath,
   componentRalphStages,
   decomposeComponentsFromText,
@@ -451,6 +456,8 @@ const HELP = `sfn - Solo Founder Nodes local CLI   (run via: npm run sfn -- <cmd
   proof full-verify --receipt <file> [--base <dir>]
   proof publish --run <dir> [--out <file>]
   compare top3d [--out <file>]  print/write the 3D provider comparison rubric
+  tweak intake --goal <g> --input <text|file> [--domain <d>] [--out <file>]
+  tweak verify --receipt <file>
   intent ralph-plan --goal <g> [--domain <d>] [--workstreams <file>] [--completed] [--out <file>]
   intent ralph-verify --receipt <file> [--base <dir>] [--no-files]
   component init --goal <g> [--domain <d>] [--components <file>] [--completed] [--project <path>] [--out <file>]
@@ -1490,6 +1497,46 @@ async function main() {
         console.log(JSON.stringify(rubric, jbig, 2));
       }
       process.exit(0);
+    }
+    case "tweak": {
+      const sub = rest[0];
+      if (sub === "intake") {
+        const goal = flag(rest, "--goal");
+        const input = flag(rest, "--input");
+        if (!goal || !input) {
+          console.error("tweak intake --goal <g> --input <text|file> [--domain <d>] [--out <file>]");
+          process.exit(2);
+        }
+        const absInput = resolve(input);
+        const sourceText = existsSync(absInput) ? readFileSync(absInput, "utf8") : input;
+        const messages = sourceText
+          .split(/\r?\n(?:[-*]\s+|\d+\.\s+)?/)
+          .map((line) => line.trim())
+          .filter(Boolean);
+        const receipt = makeIdeaTweakReceipt({
+          goal,
+          domain: flag(rest, "--domain"),
+          messages,
+        });
+        const out = flag(rest, "--out");
+        if (out) writeJson(resolve(out), receipt);
+        console.log(JSON.stringify(out ? { out: resolve(out), receipt } : receipt, jbig, 2));
+        process.exit(0);
+      }
+      if (sub === "verify") {
+        const receiptPath = flag(rest, "--receipt");
+        if (!receiptPath) {
+          console.error("tweak verify --receipt <file>");
+          process.exit(2);
+        }
+        const abs = resolve(receiptPath);
+        const receipt = readJson<IdeaTweakReceipt>(abs);
+        const verdict = verifyIdeaTweakReceipt(receipt);
+        console.log(JSON.stringify({ file: abs, verdict }, jbig, 2));
+        process.exit(verdict.ok ? 0 : 1);
+      }
+      console.error("tweak: intake | verify");
+      process.exit(2);
     }
     case "3d": {
       const sub = rest[0];
