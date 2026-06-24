@@ -171,12 +171,12 @@ async function main() {
     provider: "Meshy",
     requiredSecrets: ["MESHY_API_KEY"],
     setupUrls: ["https://www.meshy.ai/api"],
-    completedPrework: ["adapter-boundary", "server-side-secret-boundary"],
+    completedPrework: ["adapter-boundary", "ai-chat-component", "server-side-secret-boundary"],
     resumeCommands: ["npm run build"],
     createdAt: "2026-06-23T00:00:00.000Z",
   });
   const incompleteGateVerdict = verifyExternalSetupGateReceipt(incompleteGate);
-  check("credential gate rejects early stop before deterministic prework", incompleteGateVerdict.ok === false && incompleteGateVerdict.errors.some((e) => e.includes("missing-secret-ui")));
+  check("credential gate rejects early stop before deterministic prework", incompleteGateVerdict.ok === false && incompleteGateVerdict.errors.some((e) => e.includes("chat-action-protocol")));
 
   const completeGate = makeExternalSetupGateReceipt({
     goal: "Connect Meshy real 3D generation.",

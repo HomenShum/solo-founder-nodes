@@ -10,8 +10,8 @@ Turns the gap report from the prior phase into running code, on the user's actua
 ## Procedure (agent-driven; human steers by comment)
 0x. **Do deterministic provider/setup work before any credential pause.** If a real provider, storage
 service, deploy secret, OAuth app, or billing account is missing, build the pieces that do not need it:
-server-side adapter interface, server-only env var names, missing-secret UI, blocked-path test, setup
-doc, cost/latency ledger shape, and exact resume command. Generate an external setup receipt with
+server-side adapter interface, AI chat component, typed chat action protocol, server-only env var
+names, missing-secret UI, blocked-path test, setup doc, cost/latency ledger shape, and exact resume command. Generate an external setup receipt with
 `npm run sfn -- setup gate ...`. Do not stop at "need API key" while these pieces are still unbuilt.
 0. **Load safe project memory + check prior decisions.** Before scaffolding, read from memory ([`../references/memory.md`](../references/memory.md), L1/L3): the detected stack + prior template choice, the existing harness/tool registry shape, approved architecture rules, founder stack/design preferences, AND the prior REJECTED fixes. Do NOT re-propose an architecture or a fix the human already rejected, and EXTEND the existing tool registry rather than forking it. Read split hashes/scores only — never held-out task contents (quarantine).
 0a. **Gate implementation decisions through the Research Spine.** Run `npm run sfn -- research verify research-spine.json`. For every major architecture choice in this phase, add or update a decision receipt with `requirementId`, `chosenApproach`, rejected alternatives, research source ids, practical/inspiration source ids, eval metric ids, and risk. Do not build from a claim labeled `unsupported_assumption` unless the output is explicitly a stretch/prototype lane.

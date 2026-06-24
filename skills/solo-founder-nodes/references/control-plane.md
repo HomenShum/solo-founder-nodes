@@ -67,8 +67,8 @@ Approval is durable state, not a chat convention. A decision is one of:
 
 Hard stops remain: over budget, off-allowlist download, public publish, data deletion, credentials.
 Credential hard stops are valid only after the loop has checkpointed the deterministic prework that does
-not require the secret: adapter boundary, server-side env names, missing-secret UI, blocked-path test,
-setup doc, cost/latency ledger shape, and resume command. Store that checkpoint as an external setup
+not require the secret: adapter boundary, AI chat component, typed chat action protocol, server-side
+env names, missing-secret UI, blocked-path test, setup doc, cost/latency ledger shape, and resume command. Store that checkpoint as an external setup
 receipt so a fresh session can continue without rediscovering the provider boundary.
 
 ## Observability and hill climbing

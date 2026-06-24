@@ -21,8 +21,8 @@ A single config the agent reads at the start — see [`../templates/autonomy.pol
 
 With the policy set, the agent executes the loop end-to-end and pauses only on a hard-stop or a real
 failure. No per-step nagging. A credential hard-stop is not an early exit: before pausing, the agent
-must finish the no-secret work, including adapter boundaries, server-side env names, missing-secret UI,
-blocked-path tests, setup docs, cost/latency ledger shape, and resume commands.
+must finish the no-secret work, including adapter boundaries, AI chat component, typed chat action
+protocol, server-side env names, missing-secret UI, blocked-path tests, setup docs, cost/latency ledger shape, and resume commands.
 
 The durable runtime is `templates/control/SoloControlPlane`: it records the loop id, phase checkpoints,
 approval pauses, idempotent triggers, budget spend, trace spans, worktree leases, and improvement

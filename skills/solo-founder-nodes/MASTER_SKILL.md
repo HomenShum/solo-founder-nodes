@@ -37,11 +37,11 @@ get explicit approval **before** executing.
 ## External setup gate (hard)
 External accounts, billing, OAuth, production deploys, storage projects, and API keys are human gates,
 but they are not permission to stop early. Before pausing on a provider key or service setup, complete
-all deterministic prework that does not require the secret: adapter boundary, server-side secret env
-names, missing-secret UI, blocked-path test, setup documentation, cost/latency ledger shape, and exact
-resume commands. Do not expose provider keys through `VITE_`, `NEXT_PUBLIC_`, screenshots, logs, or
-chat. The pause receipt must say what is already built, what human action is required, and which
-command resumes proof collection. Template + verifier: [`templates/setup/externalSetupGate.ts`](templates/setup/externalSetupGate.ts);
+all deterministic prework that does not require the secret: adapter boundary, AI chat component,
+typed chat action protocol, server-side secret env names, missing-secret UI, blocked-path test, setup
+documentation, cost/latency ledger shape, and exact resume commands. Do not expose provider keys
+through `VITE_`, `NEXT_PUBLIC_`, screenshots, logs, or chat. The pause receipt must say what is
+already built, what human action is required, and which command resumes proof collection. Template + verifier: [`templates/setup/externalSetupGate.ts`](templates/setup/externalSetupGate.ts);
 CLI: `npm run sfn -- setup gate ...`.
 
 ## Context substrate + control plane (required for full autonomy)

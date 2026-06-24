@@ -33,9 +33,9 @@ Turns "I picked a benchmark" into "the runner, the dataset, and the verifier are
 7. **GATE → execute** the heavy steps (see Gate) only after explicit approval: pull/build the image, download the dataset to the pinned disk, install the runner.
 8. **Smoke one task.** Run a single benchmark task end-to-end to prove the wiring. PORTABLE smoke (ungated): `python templates/run/bankertoolbench.py --dump --slice 1` lists the sealed task and `--mode agent … --grade-lane local` materializes + grades it with the deterministic proxy. OFFICIAL smoke (gated): one task through the Harbor runner with the LLM judge — confirm the verifier returns a real score, not a stub.
 9. **If credentials or external services block real proof, exhaust deterministic prework first.**
-   Before pausing for the founder, finish the adapter boundary, server-side secret names,
-   missing-secret UI, blocked-path test, provider/storage setup doc, cost/latency ledger schema, and
-   resume command. Then emit an external setup receipt. Do not put provider keys in `VITE_`,
+   Before pausing for the founder, finish the adapter boundary, AI chat component, typed chat action
+   protocol, server-side secret names, missing-secret UI, blocked-path test, provider/storage setup
+   doc, cost/latency ledger schema, and resume command. Then emit an external setup receipt. Do not put provider keys in `VITE_`,
    `NEXT_PUBLIC_`, logs, screenshots, or chat.
 10. **Record provenance.** Write `SETUP.md` with image digest, dataset revision, tool versions, disk paths, the grade lane used, and the smoke result. *(Human comments to approve the recorded baseline.)*
 
@@ -45,8 +45,8 @@ Turns "I picked a benchmark" into "the runner, the dataset, and the verifier are
 - **Verifier honesty.** The smoke task must show the verifier producing a genuine pass/fail/score with no hardcoded floor and a non-2xx/error surfaced as failure (not silently swallowed). A judge that always returns "pass" is a broken environment, not a passing one.
 - **GSTACK SETUP RECEIPTS:** provider, deployment, devex, and security decisions need explicit receipts when they affect customer/judge usability, secrets, data persistence, or paid services.
 - **NO EARLY CREDENTIAL STOP:** lack of an API key can block a real provider run, but it cannot block
-  deterministic implementation work. A setup pause without adapter/stub boundary, missing-secret UI,
-  blocked-path test, setup doc, and resume command is a skill failure.
+  deterministic implementation work. A setup pause without adapter/stub boundary, AI chat component,
+  typed chat action protocol, missing-secret UI, blocked-path test, setup doc, and resume command is a skill failure.
 
 ## Gate (heavy / irreversible — explicit approval required)
 The following do NOT run until the human explicitly approves, after seeing the plan + commands + links + size estimates from steps 2 & 5:

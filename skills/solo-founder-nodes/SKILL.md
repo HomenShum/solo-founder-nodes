@@ -62,9 +62,9 @@ major claims that lack proof artifacts. Spec: [`references/research-spine.md`](r
 templates in [`templates/research/`](templates/research/).
 
 **External setup gate:** API keys, OAuth, billing, storage, and production provider setup are human
-gates, but the agent must finish every deterministic part before pausing: adapter boundary,
-server-side secret env names, missing-secret UI, blocked-path test, setup docs, cost/latency ledger
-shape, and exact resume commands. Use
+gates, but the agent must finish every deterministic part before pausing: adapter boundary, AI chat
+component, typed chat action protocol, server-side secret env names, missing-secret UI, blocked-path
+test, setup docs, cost/latency ledger shape, and exact resume commands. Use
 [`templates/setup/externalSetupGate.ts`](templates/setup/externalSetupGate.ts) or
 `npm run sfn -- setup gate ...`; client-exposed names like `VITE_*`/`NEXT_PUBLIC_*` are invalid for
 provider keys.

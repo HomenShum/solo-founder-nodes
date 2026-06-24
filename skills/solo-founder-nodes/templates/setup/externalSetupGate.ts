@@ -1,5 +1,7 @@
 export const defaultDeterministicPrework = [
   "adapter-boundary",
+  "ai-chat-component",
+  "chat-action-protocol",
   "server-side-secret-boundary",
   "missing-secret-ui",
   "blocked-path-test",
