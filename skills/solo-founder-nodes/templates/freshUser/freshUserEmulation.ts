@@ -51,6 +51,7 @@ export function makeFreshUserEmulationPlan(input: {
       "model-provider",
       "cost-latency-budget",
       "rights-provenance-policy",
+      "first-principles-originality-policy",
     ],
     requiredEvidence: [
       "fullscreen-video",
@@ -64,6 +65,7 @@ export function makeFreshUserEmulationPlan(input: {
       "proof-verdict",
       "comparator-scorecard",
       "rights-provenance-receipt",
+      "component-breakdown-receipt",
     ],
     stopConditions: [
       "missing user-owned secret after deterministic no-secret prework is complete",

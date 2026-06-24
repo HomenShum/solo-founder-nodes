@@ -672,6 +672,10 @@ async function main() {
   badThreeDPlan.firstPartyLanes = badThreeDPlan.firstPartyLanes.filter((lane) => lane.id !== "multiview-reconstruction");
   const badThreeDPlanVerdict = verifyThreeDPlan(badThreeDPlan);
   check("3D plan rejects missing first-party reconstruction lane", badThreeDPlanVerdict.ok === false && badThreeDPlanVerdict.errors.some((e) => e.includes("multiview-reconstruction")));
+  const noDecompositionPlan = clone(threeDPlan);
+  noDecompositionPlan.firstPartyLanes = noDecompositionPlan.firstPartyLanes.filter((lane) => lane.id !== "first-principles-decomposition");
+  const noDecompositionVerdict = verifyThreeDPlan(noDecompositionPlan);
+  check("3D plan rejects missing first-principles decomposition lane", noDecompositionVerdict.ok === false && noDecompositionVerdict.errors.some((e) => e.includes("first-principles component breakdown")));
   const threeDComparator = makeThreeDComparatorRubric();
   check("3D comparator scores first-party and provider outputs on same rubric", threeDComparator.providers.length >= 4 && threeDComparator.passRule.includes("not the default product architecture"));
   check("3D comparator stays a 100-point rubric", threeDComparator.metrics.reduce((sum, metric) => sum + metric.points, 0) === 100);

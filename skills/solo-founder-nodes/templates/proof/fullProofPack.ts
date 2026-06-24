@@ -15,7 +15,8 @@ export type FullProofArtifactKind =
   | "cost-latency-ledger"
   | "scorecard"
   | "trust-root-verdict"
-  | "rights-provenance-receipt";
+  | "rights-provenance-receipt"
+  | "component-breakdown-receipt";
 
 export type FullProofArtifact = {
   id: string;
@@ -73,6 +74,7 @@ export function makeFullProofPack(input: {
       artifact("scorecard", "scorecard", "proof/scorecard.json"),
       artifact("trust-root-verdict", "trust-root-verdict", "proof/trust-root-verdict.json"),
       artifact("rights-provenance-receipt", "rights-provenance-receipt", "proof/rights-provenance.json"),
+      artifact("component-breakdown-receipt", "component-breakdown-receipt", "proof/component-breakdown.json"),
     ],
     claims: [
       {
@@ -83,12 +85,17 @@ export function makeFullProofPack(input: {
       {
         id: "3d-asset-produced",
         claim: "The app produced and exported a loadable 3D asset.",
-        artifactIds: ["generated-asset", "exported-asset", "reopen-proof", "cost-latency-ledger", "rights-provenance-receipt"],
+        artifactIds: ["generated-asset", "exported-asset", "reopen-proof", "cost-latency-ledger", "rights-provenance-receipt", "component-breakdown-receipt"],
       },
       {
         id: "reference-media-allowed-use",
         claim: "Reference media was handled under an explicit ownership/license/transformative-use mode, not unverified exact extraction.",
         artifactIds: ["rights-provenance-receipt", "recording-audit", "scorecard"],
+      },
+      {
+        id: "first-principles-originality",
+        claim: "Before generation, the reference was decomposed into functional parts, primitives, materials, constraints, and original design deltas rather than copied as protected expression.",
+        artifactIds: ["component-breakdown-receipt", "rights-provenance-receipt", "scorecard"],
       },
       {
         id: "recording-visually-verified",
@@ -124,6 +131,7 @@ export function verifyFullProofPack(pack: FullProofPack, options: { baseDir?: st
     "scorecard",
     "trust-root-verdict",
     "rights-provenance-receipt",
+    "component-breakdown-receipt",
   ];
   for (const kind of requiredKinds) {
     if (!pack.artifacts.some((artifact) => artifact.kind === kind && artifact.required)) {
@@ -182,7 +190,7 @@ function validateArtifactShape(artifact: FullProofArtifact, size: number): strin
   } else if (artifact.kind === "terminal-transcript") {
     expect([".log", ".txt", ".md"]);
     if (size < 100) errors.push(`artifact '${artifact.id}' transcript too small`);
-  } else if (["recording-audit", "reopen-proof", "cost-latency-ledger", "scorecard", "trust-root-verdict", "rights-provenance-receipt"].includes(artifact.kind)) {
+  } else if (["recording-audit", "reopen-proof", "cost-latency-ledger", "scorecard", "trust-root-verdict", "rights-provenance-receipt", "component-breakdown-receipt"].includes(artifact.kind)) {
     expect([".json", ".md", ".txt", ".csv"]);
     if (size < 50) errors.push(`artifact '${artifact.id}' receipt too small`);
   } else if (artifact.kind === "deployed-url") {

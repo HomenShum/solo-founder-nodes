@@ -4,6 +4,7 @@ export type ThreeDProofState = (typeof threeDProofStates)[number];
 export const firstPartyThreeDLanes = [
   "reference-media-intake",
   "rights-provenance-gate",
+  "first-principles-decomposition",
   "capture-intake",
   "coverage-scoring",
   "multiview-reconstruction",
@@ -65,6 +66,7 @@ export function makeThreeDPlan(input: {
     firstPartyLanes: [
       lane("reference-media-intake", "Accept screenshots, social/video links, textbook images, and movie/game references as reference media, not automatically as owned source assets.", ["U.S. Copyright Office AI reports", "platform terms", "source metadata"], ["source-manifest", "media-origin-receipt"]),
       lane("rights-provenance-gate", "Decide whether the requested output is user-owned/licensed, public-domain/CC-compatible, real-world factual reference, transformative inspiration, or blocked exact extraction.", ["fair-use four factors", "license receipts", "similarity review"], ["rights-provenance-receipt", "allowed-use-mode", "blocked-extraction-state"]),
+      lane("first-principles-decomposition", "Break the reference down into functional parts, geometric primitives, materials, constraints, and original design deltas before generation.", ["P3D-Bench", "idea-expression distinction", "useful-article/functionality review"], ["component-breakdown", "functional-geometry-map", "originality-delta", "protectable-expression-filter", "educational-purpose-note"]),
       lane("capture-intake", "Accept text, one image, multi-view images, and video-frame references.", ["CO3D", "Objaverse"], ["input-manifest", "capture-coverage-receipt"]),
       lane("coverage-scoring", "Warn when user inputs cannot support the requested 3D quality.", ["COLMAP", "VGGT", "DUSt3R", "MASt3R"], ["coverage-score", "needs-more-capture-state"]),
       lane("multiview-reconstruction", "Recover camera/depth/point structure when enough references exist.", ["COLMAP", "VGGT", "DUSt3R", "MASt3R"], ["camera-pose-receipt", "point-cloud-or-depth-artifact"]),
@@ -125,6 +127,10 @@ export function verifyThreeDPlan(plan: ThreeDPlan): ThreeDPlanVerdict {
   if (!rightsLane?.proofRequired.includes("rights-provenance-receipt")) {
     errors.push("3D plan must require a rights-provenance receipt for reference-media requests");
   }
+  const decompositionLane = plan.firstPartyLanes.find((lane) => lane.id === "first-principles-decomposition");
+  if (!decompositionLane?.proofRequired.includes("component-breakdown") || !decompositionLane?.proofRequired.includes("originality-delta")) {
+    errors.push("3D plan must require first-principles component breakdown and originality delta before generation");
+  }
   if (plan.exportTargets.includes("cad-native-pass")) {
     warnings.push("CAD-native pass should remain a separate proof lane unless a CAD adapter is verified");
   }
@@ -136,13 +142,14 @@ export function makeThreeDComparatorRubric() {
     schemaVersion: 1,
     providers: [...optionalThreeDProviders],
     metrics: [
-      { id: "asset-validity", points: 18, evidence: ["loadable GLB/USDZ", "geometry/material presence", "reopen proof"] },
-      { id: "visual-alignment", points: 18, evidence: ["input screenshot", "viewer screenshot", "human/ML rubric score"] },
-      { id: "editability", points: 12, evidence: ["Blender open proof", "mesh/material notes", "CAD stretch label"] },
+      { id: "asset-validity", points: 16, evidence: ["loadable GLB/USDZ", "geometry/material presence", "reopen proof"] },
+      { id: "visual-alignment", points: 14, evidence: ["input screenshot", "viewer screenshot", "human/ML rubric score"] },
+      { id: "component-originality", points: 12, evidence: ["component tree", "functional geometry map", "originality delta", "protectable-expression filter"] },
+      { id: "editability", points: 10, evidence: ["Blender open proof", "mesh/material notes", "CAD stretch label"] },
       { id: "latency", points: 8, evidence: ["queue/runtime timestamps"] },
       { id: "cost", points: 8, evidence: ["provider or local compute cost ledger"] },
-      { id: "ui-completion", points: 14, evidence: ["fresh-room trace", "chat action protocol", "export path"] },
-      { id: "fallback-quality", points: 10, evidence: ["fallback state", "needs-more-capture explanation", "nonblank viewer proof"] },
+      { id: "ui-completion", points: 12, evidence: ["fresh-room trace", "chat action protocol", "export path"] },
+      { id: "fallback-quality", points: 8, evidence: ["fallback state", "needs-more-capture explanation", "nonblank viewer proof"] },
       { id: "rights-provenance", points: 12, evidence: ["source manifest", "license/ownership mode", "similarity/blocked-extraction verdict"] },
     ],
     passRule: "Score all first-party outputs and optional provider outputs with the same rubric; providers are comparators/fallbacks, not the default product architecture.",

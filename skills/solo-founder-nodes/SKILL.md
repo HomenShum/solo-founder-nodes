@@ -81,11 +81,14 @@ test, setup docs, cost/latency ledger shape, and exact resume commands. Use
 provider keys.
 
 **3D/fresh-user proof:** for screenshot-only picture/text/video/reference-media-to-3D requests, use
-`npm run sfn -- 3d plan ...` with first-party lanes, a rights/provenance gate, and providers as
-comparators/fallbacks. Prove the claim with `fresh-user`, `proof full-verify`, and `trust verify`
-receipts before saying a nontechnical founder or judge can use it end to end. Block unverified exact
-extraction of protected social/movie/game/textbook assets; support user-owned/licensed/public-domain
-media or transformed inspiration with provenance.
+`npm run sfn -- 3d plan ...` with first-party lanes, a rights/provenance gate, first-principles
+component breakdown, and providers as comparators/fallbacks. Prove the claim with `fresh-user`,
+`proof full-verify`, and `trust verify` receipts before saying a nontechnical founder or judge can use
+it end to end. Block unverified exact extraction of protected social/movie/game/textbook assets.
+Educational purpose is context, not automatic permission. Support user-owned/licensed/public-domain
+media, real-world factual references, or transformed inspiration only after a component tree,
+functional geometry/material map, protected-expression filter, originality delta, and provenance
+receipt exist.
 
 **Design skills:** design guidance is not Claude Code locked. Use
 [`templates/design/designSkillBridge.ts`](templates/design/designSkillBridge.ts) or

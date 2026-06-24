@@ -39,10 +39,14 @@ npm run sfn -- compare top3d
 
 For the screenshot-only 3D-agent app request, the seeded default is:
 
-- v1: provider-backed single-image/text-to-3D, GLB/USDZ export, Three.js viewer, deployed URL,
-  object storage, persistence, and real UI proof.
+- v1: first-party reference-media intake, rights/provenance gate, first-principles component
+  breakdown/originality delta, single-image/text-to-3D or reconstruction lane, GLB/USDZ export,
+  Three.js viewer, deployed URL, object storage, persistence, and real UI proof.
 - comparator: Meshy, Tripo, Rodin/Hyper3D, and Luma, scored on asset validity, visual alignment,
-  editability/export, real UI completion, cost/latency, and provenance.
+  component originality, editability/export, real UI completion, cost/latency, and provenance.
+- rights: educational purpose is recorded as context but does not bypass the gate. The agent may
+  proceed from protected reference media only by generating an original design from abstracted
+  functional/geometric components, or by receiving rights proof.
 - stretch: multi-photo COLMAP/3DGS, Depth Anything fallback, CAD-native/AutoCAD workflows, humanoid
   rigging, and motion tracking. These cannot be claimed as done until a separate proof lane passes.
 

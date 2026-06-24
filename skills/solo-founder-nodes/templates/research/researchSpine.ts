@@ -39,6 +39,7 @@ export interface ProofArtifact {
     | "provider-costs"
     | "scorecard"
     | "decision-log"
+    | "component-breakdown-receipt"
     | "recording-audit";
   description: string;
   required: boolean;
@@ -143,6 +144,7 @@ export function make3dAgentResearchPack(args: {
     source("hy3d-bench", "HY3D-Bench: Generation of 3D Assets", "https://arxiv.org/html/2602.03907v1", "benchmark", "eval"),
     source("gpt-eval-3d", "GPTEval3D: Using GPT-4V to Evaluate 3D Asset Generation", "https://arxiv.org/abs/2401.04092", "paper", "eval"),
     source("usco-ai", "U.S. Copyright Office: Copyright and Artificial Intelligence", "https://www.copyright.gov/ai/", "official-doc", "eval"),
+    source("usco-fair-use", "U.S. Copyright Office: Fair Use Index", "https://www.copyright.gov/fair-use/", "official-doc", "eval"),
     source("youtube-fair-use", "YouTube Help: Fair use on YouTube", "https://support.google.com/youtube/answer/9783148", "official-doc", "eval"),
     source("meshy-api", "Meshy API", "https://www.meshy.ai/api", "product", "3d-generation"),
     source("tripo", "Tripo 3D", "https://www.tripo3d.ai/", "product", "3d-generation"),
@@ -169,6 +171,12 @@ export function make3dAgentResearchPack(args: {
       userNeed: "Use a screenshot, social post, video frame, movie/game reference, or textbook image as inspiration for a 3D asset.",
       deliverable: "A rights-aware reference-media workflow that either generates a transformed/original 3D asset, asks for proof of rights, or blocks exact extraction.",
       evidence: "Screenshot request mentions taking cool 3D assets from social posts/videos/movies/textbooks and asking if they can 3D print or build it into an app.",
+    },
+    {
+      id: "req-first-principles-breakdown",
+      userNeed: "Before making a 3D asset, break the reference down into every important functional component, primitive shape, material, constraint, and original design delta.",
+      deliverable: "A component tree plus functional geometry map, protected-expression filter, educational-purpose note, and originality delta that precedes generation.",
+      evidence: "User requested first-principles decomposition before 3D generation and asked whether educational purpose allows original non-copyrighted output.",
     },
     {
       id: "req-3d-generate",
@@ -222,6 +230,12 @@ export function make3dAgentResearchPack(args: {
       sourceIds: ["gpt-eval-3d", "hy3d-bench"],
     },
     {
+      id: "metric-component-originality",
+      name: "Component originality",
+      grader: "Verify the asset spec is built from decomposed functional/geometric components, records protected-expression removals, and includes an originality delta before generation.",
+      sourceIds: ["p3d-bench", "gpt-eval-3d", "usco-fair-use", "usco-ai"],
+    },
+    {
       id: "metric-agentic-ui-completion",
       name: "Real UI task completion",
       grader: "Fresh browser session drives upload/chat/generate/view/export through the deployed app.",
@@ -243,7 +257,7 @@ export function make3dAgentResearchPack(args: {
       id: "metric-rights-provenance",
       name: "Rights and provenance",
       grader: "Verify source manifest, ownership/license mode, blocked exact-extraction state, and similarity/transformative-use notes are present before export.",
-      sourceIds: ["usco-ai", "youtube-fair-use"],
+      sourceIds: ["usco-ai", "usco-fair-use", "youtube-fair-use"],
     },
   ];
 
@@ -259,6 +273,7 @@ export function make3dAgentResearchPack(args: {
     { id: "artifact-comparator-scorecard", kind: "scorecard", required: true, description: "Scorecard against Meshy, Tripo, Rodin/Hyper3D, and Luma." },
     { id: "artifact-decision-log", kind: "decision-log", required: true, description: "Implementation decisions with research and practical references." },
     { id: "artifact-rights-provenance", kind: "decision-log", required: true, description: "Source manifest, ownership/license/allowed-use mode, and blocked exact-extraction receipt for reference media." },
+    { id: "artifact-component-breakdown", kind: "component-breakdown-receipt", required: true, description: "First-principles component tree, functional geometry/material map, protected-expression filter, and originality delta produced before generation." },
   ];
 
   const decisions: ImplementationDecision[] = [
@@ -270,9 +285,21 @@ export function make3dAgentResearchPack(args: {
         "Letting platform availability imply permission to create derivative 3D assets.",
       ],
       researchSourceIds: ["rigorous-agent-benchmarks"],
-      inspirationSourceIds: ["usco-ai", "youtube-fair-use", "meshy-api", "tripo", "hyper3d-rodin", "luma"],
+      inspirationSourceIds: ["usco-ai", "usco-fair-use", "youtube-fair-use", "meshy-api", "tripo", "hyper3d-rodin", "luma"],
       evalMetricIds: ["metric-rights-provenance", "metric-asset-validity", "metric-visual-alignment"],
       risk: "Copyright, trademark, publicity, and platform-term risks vary by source; the product must block unverified exact copying and preserve provenance receipts.",
+    },
+    {
+      requirementId: "req-first-principles-breakdown",
+      chosenApproach: "Force a pre-generation decomposition pass that converts references into component trees, functional primitives, material constraints, and an original design spec with explicit deltas from the source.",
+      rejectedAlternatives: [
+        "Generating a mesh directly from a protected screenshot or video frame without explaining which expressive details were removed.",
+        "Treating educational purpose as automatic permission to copy the original asset.",
+      ],
+      researchSourceIds: ["p3d-bench", "gpt-eval-3d", "rigorous-agent-benchmarks"],
+      inspirationSourceIds: ["usco-fair-use", "usco-ai", "meshy-api", "tripo"],
+      evalMetricIds: ["metric-component-originality", "metric-rights-provenance", "metric-visual-alignment"],
+      risk: "The system can steer original educational modeling, but it cannot guarantee fair use or ownership; exact protected expression stays blocked unless rights are proven.",
     },
     {
       requirementId: "req-3d-generate",
@@ -341,8 +368,18 @@ export function make3dAgentResearchPack(args: {
       claim: "Reference-media-to-3D is allowed only when source ownership/license/allowed-use mode is recorded; exact extraction of protected expressive assets without rights proof is blocked.",
       status: "supported",
       risk: "major",
-      sourceIds: ["usco-ai", "youtube-fair-use"],
+      sourceIds: ["usco-ai", "usco-fair-use", "youtube-fair-use"],
       proofArtifactIds: ["artifact-rights-provenance"],
+    },
+    {
+      id: "claim-first-principles-original-asset",
+      requirementId: "req-first-principles-breakdown",
+      claimType: "capability",
+      claim: "The skill may proceed with educational/reference-media 3D generation only after a first-principles breakdown removes protected expressive copying and records an original design delta before generation.",
+      status: "supported",
+      risk: "major",
+      sourceIds: ["p3d-bench", "gpt-eval-3d", "usco-fair-use", "usco-ai"],
+      proofArtifactIds: ["artifact-component-breakdown", "artifact-rights-provenance"],
     },
     {
       id: "claim-v1-realistic",
@@ -403,6 +440,7 @@ export function make3dAgentResearchPack(args: {
       "gstack is an inspirational review methodology source, not a runtime dependency unless explicitly installed.",
       "Fresh-user emulation is not a real human study; label it as emulation unless an actual participant performs the session.",
       "Reference media from movies, games, social posts, videos, or textbooks requires a source manifest and rights/provenance gate before export.",
+      "Educational purpose is a factor to record, not an automatic safe harbor; original outputs must come from abstracted components and an originality delta unless rights are proven.",
     ],
   };
 }
@@ -412,11 +450,12 @@ export function top3dComparisonRubric() {
     competitors: ["Meshy", "Tripo", "Rodin/Hyper3D", "Luma"],
     totalPoints: 100,
     metrics: [
-      { id: "asset-validity", points: 20, evidence: "loadable asset, geometry/materials present, file hash" },
-      { id: "visual-alignment", points: 20, evidence: "prompt/image alignment screenshot and evaluator note" },
-      { id: "editability-export", points: 15, evidence: "downloaded GLB/USDZ opens in target viewer; CAD-native flagged separately" },
-      { id: "agentic-ui-completion", points: 20, evidence: "fresh browser upload/chat/generate/view/export trace" },
-      { id: "cost-latency", points: 15, evidence: "provider runtime, queue time, errors, and cost" },
+      { id: "asset-validity", points: 18, evidence: "loadable asset, geometry/materials present, file hash" },
+      { id: "visual-alignment", points: 16, evidence: "prompt/image alignment screenshot and evaluator note" },
+      { id: "component-originality", points: 12, evidence: "component tree, protected-expression filter, and originality delta before generation" },
+      { id: "editability-export", points: 12, evidence: "downloaded GLB/USDZ opens in target viewer; CAD-native flagged separately" },
+      { id: "agentic-ui-completion", points: 18, evidence: "fresh browser upload/chat/generate/view/export trace" },
+      { id: "cost-latency", points: 14, evidence: "provider runtime, queue time, errors, and cost" },
       { id: "provenance", points: 10, evidence: "video, transcript, trace, generated assets, and scorecard hashes" },
     ],
   };
