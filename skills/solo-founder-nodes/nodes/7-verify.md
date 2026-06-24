@@ -31,6 +31,10 @@ Outputs:
 6. Write the transfer ledger and the verdict. Enumerate every non-transferring task id and the divergence class (wrong answer / missing citation / runtime error / blank shell / different code path).
 6a. **Seal research-backed proof claims.** For each supported major capability/result claim in `research-spine.json`, confirm the required proof artifacts exist (video, transcript, Playwright trace/video, deployed URL, generated assets, provider costs, scorecard as applicable). Run `npm run sfn -- proof verdict --run <dir>` for proof-pack runs; any missing artifact downgrades the claim to UNVERIFIED.
 6b. **Seal gstack operating receipts.** Confirm the verification gstack plan verifies with `verifyGstackPlan`: UI proof has live QA/design receipts, deployed proof has release/deploy/canary receipts, security-boundary proof has a CSO receipt, and the run leaves a retro/learning receipt. Any missing lane blocks the final "judge/customer usable" claim.
+6c. **Seal UI design quality.** For every UI-facing proof, run `npm run sfn -- design gate ...` with
+the selected design skills, completed criteria, Design Brief, Component Contract, desktop/mobile
+screenshots, interaction proof, and accessibility proof. A missing or failing design-quality receipt
+downgrades the UI/product claim to UNVERIFIED even if the underlying agent action succeeded.
 7. HUMAN COMMENT POINT: if transfer fails, the user steers the next move by comment — loop back to Phase 7 (the harness was measuring something the app does not do), or back to the app wiring (the capability exists but the UI path is broken). Do NOT silently re-tune to make the number look good.
 8. **Write the in-app transfer proof to memory.** Persist to memory ([`../references/memory.md`](../references/memory.md), L2, kind `in_app_transfer`): per verified task the DOM signal, the screenshot path, the recorded run id, and the binary verdict; the suite-level REAL CAPABILITY vs OVERFIT line; and the enumerated non-transferring task ids + divergence class. Store split membership + the proof refs (screenshot/dom_signal/trace) only — NOT held-out task answers (quarantine). This closes the suite's memory loop so a future re-tune or app-wiring fix targets the non-transferring ids without re-running everything.
 
@@ -57,15 +61,18 @@ The prose in **Procedure** (steps 2-6) makes the in-app transfer doctrine human-
 - Never claim "verified in-app" on the basis of build success, `git push`, CLI exit codes, or CI-green. Live rendered DOM signal + screenshot, or it did not transfer.
 - Never claim "research-backed implementation" on citations alone. Major supported claims require both cited sources and proof artifacts; otherwise they remain `unsupported_assumption`, `rejected`, or UNVERIFIED.
 - Never claim "deployed/customer usable" without the gstack verification receipts: live QA, release/deploy, canary, security if applicable, docs/DX if applicable, and retro learning.
+- Never claim "best UI/UX", "premium UI", or "customer-ready UI" without a passing
+  `design-quality-receipt` that includes desktop/mobile screenshots and interaction/a11y proof.
 
 ## Design Bridge (subroutine — only when the task needs UI parity)
-If the verified task requires the rendered surface to MATCH a design (not just produce a correct value), run the Design Bridge verification before declaring transfer. This is the verify-side mirror of the build-phase Bridge: build constructs the surface, verify proves the surface renders the proof to spec. Full subroutine: [`../references/design-bridge.md`](../references/design-bridge.md).
+If the verified task includes any UI-facing surface, run the Design Bridge verification before declaring transfer. This is the verify-side mirror of the build-phase Bridge: build constructs the surface, verify proves the surface renders the proof to spec. Full subroutine: [`../references/design-bridge.md`](../references/design-bridge.md).
 - **Screenshot** the rendered surface (Claude Preview / Playwright; remember the hidden-tab `document.hidden=true` gotcha — verify via click + `preview_eval` + `getComputedStyle`, not passive screenshots).
 - **DOM** — assert the concrete content signal (testid / expected cell value / citation string) is in the live rendered DOM, not just the network response.
 - **Interaction** — drive the real interaction path (composer → trigger → result, evidence click-through to the source cell) the way a user would; no shims.
 - **Mobile breakpoint** — confirm the surface holds at the mobile viewport, not only desktop.
 - **Design-token usage** — confirm the surface uses the app's design tokens (no one-off CSS drift); compare against the design-system reference.
 - **Design-skill decisions** — confirm any selected design-skill guidance appears as concrete brief/contract decisions, not Claude-only commands or unrelated style drift.
+- **Design-quality receipt** - run `npm run sfn -- design gate ...` and require a passing receipt.
 Order guardrail: the proof (correct cited answer) comes FIRST; design parity is verified SECOND. A pretty surface that shows the wrong answer still FAILS transfer.
 
 ## Gate

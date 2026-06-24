@@ -33,6 +33,13 @@ import {
   type DesignTargetPlatform,
 } from "../design/designSkillBridge";
 import {
+  makeDesignQualityReceipt,
+  verifyDesignQualityReceipt,
+  type DesignQualityBar,
+  type DesignQualityCriterion,
+  type DesignVisualVerdict,
+} from "../design/designQualityGate";
+import {
   gstackRiskLevels,
   gstackRoleRegistry,
   recommendGstackLanes,
@@ -159,6 +166,18 @@ function parseTargetPlatform(value?: string): DesignTargetPlatform {
   throw new Error(`unsupported design platform '${value ?? ""}' (expected one of: ${designTargetPlatforms.join(", ")})`);
 }
 
+function parseDesignVisualVerdict(value?: string): DesignVisualVerdict {
+  const allowed: DesignVisualVerdict[] = ["pass", "needs-redesign", "internal-harness", "not-run"];
+  if (value && allowed.includes(value as DesignVisualVerdict)) return value as DesignVisualVerdict;
+  throw new Error(`unsupported design visual verdict '${value ?? ""}' (expected one of: ${allowed.join(", ")})`);
+}
+
+function parseDesignQualityBar(value?: string): DesignQualityBar {
+  const allowed: DesignQualityBar[] = ["shipping", "prototype", "internal"];
+  if (value && allowed.includes(value as DesignQualityBar)) return value as DesignQualityBar;
+  throw new Error(`unsupported design quality bar '${value ?? ""}' (expected one of: ${allowed.join(", ")})`);
+}
+
 function parseSoloPhase(value?: string): SoloLoopPhase {
   if (value && soloLoopPhases.includes(value as SoloLoopPhase)) return value as SoloLoopPhase;
   throw new Error(`unsupported phase '${value ?? ""}' (expected one of: ${soloLoopPhases.join(", ")})`);
@@ -189,6 +208,7 @@ const HELP = `sfn — Solo Founder Nodes local CLI   (run via: npm run sfn -- <c
   design registry [--out <file>]
   design recommend --surface <kind> [--stack <s>] [--runtime <r>] [--style <preset>] [--platform <p>] [--animation] [--visuals] [--mobile] [--shadcn] [--shadcn-mcp] [--out <file>]
   design flow --surface <kind> [--category <c>] [--stack <s>] [--runtime <r>] [--style <preset>] [--platform <p>] [--animation] [--visuals] [--mobile] [--shadcn] [--shadcn-mcp] [--out <file>]
+  design gate --surface <kind> --skill <id> --completed <csv> --desktop <path> --mobile <path> --brief <path> --contract <path> --interaction <path> --a11y <path> [--primary <kind>] [--verdict pass|needs-redesign|internal-harness|not-run] [--quality shipping|prototype|internal] [--note <text>] [--out <file>]
   gstack registry [--out <file>]
   gstack recommend --phase <p> --goal <g> [--surface <s>] [--risk low|medium|high] [--ui] [--deploy] [--security] [--devex] [--docs] [--perf] [--mobile] [--out <file>]
   seal --salt <s> <id...>     seal a held-out manifest (HMAC) — keep the salt OUT of the agent's reach
@@ -514,7 +534,37 @@ async function main() {
         console.log(JSON.stringify(out ? { out: resolve(out), ...payload } : payload, jbig, 2));
         process.exit(verdict.ok ? 0 : 1);
       }
-      console.error("design: registry | recommend | flow");
+      if (sub === "gate") {
+        const surfaceKind = parseSurfaceKind(flag(rest, "--surface", "saas-app"));
+        const selectedSkillIds = csvFlags(rest, "--skill");
+        const completedCriteria = csvFlags(rest, "--completed") as DesignQualityCriterion[];
+        if (selectedSkillIds.length === 0 || completedCriteria.length === 0) {
+          console.error("design gate --surface <kind> --skill <id> --completed <csv> --desktop <path> --mobile <path> --brief <path> --contract <path> --interaction <path> --a11y <path> [--primary <kind>] [--out <file>]");
+          process.exit(2);
+        }
+        const receipt = makeDesignQualityReceipt({
+          surfaceKind,
+          selectedSkillIds,
+          completedCriteria,
+          desktopScreenshotPaths: flags(rest, "--desktop"),
+          mobileScreenshotPaths: flags(rest, "--mobile"),
+          designBriefPath: flag(rest, "--brief"),
+          componentContractPath: flag(rest, "--contract"),
+          interactionProofPaths: flags(rest, "--interaction"),
+          accessibilityProofPaths: flags(rest, "--a11y"),
+          primarySurface: flag(rest, "--primary", "unspecified"),
+          visualVerdict: parseDesignVisualVerdict(flag(rest, "--verdict", "not-run")),
+          qualityBar: parseDesignQualityBar(flag(rest, "--quality", "prototype")),
+          notes: flags(rest, "--note"),
+        });
+        const verdict = verifyDesignQualityReceipt(receipt);
+        const payload = { receipt, verdict };
+        const out = flag(rest, "--out");
+        if (out) writeJson(resolve(out), payload);
+        console.log(JSON.stringify(out ? { out: resolve(out), ...payload } : payload, jbig, 2));
+        process.exit(verdict.ok ? 0 : 1);
+      }
+      console.error("design: registry | recommend | flow | gate");
       process.exit(2);
     }
     case "gstack": {

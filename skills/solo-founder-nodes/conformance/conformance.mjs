@@ -46,12 +46,14 @@ ok("templates substrate present", [
   "setup/externalSetupGate.ts",
   "research/researchSpine.ts",
   "design/designSkillBridge.ts",
+  "design/designQualityGate.ts",
   "gstack/gstackBridge.ts",
 ].every((f) => existsSync(join(skill, "templates", f))));
 ok("context/control directives present", /context-substrate/i.test(master) && /control-plane/i.test(master));
 ok("external setup gate directive present", /External setup gate/i.test(master) && /deterministic prework/i.test(master) && /server-side secret/i.test(master));
 ok("research-backed implementation directive present", /research-spine/i.test(master) && /research-backed implementation/i.test(master));
 ok("design skill portability directive present", /design skills are portable inputs/i.test(master) && /designSkillBridge/i.test(master) && /design flow/i.test(master));
+ok("design quality gate directive present", /design quality gate/i.test(master) && /best\s+UI\/UX/i.test(master) && /browser screenshots/i.test(master));
 ok("gstack operating lanes directive present", /gstack/i.test(master) && /gstackBridge/i.test(master) && /portable operating/i.test(master));
 
 // 5. Portability declared (no single-agent lock-in): the directive names multiple agents / "any coding agent".
@@ -64,7 +66,8 @@ let smoke = { ran: false, note: "skipped — run `cd templates && npm i` then re
 const installed = existsSync(join(skill, "templates", "node_modules"));
 if (installed || process.argv.includes("--run-smoke")) {
   try {
-    const out = execSync("npm run smoke", { cwd: join(skill, "templates"), encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] });
+    const smokeCmd = process.platform === "win32" ? "npm.cmd run smoke" : "npm run smoke";
+    const out = execSync(smokeCmd, { cwd: join(skill, "templates"), encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] });
     const m = out.match(/(\d+)\s+passed,\s+(\d+)\s+failed/);
     smoke = { ran: true, passed: m ? +m[1] : null, failed: m ? +m[2] : null };
     ok("substrate smoke: 0 failed", !!m && +m[2] === 0, m ? `${m[1]} passed, ${m[2]} failed` : "no summary line");

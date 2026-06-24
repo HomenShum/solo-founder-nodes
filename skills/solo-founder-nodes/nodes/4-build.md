@@ -16,6 +16,12 @@ names, missing-secret UI, blocked-path test, setup doc, cost/latency ledger shap
 0. **Load safe project memory + check prior decisions.** Before scaffolding, read from memory ([`../references/memory.md`](../references/memory.md), L1/L3): the detected stack + prior template choice, the existing harness/tool registry shape, approved architecture rules, founder stack/design preferences, AND the prior REJECTED fixes. Do NOT re-propose an architecture or a fix the human already rejected, and EXTEND the existing tool registry rather than forking it. Read split hashes/scores only — never held-out task contents (quarantine).
 0a. **Gate implementation decisions through the Research Spine.** Run `npm run sfn -- research verify research-spine.json`. For every major architecture choice in this phase, add or update a decision receipt with `requirementId`, `chosenApproach`, rejected alternatives, research source ids, practical/inspiration source ids, eval metric ids, and risk. Do not build from a claim labeled `unsupported_assumption` unless the output is explicitly a stretch/prototype lane.
 0b. **Gate implementation process through gstack lanes.** Run `npm run sfn -- gstack recommend --phase build --goal "<goal>" --ui --security --risk high` when the work touches UI, credentials, provider calls, deployment, user data, or broad architecture. The plan must include `plan-eng-review`; UI work must include `plan-design-review`; code landing must include `review`; security-boundary work must include `cso`; high-risk work must include `guard`. Store the receipts in the build note before mutating code.
+0c. **Gate UI quality before UI code.** For every UI-facing change, run `npm run sfn -- design flow ...`
+for the surface and category, then record a Design Brief, Component Contract, selected design skills,
+state matrix, and planned visual proof. Do not write UI code from a blank/default harness. The
+post-implementation receipt must be created with `npm run sfn -- design gate ...`; missing distinctive
+direction, industry fit, component-system choice, responsive screenshots, interaction proof,
+accessibility proof, or anti-generic review means the diff is not ready.
 1. **Pick the stack template.** Detect the stack (Convex/React, Next.js, Streamlit, …) and announce which template you're applying. If unknown, say so and propose the closest one — do NOT invent a universal abstraction.
 2. **Map task → capabilities.** For each benchmark task, list the tools the agent must call, the model route(s), and the UI surfaces a human needs to run it and see the result. Present this map; **the human comments here to steer architecture** (e.g. "reuse the existing tool registry, don't fork it", "route long-context to X").
 3. **Scaffold the agent layer — including the clean-probe lane.** Harness loop (observe → plan → act → extract), tool implementations (real, not answer-keys), model routing. Reuse the existing harness shape; extend the registry rather than forking. Build the **clean-probe lane from the start**: a generic writer that renders the model's own plan (no per-task/family writers) plus the wiring for a mode that forces it with the model in the loop — this is what the adapter (Phase 5) toggles and the loop (Phase 6) measures as the headline. See [`../references/honest-lane.md`](../references/honest-lane.md).
@@ -34,15 +40,23 @@ names, missing-secret UI, blocked-path test, setup doc, cost/latency ledger shap
 - **HELD-OUT:** do not peek at the held-out or off-distribution task contents while building; build to the task *shape*, not to specific held-out answers.
 - **RESEARCH-BACKED IMPLEMENTATION:** a major implementation decision without a valid decision receipt is blocked. If the research says a capability is stretch/unproven, the build must label it that way in UI/docs/proof rather than silently claiming it.
 - **GSTACK OPERATING RECEIPTS:** architecture, design, staff-review, security, and guard lanes are mandatory when their trigger conditions apply. Missing gstack receipts mean the diff is not ready for the Gate.
+- **DESIGN QUALITY GATE:** any UI-facing diff needs a `design-quality-receipt` from
+  `npm run sfn -- design gate ...`. A UI that still reads as an internal harness, lacks desktop/mobile
+  screenshots, lacks interaction/a11y proof, or skips industry-fit/component-system decisions is not
+  ready even if the backend agent loop works.
 
-## Design Bridge (subroutine — only when a UI gap is architectural/visual and a design tool is connected)
-When the app-layer gap is a missing or visually-wrong surface (not just a missing function), run this subroutine so IN-APP TRANSFER is achievable against a real design — not "make it pretty" guesswork. Full subroutine + templates: [`../references/design-bridge.md`](../references/design-bridge.md). Order is a hard guardrail: **brief FIRST, design output SECOND, implementation THIRD, browser-verify LAST.**
+## Design Bridge (subroutine — mandatory for UI-facing build work)
+When the app-layer gap is a missing or visually-wrong surface, run this subroutine so IN-APP TRANSFER is achievable against a real design — not "make it pretty" guesswork. The design tool is optional; the design-quality receipt is mandatory. Full subroutine + templates: [`../references/design-bridge.md`](../references/design-bridge.md). Order is a hard guardrail: **brief FIRST, design output SECOND, implementation THIRD, browser-verify LAST.**
 1. **Gap → structured Design Brief.** Write the brief: the user job; the missing surface; the required components; the design-system tokens; layout/motion/accessibility constraints; screenshots of the current UI; and the EXACT code surfaces to change. (No giant one-shot "redesign the app" prompt.)
 2. **Select portable design skills.** Run `npm run sfn -- design recommend ...` (or call `templates/design/designSkillBridge.ts`) to choose direction/component/dashboard/animation/mobile guidance for the surface. Claude-origin skills are allowed as markdown references, but implementation must remain runnable by the current coding agent.
 3. **Inspect/generate via a design MCP (if connected).** Use the connected design tool (Figma MCP for structured access to files/components/variables/layout and code-from-frame; Codex/Claude/Cursor/Windsurf can also use screenshots, Open Design, or DESIGN.md/SKILL.md inputs) to pull context/assets for visual parity. The design tool is an artifact generator + validator, NOT the source of product truth.
 4. **Produce a Component Contract.** Name the components, their explicit states, the tokens used, and the props/data they bind to.
 5. **Implement from the contract — REUSE existing components.** Build from the contract using the app's real components (avoid one-off CSS drift). Record the contract for the build note.
 6. **Browser-verify** (handed to Phase 7's Design Bridge): Playwright screenshot, DOM signal, visual diff, interaction path, mobile breakpoint, design-token usage.
+7. **Create the design-quality receipt.** Run `npm run sfn -- design gate ...` with selected skills,
+desktop/mobile screenshots, interaction proof, accessibility proof, the Design Brief, and the Component
+Contract. A receipt whose visual verdict is `internal-harness`, `needs-redesign`, or `not-run` blocks
+the UI claim.
 - **COST GATE:** GUIDE → GENERATE → GATE before burning many design calls or writing back to Figma (same discipline as the Gate below; some seat tiers rate-limit design tool calls hard).
 
 ## Gate (heavy/irreversible — explicit approval required)

@@ -12,6 +12,7 @@ import { inspectGraphContext, graphQueryPlan } from "./context/graphContext";
 import { SoloControlPlane } from "./control/controlPlane";
 import { make3dAgentResearchPack, top3dComparisonRubric, verifyResearchPack, type ResearchPack } from "./research/researchSpine";
 import { designSkillRegistry, makeDesignFullFlow, recommendDesignSkills, verifyDesignFullFlow, verifyDesignSkillPlan, type DesignFullFlowPlan } from "./design/designSkillBridge";
+import { defaultDesignQualityCriteria, makeDesignQualityReceipt, verifyDesignQualityReceipt, type DesignQualityGateInput } from "./design/designQualityGate";
 import { gstackRoleRegistry, recommendGstackLanes, verifyGstackPlan, type GstackReviewPlan } from "./gstack/gstackBridge";
 import { defaultDeterministicPrework, makeExternalSetupGateReceipt, verifyExternalSetupGateReceipt } from "./setup/externalSetupGate";
 
@@ -302,6 +303,44 @@ async function main() {
   const badFullFlow: DesignFullFlowPlan = { ...full3dDesignFlow, sequence: full3dDesignFlow.sequence.filter((id) => id !== "surface-classification") };
   const badFullFlowVerdict = verifyDesignFullFlow(badFullFlow);
   check("full design flow without surface classification is rejected", badFullFlowVerdict.ok === false && badFullFlowVerdict.errors.some((e) => e.includes("surface-classification")));
+
+  const designQualityInput: DesignQualityGateInput = {
+    surfaceKind: "3d-app",
+    selectedSkillIds: ["frontend-design", "ui-ux-pro-max", "shadcn-ui", "premium-frontend-ui", "gsap-skills"],
+    completedCriteria: [...defaultDesignQualityCriteria],
+    desktopScreenshotPaths: ["docs/proof/playwright-results/fresh-founder-flow-chromium/fresh-founder-flow.png"],
+    mobileScreenshotPaths: ["docs/proof/playwright-results/fresh-founder-flow-mobile/fresh-founder-flow.png"],
+    designBriefPath: "docs/proof/design-flow.json",
+    componentContractPath: "docs/decisions/implementation-receipts.md",
+    interactionProofPaths: ["docs/proof/playwright-report/index.html"],
+    accessibilityProofPaths: ["docs/proof/scorecard.md"],
+    primarySurface: "workspace-console",
+    visualVerdict: "pass",
+    qualityBar: "shipping",
+  };
+  const designQualityReceipt = makeDesignQualityReceipt(designQualityInput);
+  const designQualityVerdict = verifyDesignQualityReceipt(designQualityReceipt);
+  check("design quality gate passes complete 3D workspace receipt", designQualityVerdict.ok, designQualityVerdict.errors.join("; "));
+
+  const missingVisualReceipt = makeDesignQualityReceipt({
+    ...designQualityInput,
+    desktopScreenshotPaths: [],
+    mobileScreenshotPaths: [],
+  });
+  const missingVisualVerdict = verifyDesignQualityReceipt(missingVisualReceipt);
+  check("design quality gate rejects missing visual screenshots", missingVisualVerdict.ok === false && missingVisualVerdict.errors.some((e) => e.includes("screenshot")));
+
+  const harnessReceipt = makeDesignQualityReceipt({
+    ...designQualityInput,
+    selectedSkillIds: ["frontend-design", "shadcn-ui"],
+    completedCriteria: defaultDesignQualityCriteria.filter((criterion) => criterion !== "industry-fit"),
+    primarySurface: "framed-preview-card",
+    visualVerdict: "internal-harness",
+    qualityBar: "internal",
+    notes: ["current UI still reads as an internal test harness"],
+  });
+  const harnessVerdict = verifyDesignQualityReceipt(harnessReceipt);
+  check("design quality gate rejects framed/internal harness UI", harnessVerdict.ok === false && harnessVerdict.errors.some((e) => e.includes("framed preview card")) && harnessVerdict.errors.some((e) => e.includes("internal")));
 
   // ---------------- gstack bridge: portable operating-review lanes ----------------
   console.log("\ngstackBridge (portable CEO/eng/design/QA/release roles):");

@@ -131,6 +131,18 @@ generated image/video assets are part of the product, and
 `--platform ios|android|cross-platform` only when the surface is actually mobile/native. Generated
 media, shadcn MCP registry pulls, and native mobile guidance still require browser/device proof.
 
+**Design quality gate (hard for UI).** A UI-facing task must run the Design Bridge automatically. The
+design tool is optional; the **design quality gate is mandatory**. The goal is to enforce the **best
+UI/UX** the task can support, not merely a mechanically working internal harness. A UI-facing build
+cannot pass verify until it has a `design-quality-receipt` from `npm run sfn -- design gate ...`
+([`templates/design/designQualityGate.ts`](templates/design/designQualityGate.ts)). The receipt must
+show: surface classification, distinctive direction, industry fit, component-system choice, state
+matrix, responsive proof, desktop + mobile browser screenshots, real interaction proof, accessibility
+check, and anti-generic review. Functional product UIs must select product UX/industry-fit guidance
+and a component-system lane; 3D apps must prove a full-bleed viewer/workspace-console primary surface,
+not a tiny framed preview card. If the visual verdict is `internal-harness`, `needs-redesign`, or
+`not-run`, the UI claim is blocked even when the agent mechanics work.
+
 ## Memory substrate (local-first, audit-safe)
 Each phase **reads safe project memory at start** (decisions, approvals, benchmark choice, setup env,
 design constraints, prior rejected fixes) and **writes decision/provenance memory at end** — so a

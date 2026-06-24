@@ -1,11 +1,24 @@
 # Design bridge — UI/UX subroutine for in-app transfer
 
 A **subroutine** invoked **inside Build (phase 4) and Verify (phase 7)** — **not a new phase**.
-It runs **only** when a UI gap is **architectural/visual** and a design tool is connected.
+It runs for **every UI-facing build/proof**. Design tools are optional artifact generators; the
+design-quality receipt is mandatory.
 Build's bridge **constructs** the surface from the deliverable shape; Verify's bridge **proves**
 the rendered surface shows the cited answer. The purpose is **IN-APP TRANSFER**: the benchmark
 task must be triggerable and watchable in the **live** app, not just a private script. A design
 MCP / Figma / design skill is an **artifact generator + validator, NOT the source of product truth.**
+
+## Hard gate
+
+Run this bridge for every UI-facing build/proof. Design tools are optional artifact generators; the
+design-quality receipt is mandatory. A UI claim cannot pass on a mechanically working internal harness.
+
+The receipt comes from `npm run sfn -- design gate ...` and must include selected skills, completed
+criteria, Design Brief, Component Contract, desktop/mobile screenshots, interaction proof,
+accessibility proof, and a `pass` visual verdict. The gate rejects missing screenshots, missing
+industry-fit/component-system decisions, missing interaction/a11y proof, visual verdicts of
+`internal-harness`, `needs-redesign`, or `not-run`, and 3D app UIs whose primary surface is a small
+framed preview instead of a full-bleed viewer/workspace.
 
 ## Runtime
 
@@ -85,6 +98,24 @@ npm run sfn -- design flow --surface mobile-app --platform ios --stack SwiftUI -
 The chosen skill list is a **design input**, not a runtime dependency. If a skill is Claude-labeled,
 port the instructions into the Design Brief / Component Contract and keep implementation in the user's
 actual coding agent.
+
+Design-quality gate example:
+
+```bash
+npm run sfn -- design gate \
+  --surface 3d-app \
+  --skill frontend-design,ui-ux-pro-max,shadcn-ui,premium-frontend-ui,gsap-skills \
+  --completed surface-classification,distinctive-direction,industry-fit,component-system,state-matrix,responsive-proof,visual-screenshot-proof,interaction-proof,accessibility-check,anti-generic-review \
+  --desktop docs/proof/playwright-results/fresh-founder-flow-chromium/fresh-founder-flow.png \
+  --mobile docs/proof/playwright-results/fresh-founder-flow-mobile/fresh-founder-flow.png \
+  --brief docs/proof/design-flow.json \
+  --contract docs/decisions/implementation-receipts.md \
+  --interaction docs/proof/playwright-report/index.html \
+  --a11y docs/proof/scorecard.md \
+  --primary workspace-console \
+  --verdict pass \
+  --quality shipping
+```
 
 ## Figma / OpenDesign-MCP notes
 

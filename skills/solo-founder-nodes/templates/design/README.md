@@ -14,6 +14,7 @@ npm run sfn -- design recommend --surface marketing-site --style premium --visua
 npm run sfn -- design recommend --surface mobile-app --platform ios --stack SwiftUI --runtime codex
 npm run sfn -- design flow --surface 3d-app --category "3D asset generation" --style premium --visuals --animation --shadcn-mcp --runtime codex
 npm run sfn -- design flow --surface dashboard --category analytics --stack "Next.js shadcn" --shadcn-mcp --runtime codex
+npm run sfn -- design gate --surface 3d-app --skill frontend-design,ui-ux-pro-max,shadcn-ui,premium-frontend-ui,gsap-skills --completed surface-classification,distinctive-direction,industry-fit,component-system,state-matrix,responsive-proof,visual-screenshot-proof,interaction-proof,accessibility-check,anti-generic-review --desktop docs/proof/playwright-results/fresh-founder-flow-chromium/fresh-founder-flow.png --mobile docs/proof/playwright-results/fresh-founder-flow-mobile/fresh-founder-flow.png --brief docs/proof/design-flow.json --contract docs/decisions/implementation-receipts.md --interaction docs/proof/playwright-report/index.html --a11y docs/proof/scorecard.md --primary workspace-console --verdict pass --quality shipping
 ```
 
 The short recommendation order remains:
@@ -26,6 +27,11 @@ The full transcript flow is stricter:
 
 No design skill is allowed to replace product truth, user evidence, app code inspection, or in-app
 verification.
+
+`design gate` is the hard UI quality seal. Use it after implementation and browser/device proof. It
+fails when the UI is still an internal harness, lacks desktop/mobile screenshots, skips
+industry-fit/component-system decisions, omits interaction/a11y proof, or claims a 3D app with a small
+framed preview instead of a full-bleed viewer/workspace surface.
 
 Selection rules:
 

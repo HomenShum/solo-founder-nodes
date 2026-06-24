@@ -74,7 +74,11 @@ provider keys.
 `npm run sfn -- design recommend ...` for short selection or `npm run sfn -- design flow ...` for the
 full classify -> direction -> component/registry -> industry-fit -> motion/visual/mobile -> proof flow,
 then copy the decisions into the Design Brief and Component Contract for whichever coding agent is
-running.
+running. For any UI-facing build, also produce a hard design-quality receipt with
+[`templates/design/designQualityGate.ts`](templates/design/designQualityGate.ts) or
+`npm run sfn -- design gate ...`; missing distinctive direction, industry fit, component-system
+choice, desktop/mobile screenshots, interaction proof, accessibility proof, or anti-generic review
+blocks the UI claim.
 
 **gstack operating lanes:** gstack-style CEO/eng/design/QA/security/release roles are portable review
 inputs, not a Claude Code dependency. Use
