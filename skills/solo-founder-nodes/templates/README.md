@@ -44,6 +44,7 @@ npm run sfn -- fresh-room verify --receipt docs/eval/fresh-room/<case-id>/latest
 npm run sfn -- fresh-user init --case fresh-3d-001 --prompt "I want a 3D model app from pictures"
 npm run sfn -- trust verify --receipt trust-root-receipt.json
 npm run sfn -- 3d plan --goal "first-party picture/text to 3D app"
+npm run sfn -- engineering plan --goal "urgent replacement part from prior models" --risk safety_critical --urgency emergency
 npm run sfn -- memory add --project . --project-id <id> --summary <s>
 npm run sfn -- rework list --project .
 npm run sfn -- rework verify --ledger rework-ledger.json
@@ -92,6 +93,9 @@ npm run sfn -- ledger verify <runId>        # re-verify a run's hash-chain (tamp
 - **`threeD/` - First-party 3D app lane**: reference-media intake, rights/provenance gate,
   first-principles component breakdown/originality delta, capture/reconstruction/3DGS/local
   generation/depth fallback/export/viewer-action plan with providers as comparator/fallback only.
+- **`engineering/` - Safety-critical invention harness**: exact previous models allowed only in a
+  non-exportable study sandbox; exportable designs require first-principles specs, hazard analysis,
+  simulation/test receipts, qualified engineer review, and export eligibility.
 - **`trust/` - Trust-root receipt**: held-out salt, scorer, and final verdict boundaries that stay
   outside the agent process.
 - **`rework/` - Build-to-delete ledger**: records replaced/deleted approaches, failure receipts,

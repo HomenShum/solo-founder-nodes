@@ -156,6 +156,16 @@ produce a component tree, functional geometry/material map, protected-expression
 originality delta so the output is an original design from abstracted components. Use
 `npm run sfn -- 3d plan ...` and `npm run sfn -- 3d verify ...`.
 
+**Engineering invention harness:** for engineer/inventor requests that mention urgent, safety-critical,
+life-support, medical, field-repair, or "life and death" stakes, use `npm run sfn -- engineering plan
+...` before build work. The harness may allow an exact previous model only inside a sealed,
+non-exportable study sandbox for measurement and first-principles extraction. The final generator must
+receive only the filtered functional spec, never the raw replica. Urgency accelerates triage,
+simulation/test planning, and receipt collection; it does not permit exact replica export, human use,
+or customer/regulator claims without hazard analysis, simulation or bench-test evidence, qualified
+human engineering approval, and an export-eligibility verdict. Medical or life-support lanes also
+require regulatory-scope review.
+
 **Fresh-user and proof gates:** screenshot-only founder requests must be proven through a fresh
 nontechnical emulation receipt (`npm run sfn -- fresh-user ...`) and a full proof pack
 (`npm run sfn -- proof full-verify ...`). A plain recording is not enough: require full-screen video,

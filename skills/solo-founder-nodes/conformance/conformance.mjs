@@ -52,6 +52,7 @@ ok("templates substrate present", [
   "proof/fullProofPack.ts",
   "freshUser/freshUserEmulation.ts",
   "threeD/threeDLoop.ts",
+  "engineering/engineeringInventionHarness.ts",
   "trust/trustRoot.ts",
   "research/researchSpine.ts",
   "design/designSkillBridge.ts",
@@ -68,6 +69,7 @@ ok("design quality gate directive present", /design quality gate/i.test(master) 
 ok("gstack operating lanes directive present", /gstack/i.test(master) && /gstackBridge/i.test(master) && /portable operating/i.test(master));
 ok("nested phase RALPH directive present", /Nested phase RALPH/i.test(master) && /phase verify/i.test(master));
 ok("3D/fresh-user/trust proof directives present", /3D founder scenario/i.test(master) && /fresh-user/i.test(master) && /trust verify/i.test(master));
+ok("engineering invention harness directive present", /Engineering invention harness/i.test(master) && /engineering plan/i.test(master) && /non-exportable study sandbox/i.test(master));
 
 // 5. Portability declared (no single-agent lock-in): the directive names multiple agents / "any coding agent".
 const agents = ["claude code", "codex", "cursor", "windsurf", "trae", "openclaw", "hermes", "opencode", "kilo", "any coding agent"];

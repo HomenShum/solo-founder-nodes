@@ -78,6 +78,15 @@ import {
   verifyPhaseRalph,
 } from "../phase/phaseRalph";
 import { makeThreeDComparatorRubric, makeThreeDPlan, verifyThreeDPlan, type ThreeDPlan } from "../threeD/threeDLoop";
+import {
+  engineeringRiskLevels,
+  engineeringUrgencies,
+  makeEngineeringInventionHarness,
+  verifyEngineeringInventionHarness,
+  type EngineeringInventionHarness,
+  type EngineeringRiskLevel,
+  type EngineeringUrgency,
+} from "../engineering/engineeringInventionHarness";
 import { makeFullProofPack, verifyFullProofPack, type FullProofPack } from "../proof/fullProofPack";
 import { makeFreshUserEmulationPlan, verifyFreshUserEmulationReceipt, type FreshUserEmulationReceipt } from "../freshUser/freshUserEmulation";
 import { makeTrustRootReceipt, verifyTrustRootReceipt, type TrustRootReceipt } from "../trust/trustRoot";
@@ -329,6 +338,8 @@ const HELP = `sfn - Solo Founder Nodes local CLI   (run via: npm run sfn -- <cmd
   3d init|plan --goal <g> [--out <file>]
   3d verify --file <file>
   3d compare [--out <file>]
+  engineering plan --goal <g> [--risk low|material_damage|safety_critical|medical_or_life_support] [--urgency routine|urgent|emergency] [--out <file>]
+  engineering verify --file <file>
   fresh-user init --case <id> --prompt <p> [--github <url>] [--out <file>]
   fresh-user verify --receipt <file> [--base <dir>]
   trust init --run <id> --verifier <cmd> [--signed <path>] [--out <file>]
@@ -1204,6 +1215,49 @@ async function main() {
         process.exit(0);
       }
       console.error("3d: init|plan --goal <g> [--out <file>] | verify --file <file> | compare [--out <file>]");
+      process.exit(2);
+    }
+    case "engineering": {
+      const sub = rest[0];
+      if (sub === "plan" || sub === "init") {
+        const goal = flag(rest, "--goal");
+        if (!goal) {
+          console.error("engineering plan --goal <g> [--risk low|material_damage|safety_critical|medical_or_life_support] [--urgency routine|urgent|emergency] [--out <file>]");
+          process.exit(2);
+        }
+        const rawRisk = flag(rest, "--risk", "safety_critical");
+        const rawUrgency = flag(rest, "--urgency", "urgent");
+        if (!engineeringRiskLevels.includes(rawRisk as EngineeringRiskLevel)) {
+          console.error(`unsupported --risk '${rawRisk}' (expected ${engineeringRiskLevels.join(", ")})`);
+          process.exit(2);
+        }
+        if (!engineeringUrgencies.includes(rawUrgency as EngineeringUrgency)) {
+          console.error(`unsupported --urgency '${rawUrgency}' (expected ${engineeringUrgencies.join(", ")})`);
+          process.exit(2);
+        }
+        const plan = makeEngineeringInventionHarness({
+          goal,
+          riskLevel: rawRisk as EngineeringRiskLevel,
+          urgency: rawUrgency as EngineeringUrgency,
+        });
+        const out = flag(rest, "--out");
+        if (out) writeJson(resolve(out), plan);
+        console.log(JSON.stringify(out ? { out: resolve(out), plan } : plan, jbig, 2));
+        process.exit(0);
+      }
+      if (sub === "verify") {
+        const file = flag(rest, "--file");
+        if (!file) {
+          console.error("engineering verify --file <file>");
+          process.exit(2);
+        }
+        const abs = resolve(file);
+        const plan = readJson<EngineeringInventionHarness>(abs);
+        const verdict = verifyEngineeringInventionHarness(plan);
+        console.log(JSON.stringify({ file: abs, verdict }, jbig, 2));
+        process.exit(verdict.ok ? 0 : 1);
+      }
+      console.error("engineering: plan --goal <g> [--risk <level>] [--urgency <level>] [--out <file>] | verify --file <file>");
       process.exit(2);
     }
     case "fresh-user": {

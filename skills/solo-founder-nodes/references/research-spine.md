@@ -47,6 +47,10 @@ For the screenshot-only 3D-agent app request, the seeded default is:
 - rights: educational purpose is recorded as context but does not bypass the gate. The agent may
   proceed from protected reference media only by generating an original design from abstracted
   functional/geometric components, or by receiving rights proof.
+- engineering: urgent/safety-critical invention requests use the engineering harness. Exact previous
+  models may enter only a non-exportable study sandbox. Exportable outputs must come from the filtered
+  first-principles spec and require hazard analysis, simulation or bench-test evidence, qualified
+  engineer review, and export eligibility; medical/life-support lanes require regulatory-scope review.
 - stretch: multi-photo COLMAP/3DGS, Depth Anything fallback, CAD-native/AutoCAD workflows, humanoid
   rigging, and motion tracking. These cannot be claimed as done until a separate proof lane passes.
 

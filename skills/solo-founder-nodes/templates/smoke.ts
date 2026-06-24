@@ -26,6 +26,7 @@ import {
   verifyPhaseRalph,
 } from "./phase/phaseRalph";
 import { makeThreeDComparatorRubric, makeThreeDPlan, verifyThreeDPlan } from "./threeD/threeDLoop";
+import { makeEngineeringInventionHarness, verifyEngineeringInventionHarness } from "./engineering/engineeringInventionHarness";
 import { makeFullProofPack, verifyFullProofPack } from "./proof/fullProofPack";
 import { makeFreshUserEmulationPlan, verifyFreshUserEmulationReceipt, type FreshUserEmulationReceipt } from "./freshUser/freshUserEmulation";
 import { makeTrustRootReceipt, verifyTrustRootReceipt } from "./trust/trustRoot";
@@ -679,6 +680,31 @@ async function main() {
   const threeDComparator = makeThreeDComparatorRubric();
   check("3D comparator scores first-party and provider outputs on same rubric", threeDComparator.providers.length >= 4 && threeDComparator.passRule.includes("not the default product architecture"));
   check("3D comparator stays a 100-point rubric", threeDComparator.metrics.reduce((sum, metric) => sum + metric.points, 0) === 100);
+
+  console.log("\nEngineeringInventionHarness (study replica -> first-principles -> safety proof):");
+  const engineeringHarness = makeEngineeringInventionHarness({
+    goal: "Invent an urgent safety-critical replacement part from previous models without exporting a protected exact replica.",
+    riskLevel: "safety_critical",
+    urgency: "emergency",
+    generatedAt: "2026-06-24T00:00:00.000Z",
+  });
+  const engineeringVerdict = verifyEngineeringInventionHarness(engineeringHarness);
+  check("engineering harness allows exact study replica only in non-export sandbox", engineeringVerdict.ok && engineeringHarness.sandboxPolicy.exactReplicaAllowedForStudy && engineeringHarness.sandboxPolicy.replicaExportAllowed === false, engineeringVerdict.errors.join("; "));
+  check("engineering harness blocks final generator from raw replica", engineeringHarness.sandboxPolicy.rawReplicaReadableByFinalGenerator === false && engineeringHarness.stages.find((stage) => stage.id === "original-design-export")?.canAccessRawReplica === false);
+  check("engineering harness requires hazard, simulation, engineer approval, and export verdict", ["hazard-analysis-receipt", "simulation-test-receipt", "human-engineer-approval", "export-eligibility-verdict"].every((receipt) => engineeringHarness.safetyPolicy.productionUseBlockedUntil.includes(receipt)));
+  const unsafeEngineeringHarness = clone(engineeringHarness);
+  unsafeEngineeringHarness.sandboxPolicy.replicaExportAllowed = true;
+  unsafeEngineeringHarness.safetyPolicy.urgentModeDoesNotRelaxGates = false;
+  const unsafeEngineeringVerdict = verifyEngineeringInventionHarness(unsafeEngineeringHarness);
+  check("engineering harness rejects replica export and emergency gate relaxation", unsafeEngineeringVerdict.ok === false && unsafeEngineeringVerdict.errors.some((e) => e.includes("export must be blocked")) && unsafeEngineeringVerdict.errors.some((e) => e.includes("must not relax")));
+  const medicalHarness = makeEngineeringInventionHarness({
+    goal: "Invent a life-support fixture from previous reference models.",
+    riskLevel: "medical_or_life_support",
+    urgency: "urgent",
+    generatedAt: "2026-06-24T00:00:00.000Z",
+  });
+  const medicalVerdict = verifyEngineeringInventionHarness(medicalHarness);
+  check("medical/life-support harness requires regulatory scope review", medicalVerdict.ok && medicalHarness.safetyPolicy.productionUseBlockedUntil.includes("regulatory-scope-review"), medicalVerdict.errors.join("; "));
 
   const fullProofPack = makeFullProofPack({
     goal: "fresh founder 3D proof",

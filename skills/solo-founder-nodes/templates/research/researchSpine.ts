@@ -1,7 +1,7 @@
 export const researchSourceKinds = ["paper", "official-doc", "product", "benchmark", "dataset"] as const;
 export type ResearchSourceKind = (typeof researchSourceKinds)[number];
 
-export const researchDomains = ["agent-loop", "coding-agent", "3d-generation", "deployment", "eval"] as const;
+export const researchDomains = ["agent-loop", "coding-agent", "3d-generation", "deployment", "eval", "safety-engineering"] as const;
 export type ResearchDomain = (typeof researchDomains)[number];
 
 export interface ResearchSource {
@@ -40,6 +40,11 @@ export interface ProofArtifact {
     | "scorecard"
     | "decision-log"
     | "component-breakdown-receipt"
+    | "study-replica-receipt"
+    | "engineering-hazard-analysis"
+    | "simulation-test-receipt"
+    | "human-engineer-approval"
+    | "export-eligibility-verdict"
     | "recording-audit";
   description: string;
   required: boolean;
@@ -145,6 +150,12 @@ export function make3dAgentResearchPack(args: {
     source("gpt-eval-3d", "GPTEval3D: Using GPT-4V to Evaluate 3D Asset Generation", "https://arxiv.org/abs/2401.04092", "paper", "eval"),
     source("usco-ai", "U.S. Copyright Office: Copyright and Artificial Intelligence", "https://www.copyright.gov/ai/", "official-doc", "eval"),
     source("usco-fair-use", "U.S. Copyright Office: Fair Use Index", "https://www.copyright.gov/fair-use/", "official-doc", "eval"),
+    source("uspto-design-definition", "USPTO MPEP 1502: Definition of a Design", "https://www.uspto.gov/web/offices/pac/mpep/s1502.html", "official-doc", "safety-engineering"),
+    source("nist-ai-rmf", "NIST AI Risk Management Framework", "https://www.nist.gov/itl/ai-risk-management-framework", "official-doc", "safety-engineering"),
+    source("nasa-system-safety", "NASA System Safety", "https://sma.nasa.gov/sma-disciplines/system-safety", "official-doc", "safety-engineering"),
+    source("nasa-se-handbook", "NASA Systems Engineering Handbook", "https://www.nasa.gov/wp-content/uploads/2018/09/nasa_systems_engineering_handbook_0.pdf", "official-doc", "safety-engineering"),
+    source("iso-14971", "ISO 14971:2019 Medical devices - Risk management", "https://www.iso.org/standard/72704.html", "official-doc", "safety-engineering"),
+    source("fda-ai-medical-devices", "FDA Artificial Intelligence-Enabled Medical Devices", "https://www.fda.gov/medical-devices/software-medical-device-samd/artificial-intelligence-enabled-medical-devices", "official-doc", "safety-engineering"),
     source("youtube-fair-use", "YouTube Help: Fair use on YouTube", "https://support.google.com/youtube/answer/9783148", "official-doc", "eval"),
     source("meshy-api", "Meshy API", "https://www.meshy.ai/api", "product", "3d-generation"),
     source("tripo", "Tripo 3D", "https://www.tripo3d.ai/", "product", "3d-generation"),
@@ -177,6 +188,12 @@ export function make3dAgentResearchPack(args: {
       userNeed: "Before making a 3D asset, break the reference down into every important functional component, primitive shape, material, constraint, and original design delta.",
       deliverable: "A component tree plus functional geometry map, protected-expression filter, educational-purpose note, and originality delta that precedes generation.",
       evidence: "User requested first-principles decomposition before 3D generation and asked whether educational purpose allows original non-copyrighted output.",
+    },
+    {
+      id: "req-engineering-study-replica",
+      userNeed: "An engineer may urgently need to invent a safety-critical replacement or improvement from previous models without shipping copied IP or unsafe output.",
+      deliverable: "A harnessed engineering mode with non-exportable study replica, first-principles extraction, hazard analysis, simulation/test plan, qualified human review, and export eligibility verdict.",
+      evidence: "User requested a life-and-death invention workflow based on previous models for engineers.",
     },
     {
       id: "req-3d-generate",
@@ -236,6 +253,12 @@ export function make3dAgentResearchPack(args: {
       sourceIds: ["p3d-bench", "gpt-eval-3d", "usco-fair-use", "usco-ai"],
     },
     {
+      id: "metric-engineering-safety-readiness",
+      name: "Engineering safety readiness",
+      grader: "Verify exact replicas stay non-exportable, final designs come from filtered functional specs, and safety-critical outputs have hazard, simulation/test, human approval, and regulatory-scope receipts when applicable.",
+      sourceIds: ["nist-ai-rmf", "nasa-system-safety", "nasa-se-handbook", "iso-14971", "fda-ai-medical-devices"],
+    },
+    {
       id: "metric-agentic-ui-completion",
       name: "Real UI task completion",
       grader: "Fresh browser session drives upload/chat/generate/view/export through the deployed app.",
@@ -274,6 +297,11 @@ export function make3dAgentResearchPack(args: {
     { id: "artifact-decision-log", kind: "decision-log", required: true, description: "Implementation decisions with research and practical references." },
     { id: "artifact-rights-provenance", kind: "decision-log", required: true, description: "Source manifest, ownership/license/allowed-use mode, and blocked exact-extraction receipt for reference media." },
     { id: "artifact-component-breakdown", kind: "component-breakdown-receipt", required: true, description: "First-principles component tree, functional geometry/material map, protected-expression filter, and originality delta produced before generation." },
+    { id: "artifact-study-replica-sandbox", kind: "study-replica-receipt", required: true, description: "Non-exportable exact-replica study container, access log, watermark metadata, and purge/seal receipt." },
+    { id: "artifact-engineering-hazard-analysis", kind: "engineering-hazard-analysis", required: true, description: "Hazard log, FMEA/FTA or equivalent, misuse cases, safety margins, mitigations, and residual risk verdict." },
+    { id: "artifact-simulation-test", kind: "simulation-test-receipt", required: true, description: "Simulation report or bench-test plan with acceptance criteria and validation notes." },
+    { id: "artifact-human-engineer-approval", kind: "human-engineer-approval", required: true, description: "Qualified human engineering review with reviewer role, scope, and signoff limitations." },
+    { id: "artifact-export-eligibility", kind: "export-eligibility-verdict", required: true, description: "Verdict proving export is original, not the study replica, and not approved for human use unless safety receipts pass." },
   ];
 
   const decisions: ImplementationDecision[] = [
@@ -300,6 +328,19 @@ export function make3dAgentResearchPack(args: {
       inspirationSourceIds: ["usco-fair-use", "usco-ai", "meshy-api", "tripo"],
       evalMetricIds: ["metric-component-originality", "metric-rights-provenance", "metric-visual-alignment"],
       risk: "The system can steer original educational modeling, but it cannot guarantee fair use or ownership; exact protected expression stays blocked unless rights are proven.",
+    },
+    {
+      requirementId: "req-engineering-study-replica",
+      chosenApproach: "Use a harnessed engineering mode: exact previous models may enter a sealed, non-exportable study sandbox, but exportable designs are generated only from filtered first-principles specs after hazard analysis, simulation/test planning, and qualified human review.",
+      rejectedAlternatives: [
+        "Letting urgency or life-and-death framing bypass IP provenance.",
+        "Letting the final CAD/asset generator read or export the exact study replica.",
+        "Treating an AI-generated safety-critical design as deployable without engineering signoff and test evidence.",
+      ],
+      researchSourceIds: ["rigorous-agent-benchmarks", "coding-agents-e2e"],
+      inspirationSourceIds: ["nist-ai-rmf", "nasa-system-safety", "nasa-se-handbook", "iso-14971", "fda-ai-medical-devices", "uspto-design-definition"],
+      evalMetricIds: ["metric-engineering-safety-readiness", "metric-component-originality", "metric-rights-provenance"],
+      risk: "Urgent engineering can justify faster triage and proof collection, but not unreviewed human use, regulator-facing claims, or exact replica export.",
     },
     {
       requirementId: "req-3d-generate",
@@ -382,6 +423,16 @@ export function make3dAgentResearchPack(args: {
       proofArtifactIds: ["artifact-component-breakdown", "artifact-rights-provenance"],
     },
     {
+      id: "claim-engineering-harness-safe-export",
+      requirementId: "req-engineering-study-replica",
+      claimType: "capability",
+      claim: "Safety-critical engineering mode may accelerate study and redesign from previous models only when exact replicas remain non-exportable and deployable outputs are blocked until hazard, simulation/test, human approval, and export-eligibility receipts pass.",
+      status: "supported",
+      risk: "major",
+      sourceIds: ["nist-ai-rmf", "nasa-system-safety", "nasa-se-handbook", "iso-14971", "fda-ai-medical-devices"],
+      proofArtifactIds: ["artifact-study-replica-sandbox", "artifact-engineering-hazard-analysis", "artifact-simulation-test", "artifact-human-engineer-approval", "artifact-export-eligibility"],
+    },
+    {
       id: "claim-v1-realistic",
       requirementId: "req-3d-generate",
       claimType: "plan",
@@ -441,6 +492,7 @@ export function make3dAgentResearchPack(args: {
       "Fresh-user emulation is not a real human study; label it as emulation unless an actual participant performs the session.",
       "Reference media from movies, games, social posts, videos, or textbooks requires a source manifest and rights/provenance gate before export.",
       "Educational purpose is a factor to record, not an automatic safe harbor; original outputs must come from abstracted components and an originality delta unless rights are proven.",
+      "Urgent or life-critical engineering requests accelerate triage and evidence collection; they do not permit exact replica export, unsafe human use, or skipped qualified review.",
     ],
   };
 }

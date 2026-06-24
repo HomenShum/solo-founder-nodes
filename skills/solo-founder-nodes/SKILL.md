@@ -90,6 +90,15 @@ media, real-world factual references, or transformed inspiration only after a co
 functional geometry/material map, protected-expression filter, originality delta, and provenance
 receipt exist.
 
+**Engineering invention harness:** for urgent, safety-critical, medical, life-support, field-repair, or
+"life and death" engineering requests, use
+[`templates/engineering/engineeringInventionHarness.ts`](templates/engineering/engineeringInventionHarness.ts)
+or `npm run sfn -- engineering plan ...`. Exact previous models may be used only in a non-exportable
+study sandbox; exportable CAD/assets must be generated from the filtered first-principles spec. Urgency
+does not relax gates: require hazard analysis, simulation or bench-test plan, qualified human
+engineering approval, and export-eligibility verdict before human use or deployment. Medical/life-support
+work also requires regulatory-scope review.
+
 **Design skills:** design guidance is not Claude Code locked. Use
 [`templates/design/designSkillBridge.ts`](templates/design/designSkillBridge.ts) or
 `npm run sfn -- design recommend ...` for short selection or `npm run sfn -- design flow ...` for the
