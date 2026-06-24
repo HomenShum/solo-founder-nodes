@@ -99,6 +99,9 @@ does not relax gates: require hazard analysis, simulation or bench-test plan, qu
 engineering approval, and export-eligibility verdict before human use or deployment. Medical/life-support
 work also requires regulatory-scope review. A break-glass emergency override may be recorded for a
 qualified external human owner, but it must not become a passing agent verdict or export approval.
+Generate/verify first-principles deconstruction receipts with `npm run sfn -- engineering
+deconstruct-init ...` and `npm run sfn -- engineering deconstruct-verify ...`; these receipts prove
+study-only process separation, not legal/safety approval.
 
 **Design skills:** design guidance is not Claude Code locked. Use
 [`templates/design/designSkillBridge.ts`](templates/design/designSkillBridge.ts) or

@@ -166,7 +166,11 @@ or customer/regulator claims without hazard analysis, simulation or bench-test e
 human engineering approval, and an export-eligibility verdict. Medical or life-support lanes also
 require regulatory-scope review. If a qualified human chooses an emergency break-glass path outside
 the agent, record the override context, owner, scope, known unknowns, and post-hoc review plan, but do
-not let the agent convert that override into a passing safety/export verdict.
+not let the agent convert that override into a passing safety/export verdict. Use the
+first-principles deconstruction receipt (`npm run sfn -- engineering deconstruct-init ...`) to prove
+the exact replica stayed study-only, was purged/sealed, and only the filtered functional spec reached
+the reinvention agent. The receipt documents process integrity; it is not a legal opinion, safety
+approval, freedom-to-operate opinion, or human-use approval.
 
 **Fresh-user and proof gates:** screenshot-only founder requests must be proven through a fresh
 nontechnical emulation receipt (`npm run sfn -- fresh-user ...`) and a full proof pack

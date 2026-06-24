@@ -53,6 +53,7 @@ ok("templates substrate present", [
   "freshUser/freshUserEmulation.ts",
   "threeD/threeDLoop.ts",
   "engineering/engineeringInventionHarness.ts",
+  "engineering/firstPrinciplesDeconstructionReceipt.ts",
   "trust/trustRoot.ts",
   "research/researchSpine.ts",
   "design/designSkillBridge.ts",

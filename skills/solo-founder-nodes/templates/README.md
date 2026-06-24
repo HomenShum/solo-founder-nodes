@@ -45,6 +45,7 @@ npm run sfn -- fresh-user init --case fresh-3d-001 --prompt "I want a 3D model a
 npm run sfn -- trust verify --receipt trust-root-receipt.json
 npm run sfn -- 3d plan --goal "first-party picture/text to 3D app"
 npm run sfn -- engineering plan --goal "urgent replacement part from prior models" --risk safety_critical --urgency emergency
+npm run sfn -- engineering deconstruct-init --goal "clean-room deconstruct prior model" --project-id kestrel-seat
 npm run sfn -- memory add --project . --project-id <id> --summary <s>
 npm run sfn -- rework list --project .
 npm run sfn -- rework verify --ledger rework-ledger.json
@@ -96,7 +97,8 @@ npm run sfn -- ledger verify <runId>        # re-verify a run's hash-chain (tamp
 - **`engineering/` - Safety-critical invention harness**: exact previous models allowed only in a
   non-exportable study sandbox; exportable designs require first-principles specs, hazard analysis,
   simulation/test receipts, qualified engineer review, and export eligibility. Break-glass emergency
-  overrides are record-only and cannot make the agent issue a passing safety verdict.
+  overrides are record-only and cannot make the agent issue a passing safety verdict. Includes a
+  first-principles deconstruction receipt verifier for study-only clean-room extraction.
 - **`trust/` - Trust-root receipt**: held-out salt, scorer, and final verdict boundaries that stay
   outside the agent process.
 - **`rework/` - Build-to-delete ledger**: records replaced/deleted approaches, failure receipts,

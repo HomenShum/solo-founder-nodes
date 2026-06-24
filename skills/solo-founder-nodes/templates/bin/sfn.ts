@@ -87,6 +87,11 @@ import {
   type EngineeringRiskLevel,
   type EngineeringUrgency,
 } from "../engineering/engineeringInventionHarness";
+import {
+  makeFirstPrinciplesDeconstructionReceipt,
+  verifyFirstPrinciplesDeconstructionReceipt,
+  type FirstPrinciplesDeconstructionReceipt,
+} from "../engineering/firstPrinciplesDeconstructionReceipt";
 import { makeFullProofPack, verifyFullProofPack, type FullProofPack } from "../proof/fullProofPack";
 import { makeFreshUserEmulationPlan, verifyFreshUserEmulationReceipt, type FreshUserEmulationReceipt } from "../freshUser/freshUserEmulation";
 import { makeTrustRootReceipt, verifyTrustRootReceipt, type TrustRootReceipt } from "../trust/trustRoot";
@@ -340,6 +345,8 @@ const HELP = `sfn - Solo Founder Nodes local CLI   (run via: npm run sfn -- <cmd
   3d compare [--out <file>]
   engineering plan --goal <g> [--risk low|material_damage|safety_critical|medical_or_life_support] [--urgency routine|urgent|emergency] [--out <file>]
   engineering verify --file <file>
+  engineering deconstruct-init --goal <g> --project-id <id> [--source <text>] [--out <file>]
+  engineering deconstruct-verify --file <file>
   fresh-user init --case <id> --prompt <p> [--github <url>] [--out <file>]
   fresh-user verify --receipt <file> [--base <dir>]
   trust init --run <id> --verifier <cmd> [--signed <path>] [--out <file>]
@@ -1257,7 +1264,36 @@ async function main() {
         console.log(JSON.stringify({ file: abs, verdict }, jbig, 2));
         process.exit(verdict.ok ? 0 : 1);
       }
-      console.error("engineering: plan --goal <g> [--risk <level>] [--urgency <level>] [--out <file>] | verify --file <file>");
+      if (sub === "deconstruct-init" || sub === "receipt-init") {
+        const goal = flag(rest, "--goal");
+        const projectId = flag(rest, "--project-id");
+        if (!goal || !projectId) {
+          console.error("engineering deconstruct-init --goal <g> --project-id <id> [--source <text>] [--out <file>]");
+          process.exit(2);
+        }
+        const receipt = makeFirstPrinciplesDeconstructionReceipt({
+          goal,
+          projectId,
+          sourceDescription: flag(rest, "--source"),
+        });
+        const out = flag(rest, "--out");
+        if (out) writeJson(resolve(out), receipt);
+        console.log(JSON.stringify(out ? { out: resolve(out), receipt } : receipt, jbig, 2));
+        process.exit(0);
+      }
+      if (sub === "deconstruct-verify" || sub === "receipt-verify") {
+        const file = flag(rest, "--file");
+        if (!file) {
+          console.error("engineering deconstruct-verify --file <file>");
+          process.exit(2);
+        }
+        const abs = resolve(file);
+        const receipt = readJson<FirstPrinciplesDeconstructionReceipt>(abs);
+        const verdict = verifyFirstPrinciplesDeconstructionReceipt(receipt);
+        console.log(JSON.stringify({ file: abs, verdict }, jbig, 2));
+        process.exit(verdict.ok ? 0 : 1);
+      }
+      console.error("engineering: plan --goal <g> [--risk <level>] [--urgency <level>] [--out <file>] | verify --file <file> | deconstruct-init --goal <g> --project-id <id> [--source <text>] [--out <file>] | deconstruct-verify --file <file>");
       process.exit(2);
     }
     case "fresh-user": {

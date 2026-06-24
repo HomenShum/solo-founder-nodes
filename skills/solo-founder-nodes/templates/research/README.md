@@ -14,6 +14,7 @@ npm run sfn -- research verify research-spine.json
 npm run sfn -- proof init --goal "fresh-user 3D app proof" --domain 3d-generation
 npm run sfn -- compare top3d
 npm run sfn -- engineering plan --goal "urgent safety-critical redesign from previous models" --risk safety_critical --urgency emergency
+npm run sfn -- engineering deconstruct-init --goal "clean-room deconstruct prior model" --project-id kestrel-seat
 ```
 
 The validator fails closed for missing sources, stale sources, unsupported major claims, and implementation decisions with no research/eval backing. It warns, but does not fail, when a claim is explicitly labeled as an unsupported assumption or rejected stretch lane.

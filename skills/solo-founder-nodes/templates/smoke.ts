@@ -27,6 +27,7 @@ import {
 } from "./phase/phaseRalph";
 import { makeThreeDComparatorRubric, makeThreeDPlan, verifyThreeDPlan } from "./threeD/threeDLoop";
 import { makeEngineeringInventionHarness, verifyEngineeringInventionHarness } from "./engineering/engineeringInventionHarness";
+import { makeFirstPrinciplesDeconstructionReceipt, verifyFirstPrinciplesDeconstructionReceipt } from "./engineering/firstPrinciplesDeconstructionReceipt";
 import { makeFullProofPack, verifyFullProofPack } from "./proof/fullProofPack";
 import { makeFreshUserEmulationPlan, verifyFreshUserEmulationReceipt, type FreshUserEmulationReceipt } from "./freshUser/freshUserEmulation";
 import { makeTrustRootReceipt, verifyTrustRootReceipt } from "./trust/trustRoot";
@@ -707,6 +708,24 @@ async function main() {
   });
   const medicalVerdict = verifyEngineeringInventionHarness(medicalHarness);
   check("medical/life-support harness requires regulatory scope review", medicalVerdict.ok && medicalHarness.safetyPolicy.productionUseBlockedUntil.includes("regulatory-scope-review"), medicalVerdict.errors.join("; "));
+  const deconstructionReceipt = makeFirstPrinciplesDeconstructionReceipt({
+    goal: "Deconstruct a prior crew-seat reference into a clean functional spec.",
+    projectId: "kestrel-seat",
+    sourceDescription: "user-supplied photogrammetry of a third-party crew seat reference",
+    generatedAt: "2026-06-24T00:00:00.000Z",
+    originalInputHash: "sha256:abc123",
+  });
+  deconstructionReceipt.referenceSource.rightsClassification.copyrightStatus = "likely_protected";
+  deconstructionReceipt.referenceSource.rightsClassification.trademarkStatus = "scrubbed";
+  const deconstructionVerdict = verifyFirstPrinciplesDeconstructionReceipt(deconstructionReceipt);
+  check("first-principles deconstruction receipt passes study-only clean-room shape", deconstructionVerdict.ok && deconstructionVerdict.warnings.some((warning) => warning.includes("patent")), deconstructionVerdict.errors.join("; "));
+  const unsafeDeconstruction = clone(deconstructionReceipt);
+  unsafeDeconstruction.replicaSandbox.exportCapability = true as false;
+  unsafeDeconstruction.replicaSandbox.finalGeneratorCanAccessReplica = true as false;
+  unsafeDeconstruction.functionalSpec.containsMeshData = true as false;
+  unsafeDeconstruction.notices.notLegalOpinion = false as true;
+  const unsafeDeconstructionVerdict = verifyFirstPrinciplesDeconstructionReceipt(unsafeDeconstruction);
+  check("first-principles deconstruction rejects replica export, mesh leakage, and legal overclaim", unsafeDeconstructionVerdict.ok === false && unsafeDeconstructionVerdict.errors.some((e) => e.includes("exportCapability=false")) && unsafeDeconstructionVerdict.errors.some((e) => e.includes("must not access")) && unsafeDeconstructionVerdict.errors.some((e) => e.includes("must not contain mesh data")) && unsafeDeconstructionVerdict.errors.some((e) => e.includes("notLegalOpinion")));
 
   const fullProofPack = makeFullProofPack({
     goal: "fresh founder 3D proof",
