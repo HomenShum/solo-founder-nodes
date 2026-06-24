@@ -54,6 +54,25 @@ already built, what human action is required, and which command resumes proof co
 verifier: [`templates/setup/externalSetupGate.ts`](templates/setup/externalSetupGate.ts); CLI:
 `npm run sfn -- setup gate ...`.
 
+## Optional agent host setup (OpenRouter / OpenClaw / Hermes)
+
+Do not lock the skill to Claude Code, Codex, OpenClaw, Hermes, or any model provider. If the founder
+wants a low-cost OpenRouter-backed agent-host setup, generate an **optional** setup pack with
+`npm run sfn -- agents openrouter-plan --out agent-host-setup`. The pack must keep secrets out of
+repo files, cite the OpenRouter model catalog date, and select models by evidence:
+
+- OpenClaw default: cheapest paid conformance-proven route (`deepseek/deepseek-v4-flash` in the
+  2026-06-24 audit).
+- Hermes default: conformance-proven coding fallback (`qwen/qwen3-coder-next` in the 2026-06-24
+  audit).
+- Free coding lane: optional only (`cohere/north-mini-code:free`) until it passes the same agent
+  conformance receipts.
+- Multimodal UI/screenshot lane: optional only (`google/gemini-3.1-flash-lite`) for visual tasks, not
+  default text/code loops.
+
+Treat model choice as a receipt-backed policy, not a hardcoded eternal truth. If the catalog changes,
+rerun smoke + agent conformance before changing claims.
+
 ## Context substrate + control plane (required for full autonomy)
 
 The agent must not rely on chat context alone. At `discover`, build or refresh a graph-context receipt

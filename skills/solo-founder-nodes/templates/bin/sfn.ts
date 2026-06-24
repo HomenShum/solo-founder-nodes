@@ -49,6 +49,11 @@ import {
   type SoloLoopPhase,
 } from "../gstack/gstackBridge";
 import { makeExternalSetupGateReceipt, verifyExternalSetupGateReceipt } from "../setup/externalSetupGate";
+import {
+  makeOpenRouterAgentSetupPack,
+  verifyOpenRouterAgentSetupPack,
+  writeOpenRouterAgentSetupPack,
+} from "../setup/openrouterAgentHosts";
 
 const here = dirname(fileURLToPath(import.meta.url)); // templates/bin
 const templates = join(here, "..");                   // templates
@@ -205,6 +210,7 @@ const HELP = `sfn — Solo Founder Nodes local CLI   (run via: npm run sfn -- <c
   proof collect --run <dir> --artifact <id> --path <path> [--sha256 <hash>]
   proof verdict --run <dir>
   compare top3d [--out <file>]  print/write the 3D provider comparison rubric
+  agents openrouter-plan [--out <dir>] [--host-root <path>]
   design registry [--out <file>]
   design recommend --surface <kind> [--stack <s>] [--runtime <r>] [--style <preset>] [--platform <p>] [--animation] [--visuals] [--mobile] [--shadcn] [--shadcn-mcp] [--out <file>]
   design flow --surface <kind> [--category <c>] [--stack <s>] [--runtime <r>] [--style <preset>] [--platform <p>] [--animation] [--visuals] [--mobile] [--shadcn] [--shadcn-mcp] [--out <file>]
@@ -471,6 +477,28 @@ async function main() {
         console.log(JSON.stringify({ out: resolve(out), rubric }, jbig, 2));
       } else {
         console.log(JSON.stringify(rubric, jbig, 2));
+      }
+      process.exit(0);
+    }
+    case "agents": {
+      const sub = rest[0];
+      if (sub !== "openrouter-plan") {
+        console.error("agents openrouter-plan [--out <dir>] [--host-root <path>]");
+        process.exit(2);
+      }
+      const pack = makeOpenRouterAgentSetupPack({ hostRoot: flag(rest, "--host-root") });
+      const verdict = verifyOpenRouterAgentSetupPack(pack);
+      if (!verdict.ok) {
+        console.error(JSON.stringify({ ok: false, errors: verdict.errors }, null, 2));
+        process.exit(1);
+      }
+      const out = flag(rest, "--out");
+      if (out) {
+        const absOut = resolve(out);
+        writeOpenRouterAgentSetupPack(absOut, pack);
+        console.log(JSON.stringify({ out: absOut, pack }, jbig, 2));
+      } else {
+        console.log(JSON.stringify(pack, jbig, 2));
       }
       process.exit(0);
     }

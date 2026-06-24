@@ -22,6 +22,7 @@ npm run sfn -- context inspect <app-root>   # inspect Graphify-style graph conte
 npm run sfn -- control start --project <p> --goal <g> --budget 5 --root <app-root>
 npm run sfn -- control status <loopId>      # resume summary: phase, approvals, traces, improvements
 npm run sfn -- research init --goal <g> --domain 3d-generation
+npm run sfn -- agents openrouter-plan --out agent-host-setup
 npm run sfn -- design recommend --surface saas-app --runtime codex
 npm run sfn -- design flow --surface 3d-app --category "3D asset generation" --visuals --animation --runtime codex
 npm run sfn -- gstack recommend --phase verify --goal <g> --ui --deploy --security
@@ -48,6 +49,9 @@ npm run sfn -- ledger verify <runId>        # re-verify a run's hash-chain (tamp
   and 3D-agent comparison rubric.
 - **`design/`**: the design-bridge templates (brief / component contract / visual-regression checklist).
 - **`gstack/` - gstack Bridge**: portable CEO/eng/design/QA/security/release operating-review lanes.
+- **`setup/openrouterAgentHosts.ts` - Optional agent hosts**: OpenRouter/OpenClaw/Hermes setup pack
+  generator with cheap current model policy, secret hygiene, and conformance commands. The core skill
+  does not require these hosts.
 - **`smoke.ts`**: the proof.
 
 ## What runs vs. what you wire

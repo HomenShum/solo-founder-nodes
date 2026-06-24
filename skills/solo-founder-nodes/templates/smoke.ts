@@ -15,6 +15,7 @@ import { designSkillRegistry, makeDesignFullFlow, recommendDesignSkills, verifyD
 import { defaultDesignQualityCriteria, makeDesignQualityReceipt, verifyDesignQualityReceipt, type DesignQualityGateInput } from "./design/designQualityGate";
 import { gstackRoleRegistry, recommendGstackLanes, verifyGstackPlan, type GstackReviewPlan } from "./gstack/gstackBridge";
 import { defaultDeterministicPrework, makeExternalSetupGateReceipt, verifyExternalSetupGateReceipt } from "./setup/externalSetupGate";
+import { makeOpenRouterAgentSetupPack, verifyOpenRouterAgentSetupPack } from "./setup/openrouterAgentHosts";
 
 let pass = 0;
 let fail = 0;
@@ -200,6 +201,16 @@ async function main() {
   });
   const exposedSecretVerdict = verifyExternalSetupGateReceipt(exposedSecretGate);
   check("credential gate rejects client-exposed provider keys", exposedSecretVerdict.ok === false && exposedSecretVerdict.errors.some((e) => e.includes("server-side only")));
+
+  console.log("\nOpenRouterAgentHosts (optional cheap multi-agent setup):");
+  const agentSetup = makeOpenRouterAgentSetupPack({ generatedAt: "2026-06-24T00:00:00.000Z", hostRoot: "D:\\ai-agent-hosts" });
+  const agentSetupVerdict = verifyOpenRouterAgentSetupPack(agentSetup);
+  check("optional OpenRouter setup verifies", agentSetupVerdict.ok, agentSetupVerdict.errors.join("; "));
+  check("model policy selects current cheap paid + coding fallback", agentSetup.environment.SOLO_OPENROUTER_OPENCLAW_MODEL === "deepseek/deepseek-v4-flash" && agentSetup.environment.SOLO_OPENROUTER_HERMES_MODEL === "qwen/qwen3-coder-next");
+  check("model policy includes free and multimodal lanes", agentSetup.environment.SOLO_OPENROUTER_FREE_CODE_MODEL === "cohere/north-mini-code:free" && agentSetup.environment.SOLO_OPENROUTER_MULTIMODAL_MODEL === "google/gemini-3.1-flash-lite");
+  check("agent setup stays optional", agentSetup.optional === true && agentSetup.safetyRules.some((rule) => rule.includes("optional")));
+  check("agent setup does not persist concrete OpenRouter keys", !JSON.stringify(agentSetup).includes("sk-or-") && agentSetup.environment.OPENROUTER_API_KEY.includes("never commit"));
+  check("agent setup includes OpenClaw and Hermes conformance commands", agentSetup.verificationCommands.some((cmd) => cmd.includes("openclaw") && cmd.includes("conformance.mjs")) && agentSetup.verificationCommands.some((cmd) => cmd.includes("hermes") && cmd.includes("conformance.mjs")));
 
   // ---------------- Research spine: research-backed implementation gate ----------------
   console.log("\nResearchSpine (research-backed decisions + proof target):");
