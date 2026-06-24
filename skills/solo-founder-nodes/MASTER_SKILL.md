@@ -90,10 +90,18 @@ instead of waiting for the founder to steer. Doctrine: [`references/control-plan
 copyable implementation: [`templates/control/`](templates/control/). The control plane coordinates
 work; `SoloLedger` and the trust-root still derive the benchmark verdict.
 
-For executable phase enforcement, create and verify a loop receipt with
-`npm run sfn -- run --project <path> --goal <goal> --out loop-run.json` and
-`npm run sfn -- run verify --receipt loop-run.json`. No phase advances without its required receipts;
-the verify phase cannot complete without a passing `proof-verdict.json`.
+For resumable phase enforcement, create a RALPH loop ledger with
+`npm run sfn -- loop init --goal <goal> --project <path>`, inspect it with
+`npm run sfn -- loop status --project <path>`, resume with
+`npm run sfn -- loop resume --loop-id <id> --project <path>`, and start anywhere only through
+`npm run sfn -- loop start --from <R|A|L|P|H> --project <path>`. The ledger writes
+`.solo/loop-state.json`, `.solo/events.jsonl`, `.solo/receipts/<milestone>/`, `.solo/proof-verdict.json`,
+and `.solo/rework-ledger.md`. A milestone can start only if prior required receipts exist; otherwise it
+records a blocker and emits the backfill command. The lower-level phase receipt verifier remains
+available with `npm run sfn -- run verify --receipt loop-run.json`. No phase advances without its
+required receipts; the verify/proof milestone cannot complete without a passing `proof-verdict.json`.
+Doctrine: [`references/ralph-loop-ledger.md`](references/ralph-loop-ledger.md); copyable
+implementation: [`templates/loop/`](templates/loop/).
 
 ## Research spine (required for research-backed implementation)
 

@@ -89,6 +89,7 @@ probe receipt is recorded.
 - **gstack Bridge** -- `references/gstack-bridge.md` + `templates/gstack/` -- converts `garrytan/gstack` CEO/eng/design/QA/security/release roles into portable operating-review receipts, without requiring a Claude Code runtime.
 - **Memory substrate** -- `references/memory.md` + `templates/memory/` -- local-first, audit-safe memory so a resumed session re-hydrates instead of re-deriving.
 - **Research Spine** -- `references/research-spine.md` + `templates/research/` -- executable research receipts so each major implementation decision traces user need -> reference -> paper/benchmark -> eval metric -> proof artifact.
+- **RALPH Loop Ledger** -- `references/ralph-loop-ledger.md` + `templates/loop/` -- resumable `.solo/loop-state.json`, `events.jsonl`, milestone receipt directories, and start-anywhere gates for Reality/Research -> Acceptance Bar -> Live Build -> Proof Run -> Harden.
 - **Loop Runner** -- `templates/loop/` -- executable phase receipts for discover -> benchmark -> setup -> build -> adapter -> iterate -> verify, including proof-verdict enforcement.
 - **Agent-ready API** -- `references/agent-ready-api.md` + `templates/agentApi/` -- semantic tool contracts, provider-schema parity checks, and structured failure/recovery gates.
 - **Fresh-room proof receipts** -- `templates/proof/` -- live browser proof receipts for fresh-room UI runs, official scorer results, trace/video/screenshots, exports, costs, latency, and token usage.
@@ -107,6 +108,11 @@ Run `npm run smoke` in `skills/solo-founder-nodes/templates/` to prove these loc
 Executable receipts:
 
 ```
+npm run sfn -- loop init --goal <goal> --project <path>
+npm run sfn -- loop status --project <path>
+npm run sfn -- loop resume --loop-id <id> --project <path>
+npm run sfn -- loop start --from <R|A|L|P|H> --project <path>
+npm run sfn -- loop verify --milestone <R|A|L|P|H> --project <path>
 npm run sfn -- run --project <path> --goal <goal> --out loop-run.json
 npm run sfn -- run verify --receipt loop-run.json
 npm run sfn -- agent-api verify --contract agent-api-contract.json

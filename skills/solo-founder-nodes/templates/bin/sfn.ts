@@ -57,6 +57,15 @@ import {
   writeOpenRouterAgentSetupPack,
 } from "../setup/openrouterAgentHosts";
 import { makeLoopRunReceipt, verifyLoopRunReceipt, type LoopRunReceipt } from "../loop/loopRunner";
+import {
+  completeRalphMilestone,
+  createRalphLedger,
+  loadRalphLoop,
+  parseRalphMilestone,
+  ralphStatus,
+  startRalphMilestone,
+  verifyRalphMilestone,
+} from "../loop/ralphLedger";
 import { verifyAgentReadyToolContract, type AgentReadyToolContract } from "../agentApi/agentReadyApi";
 import { verifyFreshRoomProofReceipt, type FreshRoomProofReceipt } from "../proof/freshRoomReceipt";
 import { verifyReworkLedger, type ReworkLedger } from "../rework/reworkLedger";
@@ -216,6 +225,12 @@ const HELP = `sfn — Solo Founder Nodes local CLI   (run via: npm run sfn -- <c
   control start --project <p> --goal <g> [--budget <n>] [--root <path>]
   control status <loopId>     print durable loop status/resume summary
   control trigger --source <s> --key <k> --project <p> --goal <g> [--budget <n>]
+  loop init --goal <g> [--project <path>] [--max-usd <n>] [--max-runtime-ms <n>] [--max-model-calls <n>]
+  loop status [--project <path>]
+  loop resume [--loop-id <id>] [--project <path>]
+  loop start --from <R|A|L|P|H> [--project <path>]
+  loop verify --milestone <R|A|L|P|H> [--project <path>]
+  loop complete --milestone <R|A|L|P|H> --receipt <path>... [--project <path>]
   run --project <path> --goal <g> [--out <file>]  create an enforceable loop receipt skeleton
   run verify --receipt <file> [--base <dir>]       fail until all phase receipts and proof-verdict pass
   setup gate --goal <g> --provider <p> --env <NAME> [--setup-url <url>] [--completed <csv>] [--resume <cmd>] [--out <file>]
@@ -328,6 +343,65 @@ async function main() {
         process.exit(0);
       }
       console.error("control: start | status <loopId> | trigger");
+      process.exit(2);
+    }
+    case "loop": {
+      const sub = rest[0];
+      const projectPath = resolve(flag(rest, "--project", ".")!);
+      if (sub === "init") {
+        const goal = flag(rest, "--goal");
+        if (!goal) {
+          console.error("loop init --goal <g> [--project <path>] [--max-usd <n>] [--max-runtime-ms <n>] [--max-model-calls <n>]");
+          process.exit(2);
+        }
+        const budgets = {
+          maxUsd: flag(rest, "--max-usd") ? Number(flag(rest, "--max-usd")) : undefined,
+          maxRuntimeMs: flag(rest, "--max-runtime-ms") ? Number(flag(rest, "--max-runtime-ms")) : undefined,
+          maxModelCalls: flag(rest, "--max-model-calls") ? Number(flag(rest, "--max-model-calls")) : undefined,
+        };
+        const result = createRalphLedger({ repoPath: projectPath, goal, budgets });
+        console.log(JSON.stringify(result, jbig, 2));
+        process.exit(0);
+      }
+      if (sub === "status") {
+        const result = ralphStatus(projectPath);
+        console.log(JSON.stringify(result, jbig, 2));
+        process.exit(0);
+      }
+      if (sub === "resume") {
+        const loopId = flag(rest, "--loop-id");
+        const result = loadRalphLoop(projectPath);
+        if (loopId && result.loop.loopId !== loopId) {
+          console.error(`loop-id mismatch: requested ${loopId}, found ${result.loop.loopId}`);
+          process.exit(1);
+        }
+        console.log(JSON.stringify({ ...result, resumeCommand: `npm run sfn -- loop start --from ${result.loop.currentMilestone}` }, jbig, 2));
+        process.exit(0);
+      }
+      if (sub === "start") {
+        const milestone = parseRalphMilestone(flag(rest, "--from"));
+        const result = startRalphMilestone(projectPath, milestone);
+        console.log(JSON.stringify(result, jbig, 2));
+        process.exit(result.verification.ok ? 0 : 1);
+      }
+      if (sub === "verify") {
+        const milestone = parseRalphMilestone(flag(rest, "--milestone"));
+        const verdict = verifyRalphMilestone(projectPath, milestone);
+        console.log(JSON.stringify({ projectPath, verdict }, jbig, 2));
+        process.exit(verdict.ok ? 0 : 1);
+      }
+      if (sub === "complete") {
+        const milestone = parseRalphMilestone(flag(rest, "--milestone"));
+        const receipts = flags(rest, "--receipt");
+        if (receipts.length === 0) {
+          console.error("loop complete --milestone <R|A|L|P|H> --receipt <path>... [--project <path>]");
+          process.exit(2);
+        }
+        const result = completeRalphMilestone(projectPath, milestone, receipts);
+        console.log(JSON.stringify(result, jbig, 2));
+        process.exit(0);
+      }
+      console.error("loop: init | status | resume | start --from <R|A|L|P|H> | verify --milestone <R|A|L|P|H> | complete --milestone <R|A|L|P|H> --receipt <path>...");
       process.exit(2);
     }
     case "run": {

@@ -22,6 +22,11 @@ npm run sfn -- context inspect <app-root>   # inspect Graphify-style graph conte
 npm run sfn -- control start --project <p> --goal <g> --budget 5 --root <app-root>
 npm run sfn -- control status <loopId>      # resume summary: phase, approvals, traces, improvements
 npm run sfn -- research init --goal <g> --domain 3d-generation
+npm run sfn -- loop init --goal <g> --project <path>
+npm run sfn -- loop status --project <path>
+npm run sfn -- loop resume --loop-id <id> --project <path>
+npm run sfn -- loop start --from <R|A|L|P|H> --project <path>
+npm run sfn -- loop verify --milestone <R|A|L|P|H> --project <path>
 npm run sfn -- run --project <path> --goal <g> --out loop-run.json
 npm run sfn -- run verify --receipt loop-run.json
 npm run sfn -- agent-api verify --contract agent-api-contract.json
@@ -53,8 +58,9 @@ npm run sfn -- ledger verify <runId>        # re-verify a run's hash-chain (tamp
   stops, trace spans, worktree leases, and trace-sourced improvement candidates.
 - **`research/` - Research Spine**: research-backed decision receipts, claim gates, proof artifacts,
   and 3D-agent comparison rubric.
-- **`loop/` - Loop Runner**: executable phase receipts for discover -> benchmark -> setup -> build ->
-  adapter -> iterate -> verify, with proof-verdict enforcement.
+- **`loop/` - RALPH Loop Ledger + Loop Runner**: `.solo/loop-state.json`, `events.jsonl`, milestone
+  receipt directories, start-anywhere gates, and executable phase receipts for discover -> benchmark ->
+  setup -> build -> adapter -> iterate -> verify, with proof-verdict enforcement.
 - **`agentApi/` - Agent-ready API gate**: semantic tool contracts, provider-schema parity, and
   structured failure/recovery checks.
 - **`proof/` - Fresh-room proof receipts**: live browser proof receipts with trace/video/screenshots,
@@ -71,8 +77,8 @@ npm run sfn -- ledger verify <runId>        # re-verify a run's hash-chain (tamp
 ## What runs vs. what you wire
 - **Runs out of the box (generic, local):** the gate / split-sealing / memory-leak taint / hash-chain,
   the memory engine + content gate, graph-context receipt checks, durable control plane, loop runner,
-  agent-ready API gate, fresh-room receipt verifier, rework ledger verifier, design/research/gstack
-  gates, and OpenRouter setup policy. (The deterministic grader is at
+  RALPH ledger, agent-ready API gate, fresh-room receipt verifier, rework ledger verifier,
+  design/research/gstack gates, and OpenRouter setup policy. (The deterministic grader is at
   `../../../docs/eval/nonbtb/grade.py`.)
 - **You wire (app-coupled — by design, because they touch *your* harness):**
   - **S10/S11 receipts** must be produced by your harness — instrument your materializer to log the

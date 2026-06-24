@@ -1,9 +1,9 @@
 // Turnkey proof of the local substrates. Run: npm i && npm run smoke
 // Every S-mechanism is a pass/fail assertion; the process exits non-zero if any fails.
 import { createClient } from "@libsql/client";
-import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
 import { SoloLedger } from "./ledger/ledger";
 import { SoloMemory } from "./memory/localMemory";
 import { sealGold, contentGate } from "./ledger/contentGate";
@@ -18,6 +18,13 @@ import { defaultDeterministicPrework, makeExternalSetupGateReceipt, verifyExtern
 import { makeOpenRouterAgentSetupPack, rankOpenRouterModelsFromCatalog, verifyOpenRouterAgentSetupPack } from "./setup/openrouterAgentHosts";
 import { makeAgentApiContractMarkdown, makeAgentReadyToolContract, verifyAgentReadyToolContract, type AgentReadyToolContract } from "./agentApi/agentReadyApi";
 import { makeLoopRunReceipt, verifyLoopRunReceipt, type LoopRunReceipt } from "./loop/loopRunner";
+import {
+  completeRalphMilestone,
+  createRalphLedger,
+  ralphPaths,
+  startRalphMilestone,
+  verifyRalphMilestone,
+} from "./loop/ralphLedger";
 import { verifyFreshRoomProofReceipt, type FreshRoomProofReceipt } from "./proof/freshRoomReceipt";
 import { makeReworkLedger, verifyReworkLedger, type ReworkLedger } from "./rework/reworkLedger";
 
@@ -717,6 +724,57 @@ async function main() {
   writeFileSync(join(proofRoot, badProofVerdictLoop.phases.find((phase) => phase.phase === "verify")!.artifacts["proof-verdict"]!), "{\"ok\":false}", "utf8");
   const badProofVerdict = verifyLoopRunReceipt(badProofVerdictLoop, { baseDir: proofRoot });
   check("loop runner refuses done without passing proof-verdict.json", badProofVerdict.ok === false && badProofVerdict.errors.some((e) => e.includes("proof-verdict")));
+
+  // ---------------- RALPH Loop Ledger: resumable milestone state ----------------
+  console.log("\nRalphLoopLedger (.solo loop-state + events + receipt gates):");
+  const ralphRoot = mkdtempSync(join(tmpdir(), `solo-ralph-${process.pid}-`));
+  const ralph = createRalphLedger({
+    repoPath: ralphRoot,
+    goal: "build agent for this app",
+    now: "2026-06-24T00:00:00.000Z",
+    budgets: { maxUsd: 5, maxModelCalls: 20 },
+  });
+  const ralphLedgerPaths = ralphPaths(ralphRoot);
+  check("RALPH init writes .solo/loop-state.json", existsSync(ralphLedgerPaths.statePath));
+  check("RALPH init writes events.jsonl", existsSync(ralphLedgerPaths.eventsPath));
+  check("RALPH init creates milestone receipt dirs", existsSync(join(ralphLedgerPaths.receiptsDir, "P-proof-run")));
+
+  const blockedLiveBuild = startRalphMilestone(ralphRoot, "L");
+  check("RALPH start-anywhere blocks when prior receipts are missing", blockedLiveBuild.verification.ok === false && blockedLiveBuild.verification.missing.some((item) => item.includes("A:benchmark-choice")));
+
+  const ralphReceipt = (relative: string, body = "ok") => {
+    const abs = join(ralphLedgerPaths.soloDir, relative);
+    mkdirSync(dirname(abs), { recursive: true });
+    writeFileSync(abs, body, "utf8");
+    return relative;
+  };
+  completeRalphMilestone(ralphRoot, "R", [
+    ralphReceipt("receipts/R-reality/capability-spec.json"),
+    ralphReceipt("receipts/R-reality/research-spine.json"),
+    ralphReceipt("receipts/R-reality/graph-context.json"),
+  ]);
+  completeRalphMilestone(ralphRoot, "A", [
+    ralphReceipt("receipts/A-acceptance-bar/benchmark-choice.json"),
+    ralphReceipt("receipts/A-acceptance-bar/rubric.json"),
+    ralphReceipt("receipts/A-acceptance-bar/heldout-split-policy.json"),
+  ]);
+  const liveBuildStart = startRalphMilestone(ralphRoot, "L");
+  check("RALPH can start Live Build after R/A receipts exist", liveBuildStart.verification.ok, liveBuildStart.verification.errors.join("; "));
+
+  completeRalphMilestone(ralphRoot, "L", [
+    ralphReceipt("receipts/L-live-build/agent-api-contract.json"),
+    ralphReceipt("receipts/L-live-build/design-brief.md"),
+    ralphReceipt("receipts/L-live-build/build-note.md"),
+  ]);
+  completeRalphMilestone(ralphRoot, "P", [
+    ralphReceipt("receipts/P-proof-run/fresh-room-receipt.json"),
+    ralphReceipt("proof-verdict.json", "{\"ok\":false}"),
+  ]);
+  const badRalphProof = verifyRalphMilestone(ralphRoot, "P");
+  check("RALPH proof milestone rejects failing proof-verdict", badRalphProof.ok === false && badRalphProof.errors.some((e) => e.includes("proof-verdict")));
+  ralphReceipt("proof-verdict.json", "{\"ok\":true}");
+  const goodRalphProof = verifyRalphMilestone(ralphRoot, "P");
+  check("RALPH proof milestone accepts passing proof-verdict", goodRalphProof.ok, goodRalphProof.errors.join("; "));
 
   // ---------------- SoloControlPlane: durable loop control ----------------
   console.log("\nSoloControlPlane (durable control plane):");
