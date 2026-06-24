@@ -95,7 +95,8 @@ npm run sfn -- ledger verify <runId>        # re-verify a run's hash-chain (tamp
   generation/depth fallback/export/viewer-action plan with providers as comparator/fallback only.
 - **`engineering/` - Safety-critical invention harness**: exact previous models allowed only in a
   non-exportable study sandbox; exportable designs require first-principles specs, hazard analysis,
-  simulation/test receipts, qualified engineer review, and export eligibility.
+  simulation/test receipts, qualified engineer review, and export eligibility. Break-glass emergency
+  overrides are record-only and cannot make the agent issue a passing safety verdict.
 - **`trust/` - Trust-root receipt**: held-out salt, scorer, and final verdict boundaries that stay
   outside the agent process.
 - **`rework/` - Build-to-delete ledger**: records replaced/deleted approaches, failure receipts,

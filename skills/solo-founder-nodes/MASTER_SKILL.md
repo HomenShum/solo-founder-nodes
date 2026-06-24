@@ -164,7 +164,9 @@ receive only the filtered functional spec, never the raw replica. Urgency accele
 simulation/test planning, and receipt collection; it does not permit exact replica export, human use,
 or customer/regulator claims without hazard analysis, simulation or bench-test evidence, qualified
 human engineering approval, and an export-eligibility verdict. Medical or life-support lanes also
-require regulatory-scope review.
+require regulatory-scope review. If a qualified human chooses an emergency break-glass path outside
+the agent, record the override context, owner, scope, known unknowns, and post-hoc review plan, but do
+not let the agent convert that override into a passing safety/export verdict.
 
 **Fresh-user and proof gates:** screenshot-only founder requests must be proven through a fresh
 nontechnical emulation receipt (`npm run sfn -- fresh-user ...`) and a full proof pack

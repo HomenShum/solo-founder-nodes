@@ -51,6 +51,7 @@ For the screenshot-only 3D-agent app request, the seeded default is:
   models may enter only a non-exportable study sandbox. Exportable outputs must come from the filtered
   first-principles spec and require hazard analysis, simulation or bench-test evidence, qualified
   engineer review, and export eligibility; medical/life-support lanes require regulatory-scope review.
+  Break-glass emergency overrides are record-only and cannot produce a passing agent verdict.
 - stretch: multi-photo COLMAP/3DGS, Depth Anything fallback, CAD-native/AutoCAD workflows, humanoid
   rigging, and motion tracking. These cannot be claimed as done until a separate proof lane passes.
 

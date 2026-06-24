@@ -51,6 +51,13 @@ export type EngineeringInventionHarness = {
     productionUseBlockedUntil: string[];
     disallowedOutputs: string[];
   };
+  breakGlassPolicy: {
+    canRecordExternalOverrideRequest: boolean;
+    overrideCanProducePassingVerdict: boolean;
+    allowedBeforeReceipts: string[];
+    stillBlockedBeforeReceipts: string[];
+    requiredOverrideRecordFields: string[];
+  };
   stages: EngineeringHarnessStage[];
   hardStops: string[];
 };
@@ -118,6 +125,30 @@ export function makeEngineeringInventionHarness(input: {
         "use of confidential or trade-secret source material without authorization",
       ],
     },
+    breakGlassPolicy: {
+      canRecordExternalOverrideRequest: true,
+      overrideCanProducePassingVerdict: false,
+      allowedBeforeReceipts: [
+        "triage summary for qualified responders",
+        "read-only first-principles notes",
+        "non-human bench/fit-check plan",
+        "missing-receipt checklist",
+      ],
+      stillBlockedBeforeReceipts: [
+        "exact replica export",
+        "customer or regulator-facing safety claim",
+        "instructions to use the design on people",
+        "production deployment or field installation",
+      ],
+      requiredOverrideRecordFields: [
+        "qualified-human-owner",
+        "emergency-context",
+        "why-standard-proof-cannot-wait",
+        "scope-and-time-limit",
+        "known-unknowns",
+        "post-hoc-review-plan",
+      ],
+    },
     stages: [
       stage("intent-and-emergency-triage", "Classify urgency, affected people, safety domain, and whether the user needs emergency services or professional response before invention work continues.", ["urgency-classification", "domain-risk-label", "human-safety-notice"], false, false),
       stage("reference-rights-provenance", "Record where previous models, images, scans, CAD, or videos came from and decide whether exact study is user-owned, licensed, public, functional reference, or blocked.", ["source-manifest", "rights-provenance-receipt", "trade-secret-screen"], false, false),
@@ -174,6 +205,13 @@ export function verifyEngineeringInventionHarness(plan: EngineeringInventionHarn
   if (!plan.safetyPolicy.productionUseBlockedUntil.includes("simulation-test-receipt")) errors.push("production use must be blocked until simulation/test receipt exists");
   if (!plan.safetyPolicy.productionUseBlockedUntil.includes("human-engineer-approval")) errors.push("production use must be blocked until human engineer approval exists");
   if (!plan.safetyPolicy.productionUseBlockedUntil.includes("export-eligibility-verdict")) errors.push("production use must be blocked until export eligibility verdict exists");
+  if (plan.breakGlassPolicy.canRecordExternalOverrideRequest !== true) errors.push("break-glass policy must allow recording external override requests");
+  if (plan.breakGlassPolicy.overrideCanProducePassingVerdict !== false) errors.push("break-glass override must not produce a passing system verdict");
+  if (!plan.breakGlassPolicy.stillBlockedBeforeReceipts.includes("exact replica export")) errors.push("break-glass policy must still block exact replica export before receipts");
+  if (!plan.breakGlassPolicy.stillBlockedBeforeReceipts.includes("instructions to use the design on people")) errors.push("break-glass policy must still block human-use instructions before receipts");
+  for (const field of ["qualified-human-owner", "emergency-context", "why-standard-proof-cannot-wait", "post-hoc-review-plan"]) {
+    if (!plan.breakGlassPolicy.requiredOverrideRecordFields.includes(field)) errors.push(`break-glass policy missing required record field: ${field}`);
+  }
 
   const safetyCritical = plan.riskLevel === "safety_critical" || plan.riskLevel === "medical_or_life_support";
   if (safetyCritical) {

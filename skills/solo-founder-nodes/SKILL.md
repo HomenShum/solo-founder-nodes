@@ -97,7 +97,8 @@ or `npm run sfn -- engineering plan ...`. Exact previous models may be used only
 study sandbox; exportable CAD/assets must be generated from the filtered first-principles spec. Urgency
 does not relax gates: require hazard analysis, simulation or bench-test plan, qualified human
 engineering approval, and export-eligibility verdict before human use or deployment. Medical/life-support
-work also requires regulatory-scope review.
+work also requires regulatory-scope review. A break-glass emergency override may be recorded for a
+qualified external human owner, but it must not become a passing agent verdict or export approval.
 
 **Design skills:** design guidance is not Claude Code locked. Use
 [`templates/design/designSkillBridge.ts`](templates/design/designSkillBridge.ts) or

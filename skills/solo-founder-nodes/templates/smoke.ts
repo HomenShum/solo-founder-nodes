@@ -692,11 +692,13 @@ async function main() {
   check("engineering harness allows exact study replica only in non-export sandbox", engineeringVerdict.ok && engineeringHarness.sandboxPolicy.exactReplicaAllowedForStudy && engineeringHarness.sandboxPolicy.replicaExportAllowed === false, engineeringVerdict.errors.join("; "));
   check("engineering harness blocks final generator from raw replica", engineeringHarness.sandboxPolicy.rawReplicaReadableByFinalGenerator === false && engineeringHarness.stages.find((stage) => stage.id === "original-design-export")?.canAccessRawReplica === false);
   check("engineering harness requires hazard, simulation, engineer approval, and export verdict", ["hazard-analysis-receipt", "simulation-test-receipt", "human-engineer-approval", "export-eligibility-verdict"].every((receipt) => engineeringHarness.safetyPolicy.productionUseBlockedUntil.includes(receipt)));
+  check("engineering break-glass records external override but never passes it", engineeringHarness.breakGlassPolicy.canRecordExternalOverrideRequest === true && engineeringHarness.breakGlassPolicy.overrideCanProducePassingVerdict === false);
   const unsafeEngineeringHarness = clone(engineeringHarness);
   unsafeEngineeringHarness.sandboxPolicy.replicaExportAllowed = true;
   unsafeEngineeringHarness.safetyPolicy.urgentModeDoesNotRelaxGates = false;
+  unsafeEngineeringHarness.breakGlassPolicy.overrideCanProducePassingVerdict = true;
   const unsafeEngineeringVerdict = verifyEngineeringInventionHarness(unsafeEngineeringHarness);
-  check("engineering harness rejects replica export and emergency gate relaxation", unsafeEngineeringVerdict.ok === false && unsafeEngineeringVerdict.errors.some((e) => e.includes("export must be blocked")) && unsafeEngineeringVerdict.errors.some((e) => e.includes("must not relax")));
+  check("engineering harness rejects replica export, emergency gate relaxation, and passing break-glass", unsafeEngineeringVerdict.ok === false && unsafeEngineeringVerdict.errors.some((e) => e.includes("export must be blocked")) && unsafeEngineeringVerdict.errors.some((e) => e.includes("must not relax")) && unsafeEngineeringVerdict.errors.some((e) => e.includes("must not produce a passing")));
   const medicalHarness = makeEngineeringInventionHarness({
     goal: "Invent a life-support fixture from previous reference models.",
     riskLevel: "medical_or_life_support",
