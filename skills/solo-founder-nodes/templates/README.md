@@ -23,7 +23,7 @@ npm run sfn -- event record --event tool.post --agent codex --project .
 npm run sfn -- context inspect <app-root>   # inspect Graphify-style graph context readiness
 npm run sfn -- control start --project <p> --goal <g> --budget 5 --root <app-root>
 npm run sfn -- control status <loopId>      # resume summary: phase, approvals, traces, improvements
-npm run sfn -- research init --goal <g> --domain 3d-generation
+npm run sfn -- research init --goal <g> --domain 3d-generation --scope local-personal-research
 npm run sfn -- loop init --goal <g> --project <path>
 npm run sfn -- loop status --project <path>
 npm run sfn -- loop events --project <path>
@@ -38,6 +38,7 @@ npm run sfn -- agent install-hooks --target codex --project . --dry-run
 npm run sfn -- noderoom run-fresh-room --case FR-010 --base-url <url> --headed --record-video --trace on --focus-mode on --model-mode top_paid --budget benchmark_completion
 npm run sfn -- run --project <path> --goal <g> --out loop-run.json
 npm run sfn -- run verify --receipt loop-run.json
+npm run sfn -- proof init --goal <g> --domain 3d-generation --scope local-personal-research
 npm run sfn -- proof full-verify --receipt full-proof-pack.json
 npm run sfn -- agent-api verify --contract agent-api-contract.json
 npm run sfn -- fresh-room verify --receipt docs/eval/fresh-room/<case-id>/latest.json

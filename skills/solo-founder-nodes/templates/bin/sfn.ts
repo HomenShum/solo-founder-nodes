@@ -22,10 +22,12 @@ import {
 } from "../events/soloEventBus";
 import {
   make3dAgentResearchPack,
+  proofScopes,
   researchDomains,
   top3dComparisonRubric,
   verifyResearchPack,
   type ProofArtifact,
+  type ProofScope,
   type ResearchDomain,
   type ResearchPack,
 } from "../research/researchSpine";
@@ -218,6 +220,12 @@ function parseDomain(value?: string): ResearchDomain {
   throw new Error(`unsupported research domain '${value ?? ""}' (expected one of: ${researchDomains.join(", ")})`);
 }
 
+function parseProofScope(value?: string): ProofScope {
+  const normalized = value ?? "production";
+  if (proofScopes.includes(normalized as ProofScope)) return normalized as ProofScope;
+  throw new Error(`unsupported proof scope '${normalized}' (expected one of: ${proofScopes.join(", ")})`);
+}
+
 function slugify(input: string) {
   return input.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 64) || "proof-run";
 }
@@ -333,9 +341,9 @@ const HELP = `sfn - Solo Founder Nodes local CLI   (run via: npm run sfn -- <cmd
   rework add --project <path> --project-id <id> --id <id> --old <text> --why <text> --failure <text> --failure-receipt <path> --new <text> --survived <text> --proof <path> --deleted <text> --kept <text> --lesson <text>
   rework list [--project <path>]
   rework explain --ledger <file> [--base <dir>]
-  research init --goal <g> --domain <d> [--out <file>]
+  research init --goal <g> --domain <d> [--scope production|local-personal-research] [--out <file>]
   research verify [file] [--max-age-days <n>]
-  proof init --goal <g> --domain <d> [--out <dir>]
+  proof init --goal <g> --domain <d> [--scope production|local-personal-research] [--out <dir>]
   proof start --run <dir>
   proof receipt --run <dir>
   proof collect --run <dir> --artifact <id> --path <path> [--sha256 <hash>]
@@ -998,12 +1006,13 @@ async function main() {
       if (sub === "init") {
         const goal = flag(rest, "--goal");
         const domain = parseDomain(flag(rest, "--domain", "3d-generation"));
+        const proofScope = parseProofScope(flag(rest, "--scope"));
         const out = resolve(flag(rest, "--out") ?? "research-spine.json");
         if (!goal) {
-          console.error("research init --goal <g> --domain <d> [--out <file>]");
+          console.error("research init --goal <g> --domain <d> [--scope production|local-personal-research] [--out <file>]");
           process.exit(2);
         }
-        const pack = make3dAgentResearchPack({ goal, domain });
+        const pack = make3dAgentResearchPack({ goal, domain, proofScope });
         writeJson(out, pack);
         const verdict = verifyResearchPack(pack);
         console.log(JSON.stringify({ out, verdict }, jbig, 2));
@@ -1025,18 +1034,20 @@ async function main() {
       if (sub === "init") {
         const goal = flag(rest, "--goal");
         const domain = parseDomain(flag(rest, "--domain", "3d-generation"));
+        const proofScope = parseProofScope(flag(rest, "--scope"));
         if (!goal) {
-          console.error("proof init --goal <g> --domain <d> [--out <dir>]");
+          console.error("proof init --goal <g> --domain <d> [--scope production|local-personal-research] [--out <dir>]");
           process.exit(2);
         }
         const stamp = new Date().toISOString().replace(/[:.]/g, "-");
         const out = resolve(flag(rest, "--out") ?? join("proof-runs", `${slugify(goal)}-${stamp}`));
         mkdirSync(out, { recursive: true });
-        const pack = make3dAgentResearchPack({ goal, domain });
+        const pack = make3dAgentResearchPack({ goal, domain, proofScope });
         const manifest = {
           schemaVersion: 1,
           goal,
           domain,
+          proofScope,
           createdAt: new Date().toISOString(),
           status: "initialized",
           researchSpine: "research-spine.json",

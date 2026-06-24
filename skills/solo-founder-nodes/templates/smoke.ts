@@ -446,6 +446,21 @@ async function main() {
   const researchVerdict = verifyResearchPack(researchPack, { now: new Date("2026-06-23T12:00:00.000Z") });
   check("complete 3D-agent research pack passes", researchVerdict.ok, researchVerdict.errors.join("; "));
 
+  const localResearchPack = make3dAgentResearchPack({
+    goal: "Local personal research proof for a screenshot-derived 3D asset app.",
+    generatedAt: "2026-06-23T00:00:00.000Z",
+    proofScope: "local-personal-research",
+  });
+  check(
+    "local personal-research proof scope keeps deployment/provider/comparator optional",
+    localResearchPack.proofScope === "local-personal-research" &&
+      localResearchPack.proofArtifacts.find((artifact) => artifact.id === "artifact-deployed-url")?.required === false &&
+      localResearchPack.proofArtifacts.find((artifact) => artifact.id === "artifact-provider-costs")?.required === false &&
+      localResearchPack.proofArtifacts.find((artifact) => artifact.id === "artifact-comparator-scorecard")?.required === false &&
+      localResearchPack.proofArtifacts.find((artifact) => artifact.id === "artifact-playwright-trace")?.required === true &&
+      localResearchPack.proofArtifacts.find((artifact) => artifact.id === "artifact-generated-assets")?.required === true,
+  );
+
   const missingSource = clone<ResearchPack>(researchPack);
   missingSource.sources = missingSource.sources.filter((s) => s.id !== "instantmesh");
   const missingSourceVerdict = verifyResearchPack(missingSource, { now: new Date("2026-06-23T12:00:00.000Z") });

@@ -4,6 +4,9 @@ export type ResearchSourceKind = (typeof researchSourceKinds)[number];
 export const researchDomains = ["agent-loop", "coding-agent", "3d-generation", "deployment", "eval", "safety-engineering"] as const;
 export type ResearchDomain = (typeof researchDomains)[number];
 
+export const proofScopes = ["production", "local-personal-research"] as const;
+export type ProofScope = (typeof proofScopes)[number];
+
 export interface ResearchSource {
   id: string;
   title: string;
@@ -77,6 +80,7 @@ export interface ResearchPack {
   schemaVersion: 1;
   goal: string;
   domain: ResearchDomain;
+  proofScope: ProofScope;
   generatedAt: string;
   requirements: ResearchRequirement[];
   sources: ResearchSource[];
@@ -124,9 +128,12 @@ export function make3dAgentResearchPack(args: {
   goal: string;
   generatedAt?: string;
   domain?: ResearchDomain;
+  proofScope?: ProofScope;
 }): ResearchPack {
   const generatedAt = args.generatedAt ?? new Date().toISOString();
   const domain = args.domain ?? "3d-generation";
+  const proofScope = args.proofScope ?? "production";
+  const productionRequired = proofScope === "production";
   const sources: ResearchSource[] = [
     source("react", "ReAct: Synergizing Reasoning and Acting in Language Models", "https://arxiv.org/abs/2210.03629", "paper", "agent-loop"),
     source("toolformer", "Toolformer: Language Models Can Teach Themselves to Use Tools", "https://arxiv.org/abs/2302.04761", "paper", "agent-loop"),
@@ -285,23 +292,23 @@ export function make3dAgentResearchPack(args: {
   ];
 
   const proofArtifacts: ProofArtifact[] = [
-    { id: "artifact-fullscreen-video", kind: "fullscreen-video", required: true, description: "Full-screen recording of the fresh founder-style session." },
-    { id: "artifact-recording-audit", kind: "recording-audit", required: true, description: "Visual inspection receipt for videos, rejected recordings, and sampled frame checks." },
+    { id: "artifact-fullscreen-video", kind: "fullscreen-video", required: productionRequired, description: "Full-screen recording of the fresh founder-style session." },
+    { id: "artifact-recording-audit", kind: "recording-audit", required: productionRequired, description: "Visual inspection receipt for videos, rejected recordings, and sampled frame checks." },
     { id: "artifact-terminal-transcript", kind: "terminal-transcript", required: true, description: "Terminal transcript from the coding-agent session." },
     { id: "artifact-playwright-trace", kind: "playwright-trace", required: true, description: "Playwright trace proving real UI upload/chat/view/export." },
     { id: "artifact-playwright-video", kind: "playwright-video", required: true, description: "Browser video for the real app flow." },
-    { id: "artifact-deployed-url", kind: "deployed-url", required: true, description: "Live deployment URL used by judges/customers." },
+    { id: "artifact-deployed-url", kind: "deployed-url", required: productionRequired, description: "Live deployment URL used by judges/customers." },
     { id: "artifact-generated-assets", kind: "generated-asset", required: true, description: "Generated GLB/USDZ or viewer-compatible asset files." },
-    { id: "artifact-provider-costs", kind: "provider-costs", required: true, description: "Provider cost, latency, and failure-state ledger." },
-    { id: "artifact-comparator-scorecard", kind: "scorecard", required: true, description: "Scorecard against Meshy, Tripo, Rodin/Hyper3D, and Luma." },
+    { id: "artifact-provider-costs", kind: "provider-costs", required: productionRequired, description: "Provider cost, latency, and failure-state ledger." },
+    { id: "artifact-comparator-scorecard", kind: "scorecard", required: productionRequired, description: "Scorecard against Meshy, Tripo, Rodin/Hyper3D, and Luma." },
     { id: "artifact-decision-log", kind: "decision-log", required: true, description: "Implementation decisions with research and practical references." },
     { id: "artifact-rights-provenance", kind: "decision-log", required: true, description: "Source manifest, ownership/license/allowed-use mode, and blocked exact-extraction receipt for reference media." },
     { id: "artifact-component-breakdown", kind: "component-breakdown-receipt", required: true, description: "First-principles component tree, functional geometry/material map, protected-expression filter, and originality delta produced before generation." },
-    { id: "artifact-study-replica-sandbox", kind: "study-replica-receipt", required: true, description: "Non-exportable exact-replica study container, access log, watermark metadata, and purge/seal receipt." },
-    { id: "artifact-engineering-hazard-analysis", kind: "engineering-hazard-analysis", required: true, description: "Hazard log, FMEA/FTA or equivalent, misuse cases, safety margins, mitigations, and residual risk verdict." },
-    { id: "artifact-simulation-test", kind: "simulation-test-receipt", required: true, description: "Simulation report or bench-test plan with acceptance criteria and validation notes." },
-    { id: "artifact-human-engineer-approval", kind: "human-engineer-approval", required: true, description: "Qualified human engineering review with reviewer role, scope, and signoff limitations." },
-    { id: "artifact-export-eligibility", kind: "export-eligibility-verdict", required: true, description: "Verdict proving export is original, not the study replica, and not approved for human use unless safety receipts pass." },
+    { id: "artifact-study-replica-sandbox", kind: "study-replica-receipt", required: productionRequired, description: "Non-exportable exact-replica study container, access log, watermark metadata, and purge/seal receipt." },
+    { id: "artifact-engineering-hazard-analysis", kind: "engineering-hazard-analysis", required: productionRequired, description: "Hazard log, FMEA/FTA or equivalent, misuse cases, safety margins, mitigations, and residual risk verdict." },
+    { id: "artifact-simulation-test", kind: "simulation-test-receipt", required: productionRequired, description: "Simulation report or bench-test plan with acceptance criteria and validation notes." },
+    { id: "artifact-human-engineer-approval", kind: "human-engineer-approval", required: productionRequired, description: "Qualified human engineering review with reviewer role, scope, and signoff limitations." },
+    { id: "artifact-export-eligibility", kind: "export-eligibility-verdict", required: productionRequired, description: "Verdict proving export is original, not the study replica, and not approved for human use unless safety receipts pass." },
   ];
 
   const decisions: ImplementationDecision[] = [
@@ -478,6 +485,7 @@ export function make3dAgentResearchPack(args: {
     schemaVersion: 1,
     goal: args.goal,
     domain,
+    proofScope,
     generatedAt,
     requirements,
     sources,
@@ -493,6 +501,9 @@ export function make3dAgentResearchPack(args: {
       "Reference media from movies, games, social posts, videos, or textbooks requires a source manifest and rights/provenance gate before export.",
       "Educational purpose is a factor to record, not an automatic safe harbor; original outputs must come from abstracted components and an originality delta unless rights are proven.",
       "Urgent or life-critical engineering requests accelerate triage and evidence collection; they do not permit exact replica export, unsafe human use, or skipped qualified review.",
+      proofScope === "local-personal-research"
+        ? "Local personal-research proof can pass without deployment/provider/comparator artifacts, but it must not claim judge/customer readiness."
+        : "Production proof requires deployment, provider/cost, comparator, recording, and engineering safety artifacts before customer or judge readiness claims.",
     ],
   };
 }
