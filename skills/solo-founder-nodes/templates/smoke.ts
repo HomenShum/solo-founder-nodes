@@ -26,6 +26,7 @@ import {
   verifyPhaseRalph,
 } from "./phase/phaseRalph";
 import { makeThreeDComparatorRubric, makeThreeDPlan, verifyThreeDPlan } from "./threeD/threeDLoop";
+import { makeResearchOnlyAsset, verifyResearchAssetManifest } from "./threeD/researchAssetMaker";
 import { makeEngineeringInventionHarness, verifyEngineeringInventionHarness } from "./engineering/engineeringInventionHarness";
 import { makeFirstPrinciplesDeconstructionReceipt, verifyFirstPrinciplesDeconstructionReceipt } from "./engineering/firstPrinciplesDeconstructionReceipt";
 import { makeFullProofPack, verifyFullProofPack } from "./proof/fullProofPack";
@@ -681,6 +682,27 @@ async function main() {
   const threeDComparator = makeThreeDComparatorRubric();
   check("3D comparator scores first-party and provider outputs on same rubric", threeDComparator.providers.length >= 4 && threeDComparator.passRule.includes("not the default product architecture"));
   check("3D comparator stays a 100-point rubric", threeDComparator.metrics.reduce((sum, metric) => sum + metric.points, 0) === 100);
+
+  console.log("\nResearchAssetMaker (personal-research-only procedural artifact):");
+  const assetRoot = mkdtempSync(join(tmpdir(), "solo-smoke-asset-"));
+  const researchAsset = makeResearchOnlyAsset({
+    goal: "Create a personal research scaffold from a filtered spacecraft seat functional spec.",
+    projectId: "kestrel-seat",
+    outputDir: assetRoot,
+    functionalSpec: "Seat_Spec:\n  Primary: load-bearing shell\n  Support: four-point bracket\n  Padding: dual-density foam\n",
+    deconstructionReceiptPath: "proof/component-breakdown.json",
+    generatedAt: "2026-06-24T00:00:00.000Z",
+  });
+  const assetVerdict = verifyResearchAssetManifest(researchAsset, { baseDir: assetRoot });
+  check("research asset maker emits verified OBJ artifact", assetVerdict.ok && researchAsset.output.primaryAssetPath.endsWith(".obj"), assetVerdict.errors.join("; "));
+  check("research asset maker marks asset personal research only", researchAsset.restrictions.personalResearchOnly === true && researchAsset.restrictions.humanUseApproved === false && researchAsset.restrictions.exactReplicaExport === false);
+  const unsafeAsset = clone(researchAsset);
+  unsafeAsset.source.rawReplicaUsed = true as false;
+  unsafeAsset.restrictions.exactReplicaExport = true as false;
+  unsafeAsset.restrictions.humanUseApproved = true as false;
+  unsafeAsset.proof.containsMeshFromReplica = true as false;
+  const unsafeAssetVerdict = verifyResearchAssetManifest(unsafeAsset, { baseDir: assetRoot });
+  check("research asset maker rejects raw replica, exact export, and human-use claims", unsafeAssetVerdict.ok === false && unsafeAssetVerdict.errors.some((e) => e.includes("raw replica")) && unsafeAssetVerdict.errors.some((e) => e.includes("exactReplicaExport")) && unsafeAssetVerdict.errors.some((e) => e.includes("human use")) && unsafeAssetVerdict.errors.some((e) => e.includes("mesh from replica")));
 
   console.log("\nEngineeringInventionHarness (study replica -> first-principles -> safety proof):");
   const engineeringHarness = makeEngineeringInventionHarness({

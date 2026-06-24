@@ -79,6 +79,11 @@ import {
 } from "../phase/phaseRalph";
 import { makeThreeDComparatorRubric, makeThreeDPlan, verifyThreeDPlan, type ThreeDPlan } from "../threeD/threeDLoop";
 import {
+  makeResearchOnlyAsset,
+  verifyResearchAssetManifest,
+  type ResearchAssetManifest,
+} from "../threeD/researchAssetMaker";
+import {
   engineeringRiskLevels,
   engineeringUrgencies,
   makeEngineeringInventionHarness,
@@ -343,6 +348,8 @@ const HELP = `sfn - Solo Founder Nodes local CLI   (run via: npm run sfn -- <cmd
   3d init|plan --goal <g> [--out <file>]
   3d verify --file <file>
   3d compare [--out <file>]
+  3d make-asset --goal <g> --project-id <id> --out-dir <dir> [--functional-spec <file>] [--deconstruction-receipt <file>]
+  3d verify-asset --manifest <file> [--base <dir>]
   engineering plan --goal <g> [--risk low|material_damage|safety_critical|medical_or_life_support] [--urgency routine|urgent|emergency] [--out <file>]
   engineering verify --file <file>
   engineering deconstruct-init --goal <g> --project-id <id> [--source <text>] [--out <file>]
@@ -1221,7 +1228,50 @@ async function main() {
         console.log(JSON.stringify(out ? { out: resolve(out), rubric } : rubric, jbig, 2));
         process.exit(0);
       }
-      console.error("3d: init|plan --goal <g> [--out <file>] | verify --file <file> | compare [--out <file>]");
+      if (sub === "make-asset" || sub === "asset-make") {
+        const goal = flag(rest, "--goal");
+        const projectId = flag(rest, "--project-id");
+        const outDir = flag(rest, "--out-dir");
+        if (!goal || !projectId || !outDir) {
+          console.error("3d make-asset --goal <g> --project-id <id> --out-dir <dir> [--functional-spec <file>] [--deconstruction-receipt <file>]");
+          process.exit(2);
+        }
+        const functionalSpecPath = flag(rest, "--functional-spec");
+        const receiptPath = flag(rest, "--deconstruction-receipt");
+        let functionalSpec = functionalSpecPath ? readFileSync(resolve(functionalSpecPath), "utf8") : undefined;
+        if (!functionalSpec && receiptPath) {
+          const receipt = readJson<FirstPrinciplesDeconstructionReceipt>(resolve(receiptPath));
+          const verdict = verifyFirstPrinciplesDeconstructionReceipt(receipt);
+          if (!verdict.ok) {
+            console.error(JSON.stringify({ receipt: resolve(receiptPath), verdict }, jbig, 2));
+            process.exit(1);
+          }
+          functionalSpec = receipt.functionalSpec.content;
+        }
+        const manifest = makeResearchOnlyAsset({
+          goal,
+          projectId,
+          outputDir: resolve(outDir),
+          functionalSpec,
+          deconstructionReceiptPath: receiptPath ? resolve(receiptPath) : undefined,
+        });
+        const manifestPath = resolve(outDir, `${manifest.assetId}.manifest.json`);
+        console.log(JSON.stringify({ manifestPath, manifest }, jbig, 2));
+        process.exit(0);
+      }
+      if (sub === "verify-asset" || sub === "asset-verify") {
+        const manifestPath = flag(rest, "--manifest");
+        if (!manifestPath) {
+          console.error("3d verify-asset --manifest <file> [--base <dir>]");
+          process.exit(2);
+        }
+        const abs = resolve(manifestPath);
+        const manifest = readJson<ResearchAssetManifest>(abs);
+        const verdict = verifyResearchAssetManifest(manifest, { baseDir: flag(rest, "--base") ? resolve(flag(rest, "--base")!) : dirname(abs) });
+        console.log(JSON.stringify({ manifest: abs, verdict }, jbig, 2));
+        process.exit(verdict.ok ? 0 : 1);
+      }
+      console.error("3d: init|plan --goal <g> [--out <file>] | verify --file <file> | compare [--out <file>] | make-asset --goal <g> --project-id <id> --out-dir <dir> [--functional-spec <file>] [--deconstruction-receipt <file>] | verify-asset --manifest <file> [--base <dir>]");
       process.exit(2);
     }
     case "engineering": {

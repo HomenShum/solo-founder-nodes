@@ -88,7 +88,9 @@ it end to end. Block unverified exact extraction of protected social/movie/game/
 Educational purpose is context, not automatic permission. Support user-owned/licensed/public-domain
 media, real-world factual references, or transformed inspiration only after a component tree,
 functional geometry/material map, protected-expression filter, originality delta, and provenance
-receipt exist.
+receipt exist. For personal research scaffolds, use `npm run sfn -- 3d make-asset ...`; it creates a
+deterministic OBJ proof artifact from filtered spec/text and must remain personal-research-only, not
+production-ready, not commercial-use approved, not human-use approved, and not an exact replica export.
 
 **Engineering invention harness:** for urgent, safety-critical, medical, life-support, field-repair, or
 "life and death" engineering requests, use

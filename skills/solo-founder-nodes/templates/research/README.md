@@ -13,6 +13,7 @@ npm run sfn -- research init --goal "build a 3D model app from pictures" --domai
 npm run sfn -- research verify research-spine.json
 npm run sfn -- proof init --goal "fresh-user 3D app proof" --domain 3d-generation
 npm run sfn -- compare top3d
+npm run sfn -- 3d make-asset --goal "personal research 3D scaffold" --project-id kestrel-seat --out-dir proof/assets
 npm run sfn -- engineering plan --goal "urgent safety-critical redesign from previous models" --risk safety_critical --urgency emergency
 npm run sfn -- engineering deconstruct-init --goal "clean-room deconstruct prior model" --project-id kestrel-seat
 ```

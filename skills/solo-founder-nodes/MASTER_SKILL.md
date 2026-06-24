@@ -155,6 +155,10 @@ object reference, or transformed inspiration with similarity/provenance receipts
 produce a component tree, functional geometry/material map, protected-expression filter, and
 originality delta so the output is an original design from abstracted components. Use
 `npm run sfn -- 3d plan ...` and `npm run sfn -- 3d verify ...`.
+For personal research scaffolds, use `npm run sfn -- 3d make-asset ...` to create a deterministic OBJ
+from a filtered functional spec or text prompt. This asset is proof material for the loop: mark it
+personal-research-only, not production-ready, not commercial-use approved, not human-use approved, and
+not an exact replica export.
 
 **Engineering invention harness:** for engineer/inventor requests that mention urgent, safety-critical,
 life-support, medical, field-repair, or "life and death" stakes, use `npm run sfn -- engineering plan
