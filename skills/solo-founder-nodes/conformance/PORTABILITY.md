@@ -16,9 +16,9 @@ what makes it portable, and the conformance probe checks for it.
 
 | Layer | How it's proven | Status |
 |---|---|---|
-| **Substrate is identical everywhere** | `templates/` is plain Node/Python; `npm i && npm run smoke` currently reports **70 passed, 0 failed** with zero agent involvement | proven (reproducible by anyone) |
+| **Substrate is identical everywhere** | `templates/` is plain Node/Python; `npm i && npm run smoke` currently reports **74 passed, 0 failed** with zero agent involvement | proven (reproducible by anyone) |
 | **No agent-specific coupling** | `conformance/conformance.mjs` checks markdown-only directive + no lock-in + portability declared | proven |
-| **A specific agent can ingest + run it** | run `node conformance/conformance.mjs --run-smoke` under that agent's shell -> PASS receipt | Claude Code prior receipt `468f7aef456c64e8`; Codex local receipt `169e0c5a8fd79bad`; OpenClaw local receipt `169e0c5a8fd79bad`; Hermes local receipt `169e0c5a8fd79bad`; other agents = run the probe |
+| **A specific agent can ingest + run it** | run `node conformance/conformance.mjs --run-smoke` under that agent's shell -> PASS receipt | Claude Code prior receipt `468f7aef456c64e8` on an older substrate; Codex local receipt `311d4ca418744ba5`; OpenClaw local receipt `311d4ca418744ba5`; Hermes local receipt `311d4ca418744ba5`; other agents = run the probe |
 
 We do **not** claim "we drove all nine." The proof model is: the agent-agnostic core is proven once;
 each agent self-certifies by running the probe. The matrix below is the loading guide + an honest
@@ -35,11 +35,11 @@ verified column.
 
 | Agent | Primary loading | Verified by us |
 |---|---|---|
-| **Claude Code** | A - `.claude/skills/<name>/SKILL.md` auto-discovered | prior probe PASS, receipt `468f7aef456c64e8`; rerun for current 70-test substrate |
-| **Codex (OpenAI)** | A/B - Codex Skills / `AGENTS.md`, else C | local probe PASS, receipt `169e0c5a8fd79bad`, smoke 70/70 |
+| **Claude Code** | A - `.claude/skills/<name>/SKILL.md` auto-discovered | prior probe PASS, receipt `468f7aef456c64e8`; rerun for current 74-test substrate |
+| **Codex (OpenAI)** | A/B - Codex Skills / `AGENTS.md`, else C | local probe PASS, receipt `311d4ca418744ba5`, smoke 74/74 |
 | **Trae IDE** | A/C - `SKILL.md` per the standard, else bootstrap | run the probe |
-| **OpenClaw** | A/C - `SKILL.md` per the cross-vendor standard | local probe PASS via OpenRouter/DeepSeek V4 Flash, receipt `169e0c5a8fd79bad`, smoke 70/70; see [`../../../docs/AGENT_PORTABILITY_PROOF.md`](../../../docs/AGENT_PORTABILITY_PROOF.md) |
-| **Hermes** | A/C - `SKILL.md` per the standard | local probe PASS via OpenRouter/Qwen3 Coder Next, receipt `169e0c5a8fd79bad`, smoke 70/70; see [`../../../docs/AGENT_PORTABILITY_PROOF.md`](../../../docs/AGENT_PORTABILITY_PROOF.md) |
+| **OpenClaw** | A/C - `SKILL.md` per the cross-vendor standard | local probe PASS via OpenRouter/DeepSeek V4 Flash, receipt `311d4ca418744ba5`, smoke 74/74; see [`../../../docs/AGENT_PORTABILITY_PROOF.md`](../../../docs/AGENT_PORTABILITY_PROOF.md) |
+| **Hermes** | A/C - `SKILL.md` per the standard | local probe PASS via OpenRouter/Qwen3 Coder Next, receipt `311d4ca418744ba5`, smoke 74/74; see [`../../../docs/AGENT_PORTABILITY_PROOF.md`](../../../docs/AGENT_PORTABILITY_PROOF.md) |
 | **Cursor** | B/C - Project Rules (`.cursor/rules/*.mdc`) or bootstrap | run the probe |
 | **Windsurf** | B/C - `.windsurfrules` / Cascade, or bootstrap | run the probe |
 | **OpenCode** | B/C - `AGENTS.md` / rules, or bootstrap | run the probe |

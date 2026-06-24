@@ -15,7 +15,7 @@ import { designSkillRegistry, makeDesignFullFlow, recommendDesignSkills, verifyD
 import { defaultDesignQualityCriteria, makeDesignQualityReceipt, verifyDesignQualityReceipt, type DesignQualityGateInput } from "./design/designQualityGate";
 import { gstackRoleRegistry, recommendGstackLanes, verifyGstackPlan, type GstackReviewPlan } from "./gstack/gstackBridge";
 import { defaultDeterministicPrework, makeExternalSetupGateReceipt, verifyExternalSetupGateReceipt } from "./setup/externalSetupGate";
-import { makeOpenRouterAgentSetupPack, verifyOpenRouterAgentSetupPack } from "./setup/openrouterAgentHosts";
+import { makeOpenRouterAgentSetupPack, rankOpenRouterModelsFromCatalog, verifyOpenRouterAgentSetupPack } from "./setup/openrouterAgentHosts";
 
 let pass = 0;
 let fail = 0;
@@ -211,6 +211,56 @@ async function main() {
   check("agent setup stays optional", agentSetup.optional === true && agentSetup.safetyRules.some((rule) => rule.includes("optional")));
   check("agent setup does not persist concrete OpenRouter keys", !JSON.stringify(agentSetup).includes("sk-or-") && agentSetup.environment.OPENROUTER_API_KEY.includes("never commit"));
   check("agent setup includes OpenClaw and Hermes conformance commands", agentSetup.verificationCommands.some((cmd) => cmd.includes("openclaw") && cmd.includes("conformance.mjs")) && agentSetup.verificationCommands.some((cmd) => cmd.includes("hermes") && cmd.includes("conformance.mjs")));
+  const audit = rankOpenRouterModelsFromCatalog({
+    data: [
+      {
+        id: "expensive/great-code",
+        name: "Great Code",
+        created: 1780000000,
+        description: "agentic coding model",
+        context_length: 1048576,
+        architecture: { modality: "text->text", input_modalities: ["text"], output_modalities: ["text"] },
+        pricing: { prompt: "0.000005", completion: "0.00001" },
+        supported_parameters: ["tools", "structured_outputs"],
+      },
+      {
+        id: "cheap/current-code",
+        name: "Current Cheap Code",
+        created: 1781000000,
+        description: "agentic coding model",
+        context_length: 262144,
+        architecture: { modality: "text->text", input_modalities: ["text"], output_modalities: ["text"] },
+        pricing: { prompt: "0.0000001", completion: "0.0000002" },
+        supported_parameters: ["tools", "structured_outputs"],
+      },
+      {
+        id: "free/north-mini-code:free",
+        name: "North Mini Code free",
+        created: 1781700000,
+        description: "free agentic coding model",
+        context_length: 256000,
+        architecture: { modality: "text->text", input_modalities: ["text"], output_modalities: ["text"] },
+        pricing: { prompt: "0", completion: "0" },
+        supported_parameters: ["tools"],
+      },
+      {
+        id: "google/gemini-flash-lite",
+        name: "Gemini Flash Lite",
+        created: 1780500000,
+        description: "low cost multimodal agent model",
+        context_length: 1048576,
+        architecture: { modality: "text+image+video->text", input_modalities: ["text", "image", "video"], output_modalities: ["text"] },
+        pricing: { prompt: "0.00000025", completion: "0.0000015" },
+        supported_parameters: ["tools", "response_format"],
+      },
+    ],
+  }, { generatedAt: "2026-06-24T00:00:00.000Z" });
+  check("live catalog audit keeps paid/free/multimodal lanes separate", audit.recommended.paidCode?.id === "cheap/current-code" && audit.recommended.freeCode?.id === "free/north-mini-code:free" && audit.recommended.multimodalUi?.id === "google/gemini-flash-lite");
+  check("live catalog audit is marked catalog-only until conformance", audit.warning.includes("Catalog audit only") && audit.warning.includes("conformance"));
+  const auditedAgentSetup = makeOpenRouterAgentSetupPack({ generatedAt: "2026-06-24T00:00:00.000Z", hostRoot: "D:\\ai-agent-hosts", modelAudit: audit });
+  const auditedAgentSetupVerdict = verifyOpenRouterAgentSetupPack(auditedAgentSetup);
+  check("audited OpenRouter setup still verifies", auditedAgentSetupVerdict.ok, auditedAgentSetupVerdict.errors.join("; "));
+  check("audited OpenRouter setup exposes catalog recommendations without replacing proved defaults", auditedAgentSetup.environment.SOLO_OPENROUTER_OPENCLAW_MODEL === "deepseek/deepseek-v4-flash" && auditedAgentSetup.environment.SOLO_OPENROUTER_AUDITED_PAID_CODE_MODEL === "cheap/current-code" && auditedAgentSetup.environment.SOLO_OPENROUTER_AUDITED_FREE_CODE_MODEL === "free/north-mini-code:free" && auditedAgentSetup.environment.SOLO_OPENROUTER_AUDITED_MULTIMODAL_MODEL === "google/gemini-flash-lite");
 
   // ---------------- Research spine: research-backed implementation gate ----------------
   console.log("\nResearchSpine (research-backed decisions + proof target):");

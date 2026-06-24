@@ -22,7 +22,8 @@ npm run sfn -- context inspect <app-root>   # inspect Graphify-style graph conte
 npm run sfn -- control start --project <p> --goal <g> --budget 5 --root <app-root>
 npm run sfn -- control status <loopId>      # resume summary: phase, approvals, traces, improvements
 npm run sfn -- research init --goal <g> --domain 3d-generation
-npm run sfn -- agents openrouter-plan --out agent-host-setup
+npm run sfn -- agents openrouter-audit --out openrouter-model-audit.json
+npm run sfn -- agents openrouter-plan --audit openrouter-model-audit.json --out agent-host-setup
 npm run sfn -- design recommend --surface saas-app --runtime codex
 npm run sfn -- design flow --surface 3d-app --category "3D asset generation" --visuals --animation --runtime codex
 npm run sfn -- gstack recommend --phase verify --goal <g> --ui --deploy --security

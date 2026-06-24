@@ -51,6 +51,8 @@ import {
 import { makeExternalSetupGateReceipt, verifyExternalSetupGateReceipt } from "../setup/externalSetupGate";
 import {
   makeOpenRouterAgentSetupPack,
+  rankOpenRouterModelsFromCatalog,
+  type OpenRouterModelAudit,
   verifyOpenRouterAgentSetupPack,
   writeOpenRouterAgentSetupPack,
 } from "../setup/openrouterAgentHosts";
@@ -91,11 +93,19 @@ function firstPositional(args: string[], fallback: string) {
 }
 
 function readJson<T>(path: string): T {
-  return JSON.parse(readFileSync(path, "utf8")) as T;
+  return JSON.parse(readFileSync(path, "utf8").replace(/^\uFEFF/, "")) as T;
 }
 
 function writeJson(path: string, value: unknown) {
   writeFileSync(path, `${JSON.stringify(value, jbig, 2)}\n`, "utf8");
+}
+
+async function fetchOpenRouterCatalog() {
+  const response = await fetch("https://openrouter.ai/api/v1/models", {
+    headers: { "User-Agent": "solo-founder-nodes-openrouter-audit" },
+  });
+  if (!response.ok) throw new Error(`OpenRouter catalog fetch failed: HTTP ${response.status}`);
+  return response.json() as Promise<{ data?: unknown[] }>;
 }
 
 function validateProofArtifactFile(runDir: string, artifact: ProofArtifact): string[] {
@@ -210,7 +220,8 @@ const HELP = `sfn — Solo Founder Nodes local CLI   (run via: npm run sfn -- <c
   proof collect --run <dir> --artifact <id> --path <path> [--sha256 <hash>]
   proof verdict --run <dir>
   compare top3d [--out <file>]  print/write the 3D provider comparison rubric
-  agents openrouter-plan [--out <dir>] [--host-root <path>]
+  agents openrouter-plan [--out <dir>] [--host-root <path>] [--audit <file>]
+  agents openrouter-audit [--catalog <file>] [--out <file>] [--max <n>]
   design registry [--out <file>]
   design recommend --surface <kind> [--stack <s>] [--runtime <r>] [--style <preset>] [--platform <p>] [--animation] [--visuals] [--mobile] [--shadcn] [--shadcn-mcp] [--out <file>]
   design flow --surface <kind> [--category <c>] [--stack <s>] [--runtime <r>] [--style <preset>] [--platform <p>] [--animation] [--visuals] [--mobile] [--shadcn] [--shadcn-mcp] [--out <file>]
@@ -482,11 +493,29 @@ async function main() {
     }
     case "agents": {
       const sub = rest[0];
+      if (sub === "openrouter-audit") {
+        const catalogFile = flag(rest, "--catalog");
+        const maxCandidates = Number(flag(rest, "--max", "20"));
+        const catalog = catalogFile
+          ? readJson<{ data?: unknown[] }>(resolve(catalogFile))
+          : await fetchOpenRouterCatalog();
+        const audit = rankOpenRouterModelsFromCatalog(catalog as { data?: never[] }, { maxCandidates });
+        const out = flag(rest, "--out");
+        if (out) {
+          writeJson(resolve(out), audit);
+          console.log(JSON.stringify({ out: resolve(out), audit }, jbig, 2));
+        } else {
+          console.log(JSON.stringify(audit, jbig, 2));
+        }
+        process.exit(0);
+      }
       if (sub !== "openrouter-plan") {
-        console.error("agents openrouter-plan [--out <dir>] [--host-root <path>]");
+        console.error("agents openrouter-plan [--out <dir>] [--host-root <path>] [--audit <file>] | agents openrouter-audit [--catalog <file>] [--out <file>] [--max <n>]");
         process.exit(2);
       }
-      const pack = makeOpenRouterAgentSetupPack({ hostRoot: flag(rest, "--host-root") });
+      const auditFile = flag(rest, "--audit");
+      const modelAudit = auditFile ? readJson<OpenRouterModelAudit>(resolve(auditFile)) : undefined;
+      const pack = makeOpenRouterAgentSetupPack({ hostRoot: flag(rest, "--host-root"), modelAudit });
       const verdict = verifyOpenRouterAgentSetupPack(pack);
       if (!verdict.ok) {
         console.error(JSON.stringify({ ok: false, errors: verdict.errors }, null, 2));
