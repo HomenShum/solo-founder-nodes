@@ -143,11 +143,15 @@ must be labeled `unsupported_assumption` or `rejected`, never sold as shipped ca
 [`references/research-spine.md`](references/research-spine.md); copyable implementation:
 [`templates/research/`](templates/research/).
 
-**3D founder scenario:** for picture/text/video-to-3D requests, default to a first-party plan:
-capture/coverage -> multi-view reconstruction or local/open image/text-to-asset -> depth fallback ->
-assetize/export -> Three.js/WebGL viewer action protocol. Meshy/Tripo/Rodin/Luma are comparator or
-fallback lanes, not the product architecture unless the founder explicitly chooses provider-first.
-Use `npm run sfn -- 3d plan ...` and `npm run sfn -- 3d verify ...`.
+**3D founder scenario:** for picture/text/video/reference-media-to-3D requests, default to a
+first-party plan: reference-media intake + rights/provenance gate -> capture/coverage -> multi-view
+reconstruction or local/open image/text-to-asset -> depth fallback -> assetize/export -> Three.js/WebGL
+viewer action protocol. Meshy/Tripo/Rodin/Luma are comparator or fallback lanes, not the product
+architecture unless the founder explicitly chooses provider-first. Exact extraction of protected
+movie/game/social/textbook assets without rights proof is blocked; allowed modes are user-owned or
+licensed media, public-domain/compatible-license media, real-world factual object reference, or
+transformative inspiration with similarity/provenance receipts. Use `npm run sfn -- 3d plan ...` and
+`npm run sfn -- 3d verify ...`.
 
 **Fresh-user and proof gates:** screenshot-only founder requests must be proven through a fresh
 nontechnical emulation receipt (`npm run sfn -- fresh-user ...`) and a full proof pack

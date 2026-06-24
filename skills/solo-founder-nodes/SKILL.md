@@ -80,10 +80,12 @@ test, setup docs, cost/latency ledger shape, and exact resume commands. Use
 `npm run sfn -- setup gate ...`; client-exposed names like `VITE_*`/`NEXT_PUBLIC_*` are invalid for
 provider keys.
 
-**3D/fresh-user proof:** for screenshot-only picture/text/video-to-3D requests, use
-`npm run sfn -- 3d plan ...` with first-party lanes and providers as comparators/fallbacks. Prove the
-claim with `fresh-user`, `proof full-verify`, and `trust verify` receipts before saying a nontechnical
-founder or judge can use it end to end.
+**3D/fresh-user proof:** for screenshot-only picture/text/video/reference-media-to-3D requests, use
+`npm run sfn -- 3d plan ...` with first-party lanes, a rights/provenance gate, and providers as
+comparators/fallbacks. Prove the claim with `fresh-user`, `proof full-verify`, and `trust verify`
+receipts before saying a nontechnical founder or judge can use it end to end. Block unverified exact
+extraction of protected social/movie/game/textbook assets; support user-owned/licensed/public-domain
+media or transformed inspiration with provenance.
 
 **Design skills:** design guidance is not Claude Code locked. Use
 [`templates/design/designSkillBridge.ts`](templates/design/designSkillBridge.ts) or

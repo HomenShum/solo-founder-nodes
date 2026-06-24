@@ -14,7 +14,8 @@ export type FullProofArtifactKind =
   | "reopen-proof"
   | "cost-latency-ledger"
   | "scorecard"
-  | "trust-root-verdict";
+  | "trust-root-verdict"
+  | "rights-provenance-receipt";
 
 export type FullProofArtifact = {
   id: string;
@@ -71,6 +72,7 @@ export function makeFullProofPack(input: {
       artifact("cost-latency-ledger", "cost-latency-ledger", "proof/cost-latency.json"),
       artifact("scorecard", "scorecard", "proof/scorecard.json"),
       artifact("trust-root-verdict", "trust-root-verdict", "proof/trust-root-verdict.json"),
+      artifact("rights-provenance-receipt", "rights-provenance-receipt", "proof/rights-provenance.json"),
     ],
     claims: [
       {
@@ -81,7 +83,12 @@ export function makeFullProofPack(input: {
       {
         id: "3d-asset-produced",
         claim: "The app produced and exported a loadable 3D asset.",
-        artifactIds: ["generated-asset", "exported-asset", "reopen-proof", "cost-latency-ledger"],
+        artifactIds: ["generated-asset", "exported-asset", "reopen-proof", "cost-latency-ledger", "rights-provenance-receipt"],
+      },
+      {
+        id: "reference-media-allowed-use",
+        claim: "Reference media was handled under an explicit ownership/license/transformative-use mode, not unverified exact extraction.",
+        artifactIds: ["rights-provenance-receipt", "recording-audit", "scorecard"],
       },
       {
         id: "recording-visually-verified",
@@ -116,6 +123,7 @@ export function verifyFullProofPack(pack: FullProofPack, options: { baseDir?: st
     "cost-latency-ledger",
     "scorecard",
     "trust-root-verdict",
+    "rights-provenance-receipt",
   ];
   for (const kind of requiredKinds) {
     if (!pack.artifacts.some((artifact) => artifact.kind === kind && artifact.required)) {
@@ -174,7 +182,7 @@ function validateArtifactShape(artifact: FullProofArtifact, size: number): strin
   } else if (artifact.kind === "terminal-transcript") {
     expect([".log", ".txt", ".md"]);
     if (size < 100) errors.push(`artifact '${artifact.id}' transcript too small`);
-  } else if (["recording-audit", "reopen-proof", "cost-latency-ledger", "scorecard", "trust-root-verdict"].includes(artifact.kind)) {
+  } else if (["recording-audit", "reopen-proof", "cost-latency-ledger", "scorecard", "trust-root-verdict", "rights-provenance-receipt"].includes(artifact.kind)) {
     expect([".json", ".md", ".txt", ".csv"]);
     if (size < 50) errors.push(`artifact '${artifact.id}' receipt too small`);
   } else if (artifact.kind === "deployed-url") {

@@ -142,6 +142,8 @@ export function make3dAgentResearchPack(args: {
     source("p3d-bench", "P3D-Bench: Benchmarking MLLMs for Parametric 3D Generation", "https://arxiv.org/html/2606.11152v2", "benchmark", "eval"),
     source("hy3d-bench", "HY3D-Bench: Generation of 3D Assets", "https://arxiv.org/html/2602.03907v1", "benchmark", "eval"),
     source("gpt-eval-3d", "GPTEval3D: Using GPT-4V to Evaluate 3D Asset Generation", "https://arxiv.org/abs/2401.04092", "paper", "eval"),
+    source("usco-ai", "U.S. Copyright Office: Copyright and Artificial Intelligence", "https://www.copyright.gov/ai/", "official-doc", "eval"),
+    source("youtube-fair-use", "YouTube Help: Fair use on YouTube", "https://support.google.com/youtube/answer/9783148", "official-doc", "eval"),
     source("meshy-api", "Meshy API", "https://www.meshy.ai/api", "product", "3d-generation"),
     source("tripo", "Tripo 3D", "https://www.tripo3d.ai/", "product", "3d-generation"),
     source("hyper3d-rodin", "Hyper3D Rodin", "https://hyper3d.ai/", "product", "3d-generation"),
@@ -161,6 +163,12 @@ export function make3dAgentResearchPack(args: {
       userNeed: "A non-technical founder can provide only a GitHub URL plus a vague idea.",
       deliverable: "A written, research-backed capability spec with explicit assumptions and defaults.",
       evidence: "Screenshot-only 3D app need and founder-agent workflow.",
+    },
+    {
+      id: "req-reference-media-remix",
+      userNeed: "Use a screenshot, social post, video frame, movie/game reference, or textbook image as inspiration for a 3D asset.",
+      deliverable: "A rights-aware reference-media workflow that either generates a transformed/original 3D asset, asks for proof of rights, or blocks exact extraction.",
+      evidence: "Screenshot request mentions taking cool 3D assets from social posts/videos/movies/textbooks and asking if they can 3D print or build it into an app.",
     },
     {
       id: "req-3d-generate",
@@ -231,6 +239,12 @@ export function make3dAgentResearchPack(args: {
       grader: "Verify the exported artifact can be downloaded and opened in a target viewer; Blender is v1, CAD-native is stretch.",
       sourceIds: ["p3d-bench", "hunyuan3d-21"],
     },
+    {
+      id: "metric-rights-provenance",
+      name: "Rights and provenance",
+      grader: "Verify source manifest, ownership/license mode, blocked exact-extraction state, and similarity/transformative-use notes are present before export.",
+      sourceIds: ["usco-ai", "youtube-fair-use"],
+    },
   ];
 
   const proofArtifacts: ProofArtifact[] = [
@@ -244,9 +258,22 @@ export function make3dAgentResearchPack(args: {
     { id: "artifact-provider-costs", kind: "provider-costs", required: true, description: "Provider cost, latency, and failure-state ledger." },
     { id: "artifact-comparator-scorecard", kind: "scorecard", required: true, description: "Scorecard against Meshy, Tripo, Rodin/Hyper3D, and Luma." },
     { id: "artifact-decision-log", kind: "decision-log", required: true, description: "Implementation decisions with research and practical references." },
+    { id: "artifact-rights-provenance", kind: "decision-log", required: true, description: "Source manifest, ownership/license/allowed-use mode, and blocked exact-extraction receipt for reference media." },
   ];
 
   const decisions: ImplementationDecision[] = [
+    {
+      requirementId: "req-reference-media-remix",
+      chosenApproach: "Treat social/movie/textbook/video screenshots as reference media with a rights/provenance gate before generation or export.",
+      rejectedAlternatives: [
+        "Exact extraction of a protected expressive asset from media without proof of rights.",
+        "Letting platform availability imply permission to create derivative 3D assets.",
+      ],
+      researchSourceIds: ["rigorous-agent-benchmarks"],
+      inspirationSourceIds: ["usco-ai", "youtube-fair-use", "meshy-api", "tripo", "hyper3d-rodin", "luma"],
+      evalMetricIds: ["metric-rights-provenance", "metric-asset-validity", "metric-visual-alignment"],
+      risk: "Copyright, trademark, publicity, and platform-term risks vary by source; the product must block unverified exact copying and preserve provenance receipts.",
+    },
     {
       requirementId: "req-3d-generate",
       chosenApproach: "Build v1 around provider-backed single-image/text-to-3D generation with GLB/USDZ export and a mock lane for deterministic smoke tests.",
@@ -308,6 +335,16 @@ export function make3dAgentResearchPack(args: {
 
   const claims: ResearchClaim[] = [
     {
+      id: "claim-reference-media-rights-gated",
+      requirementId: "req-reference-media-remix",
+      claimType: "capability",
+      claim: "Reference-media-to-3D is allowed only when source ownership/license/allowed-use mode is recorded; exact extraction of protected expressive assets without rights proof is blocked.",
+      status: "supported",
+      risk: "major",
+      sourceIds: ["usco-ai", "youtube-fair-use"],
+      proofArtifactIds: ["artifact-rights-provenance"],
+    },
+    {
       id: "claim-v1-realistic",
       requirementId: "req-3d-generate",
       claimType: "plan",
@@ -365,6 +402,7 @@ export function make3dAgentResearchPack(args: {
       "Single-image/text-to-3D provider integration is v1; multi-photo reconstruction and humanoid motion tracking are stretch lanes.",
       "gstack is an inspirational review methodology source, not a runtime dependency unless explicitly installed.",
       "Fresh-user emulation is not a real human study; label it as emulation unless an actual participant performs the session.",
+      "Reference media from movies, games, social posts, videos, or textbooks requires a source manifest and rights/provenance gate before export.",
     ],
   };
 }

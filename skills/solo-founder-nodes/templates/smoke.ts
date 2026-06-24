@@ -459,8 +459,9 @@ async function main() {
   check("uncited implementation decision is rejected", uncitedDecisionVerdict.ok === false && uncitedDecisionVerdict.errors.some((e) => e.includes("no researchSourceIds")));
 
   const unsupportedClaim = clone<ResearchPack>(researchPack);
-  unsupportedClaim.claims[1].proofArtifactIds = [];
-  unsupportedClaim.claims[1].sourceIds = [];
+  const unsupportedCapabilityClaim = unsupportedClaim.claims.find((claim) => claim.id === "claim-agent-acts-in-ui")!;
+  unsupportedCapabilityClaim.proofArtifactIds = [];
+  unsupportedCapabilityClaim.sourceIds = [];
   const unsupportedClaimVerdict = verifyResearchPack(unsupportedClaim, { now: new Date("2026-06-23T12:00:00.000Z") });
   check("unsupported major capability claim is rejected", unsupportedClaimVerdict.ok === false && unsupportedClaimVerdict.errors.some((e) => e.includes("major capability/result claim")));
 
@@ -673,6 +674,7 @@ async function main() {
   check("3D plan rejects missing first-party reconstruction lane", badThreeDPlanVerdict.ok === false && badThreeDPlanVerdict.errors.some((e) => e.includes("multiview-reconstruction")));
   const threeDComparator = makeThreeDComparatorRubric();
   check("3D comparator scores first-party and provider outputs on same rubric", threeDComparator.providers.length >= 4 && threeDComparator.passRule.includes("not the default product architecture"));
+  check("3D comparator stays a 100-point rubric", threeDComparator.metrics.reduce((sum, metric) => sum + metric.points, 0) === 100);
 
   const fullProofPack = makeFullProofPack({
     goal: "fresh founder 3D proof",

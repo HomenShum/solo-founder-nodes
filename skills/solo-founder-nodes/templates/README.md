@@ -89,8 +89,9 @@ npm run sfn -- ledger verify <runId>        # re-verify a run's hash-chain (tamp
   video, recording audit, deployed URL, generated assets, scorecard, and trust-root verdict.
 - **`freshUser/` - Fresh nontechnical founder emulation**: required setup choices and proof evidence
   for a GitHub-URL-plus-vague-prompt session.
-- **`threeD/` - First-party 3D app lane**: capture/reconstruction/3DGS/local generation/depth
-  fallback/export/viewer-action plan with providers as comparator/fallback only.
+- **`threeD/` - First-party 3D app lane**: reference-media intake, rights/provenance gate,
+  capture/reconstruction/3DGS/local generation/depth fallback/export/viewer-action plan with
+  providers as comparator/fallback only.
 - **`trust/` - Trust-root receipt**: held-out salt, scorer, and final verdict boundaries that stay
   outside the agent process.
 - **`rework/` - Build-to-delete ledger**: records replaced/deleted approaches, failure receipts,
