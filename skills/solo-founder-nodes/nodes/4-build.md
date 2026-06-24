@@ -5,7 +5,7 @@ Turns the gap report from the prior phase into running code, on the user's actua
 
 ## Inputs (what it reads) / Outputs (the artifact it produces)
 - **Inputs:** the chosen benchmark + task contract (from solo-founder-nodes's benchmark-selection phase); `research-spine.json` with decision receipts; the gstack operating-lane plan/receipt; the gap report (what the app/agent cannot yet do); the target stack and its conventions; existing harness/tool code to extend; the human's architecture comments.
-- **Outputs:** a proposed **diff** (new/changed files for the agent layer + UI layer), plus a short build note listing what was added, which tool stubs are still TODO, and how to invoke the task both programmatically and through the UI. Nothing is committed before the Gate.
+- **Outputs:** a proposed **diff** (new/changed files for the agent layer + UI layer), `agent-api-contract.md` or `agent-api-contract.json` for every production tool exposed to the model, plus a short build note listing what was added, which tool stubs are still TODO, and how to invoke the task both programmatically and through the UI. Nothing is committed before the Gate.
 
 ## Procedure (agent-driven; human steers by comment)
 0x. **Do deterministic provider/setup work before any credential pause.** If a real provider, storage
@@ -24,6 +24,7 @@ direction, industry fit, component-system choice, responsive screenshots, intera
 accessibility proof, or anti-generic review means the diff is not ready.
 1. **Pick the stack template.** Detect the stack (Convex/React, Next.js, Streamlit, …) and announce which template you're applying. If unknown, say so and propose the closest one — do NOT invent a universal abstraction.
 2. **Map task → capabilities.** For each benchmark task, list the tools the agent must call, the model route(s), and the UI surfaces a human needs to run it and see the result. Present this map; **the human comments here to steer architecture** (e.g. "reuse the existing tool registry, don't fork it", "route long-context to X").
+2a. **Write the agent-ready API contract before tool code lands.** For every production tool in the capability map, produce an agent-facing contract and run `npm run sfn -- agent-api verify --contract <agent-api-contract.json>`. The contract must include semantic lifecycle, input/output schemas, provider schema parity, use/do-not-use guidance, preconditions, success signals, structured failure modes, recovery paths, governance, cost/latency class, and examples. Missing or failing contracts block implementation.
 3. **Scaffold the agent layer — including the clean-probe lane.** Harness loop (observe → plan → act → extract), tool implementations (real, not answer-keys), model routing. Reuse the existing harness shape; extend the registry rather than forking. Build the **clean-probe lane from the start**: a generic writer that renders the model's own plan (no per-task/family writers) plus the wiring for a mode that forces it with the model in the loop — this is what the adapter (Phase 5) toggles and the loop (Phase 6) measures as the headline. See [`../references/honest-lane.md`](../references/honest-lane.md).
 4. **Scaffold the app layer.** The input surface, a streaming trace/observability view, the result artifact, and any approval/review controls — using the app's real components so the task runs end-to-end in the live UI.
 5. **Wire the seam.** Connect UI trigger → harness → tools → artifact, so one user action drives the whole loop and surfaces its output on screen.
@@ -39,6 +40,7 @@ accessibility proof, or anti-generic review means the diff is not ready.
 - **HONEST PROVENANCE:** the build note must mark every tool stub that is still a placeholder as TODO/unverified — never describe a stub as working.
 - **HELD-OUT:** do not peek at the held-out or off-distribution task contents while building; build to the task *shape*, not to specific held-out answers.
 - **RESEARCH-BACKED IMPLEMENTATION:** a major implementation decision without a valid decision receipt is blocked. If the research says a capability is stretch/unproven, the build must label it that way in UI/docs/proof rather than silently claiming it.
+- **AGENT-READY API:** every production tool must have a verified agent-facing contract before it is exposed to the model. Backend validation alone is insufficient; if the provider schema drops required args, omits recovery semantics, hides mutation/approval requirements, or cannot explain when NOT to use the tool, the diff is not ready.
 - **GSTACK OPERATING RECEIPTS:** architecture, design, staff-review, security, and guard lanes are mandatory when their trigger conditions apply. Missing gstack receipts mean the diff is not ready for the Gate.
 - **DESIGN QUALITY GATE:** any UI-facing diff needs a `design-quality-receipt` from
   `npm run sfn -- design gate ...`. A UI that still reads as an internal harness, lacks desktop/mobile

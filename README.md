@@ -89,6 +89,10 @@ probe receipt is recorded.
 - **gstack Bridge** -- `references/gstack-bridge.md` + `templates/gstack/` -- converts `garrytan/gstack` CEO/eng/design/QA/security/release roles into portable operating-review receipts, without requiring a Claude Code runtime.
 - **Memory substrate** -- `references/memory.md` + `templates/memory/` -- local-first, audit-safe memory so a resumed session re-hydrates instead of re-deriving.
 - **Research Spine** -- `references/research-spine.md` + `templates/research/` -- executable research receipts so each major implementation decision traces user need -> reference -> paper/benchmark -> eval metric -> proof artifact.
+- **Loop Runner** -- `templates/loop/` -- executable phase receipts for discover -> benchmark -> setup -> build -> adapter -> iterate -> verify, including proof-verdict enforcement.
+- **Agent-ready API** -- `references/agent-ready-api.md` + `templates/agentApi/` -- semantic tool contracts, provider-schema parity checks, and structured failure/recovery gates.
+- **Fresh-room proof receipts** -- `templates/proof/` -- live browser proof receipts for fresh-room UI runs, official scorer results, trace/video/screenshots, exports, costs, latency, and token usage.
+- **Build-to-delete / rework ledger** -- `references/build-to-delete.md` + `templates/rework/` -- records deleted/replaced approaches, failure receipts, surviving proof, and lessons so agents do not resurrect dead paths.
 - **Optional agent hosts** -- `templates/setup/openrouterAgentHosts.ts` -- generates OpenRouter/OpenClaw/Hermes setup packs with cheap current model lanes, secret hygiene, and conformance commands; not required by the core skill.
 - `docs/eval/nonbtb/` -- a runnable deterministic example grader; `docs/eval/BTB_GENERALIZATION_DIAGNOSTIC.md` -- the anti-overfit protocol.
 
@@ -99,6 +103,16 @@ The loop now ships the missing self-direction pieces:
 - **Control plane**: persist loop/phase state, approval pauses, event triggers, budget stops, trace spans, worktree leases, and trace-sourced improvement candidates.
 
 Run `npm run smoke` in `skills/solo-founder-nodes/templates/` to prove these local invariants.
+
+Executable receipts:
+
+```
+npm run sfn -- run --project <path> --goal <goal> --out loop-run.json
+npm run sfn -- run verify --receipt loop-run.json
+npm run sfn -- agent-api verify --contract agent-api-contract.json
+npm run sfn -- fresh-room verify --receipt docs/eval/fresh-room/<case-id>/latest.json
+npm run sfn -- rework verify --ledger rework-ledger.json
+```
 
 ## Research-backed implementation
 The loop now gates major architecture and product claims through `research-spine.json`.

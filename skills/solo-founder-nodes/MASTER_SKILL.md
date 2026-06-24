@@ -58,17 +58,17 @@ verifier: [`templates/setup/externalSetupGate.ts`](templates/setup/externalSetup
 
 Do not lock the skill to Claude Code, Codex, OpenClaw, Hermes, or any model provider. If the founder
 wants a low-cost OpenRouter-backed agent-host setup, generate an **optional** setup pack with
-`npm run sfn -- agents openrouter-plan --out agent-host-setup`. The pack must keep secrets out of
-repo files, cite the OpenRouter model catalog date, and select models by evidence:
+`npm run sfn -- agents openrouter-audit --out openrouter-model-audit.json` followed by
+`npm run sfn -- agents openrouter-plan --audit openrouter-model-audit.json --out agent-host-setup`.
+The pack must keep secrets out of repo files, cite the OpenRouter model catalog date, and select
+models by evidence:
 
 - OpenClaw default: cheapest paid conformance-proven route (`deepseek/deepseek-v4-flash` in the
   2026-06-24 audit).
 - Hermes default: conformance-proven coding fallback (`qwen/qwen3-coder-next` in the 2026-06-24
   audit).
-- Free coding lane: optional only (`cohere/north-mini-code:free`) until it passes the same agent
-  conformance receipts.
-- Multimodal UI/screenshot lane: optional only (`google/gemini-3.1-flash-lite`) for visual tasks, not
-  default text/code loops.
+- Free and multimodal catalog lanes stay in `SOLO_OPENROUTER_AUDITED_*` until the selected host
+  produces its own smoke and conformance receipts.
 
 Treat model choice as a receipt-backed policy, not a hardcoded eternal truth. If the catalog changes,
 rerun smoke + agent conformance before changing claims.
@@ -90,6 +90,11 @@ instead of waiting for the founder to steer. Doctrine: [`references/control-plan
 copyable implementation: [`templates/control/`](templates/control/). The control plane coordinates
 work; `SoloLedger` and the trust-root still derive the benchmark verdict.
 
+For executable phase enforcement, create and verify a loop receipt with
+`npm run sfn -- run --project <path> --goal <goal> --out loop-run.json` and
+`npm run sfn -- run verify --receipt loop-run.json`. No phase advances without its required receipts;
+the verify phase cannot complete without a passing `proof-verdict.json`.
+
 ## Research spine (required for research-backed implementation)
 
 The agent must not turn a founder's domain prompt into unsupported architecture or product claims. At
@@ -101,6 +106,19 @@ onward, fail closed if a major capability/result claim lacks proof artifacts. Un
 must be labeled `unsupported_assumption` or `rejected`, never sold as shipped capability. Doctrine:
 [`references/research-spine.md`](references/research-spine.md); copyable implementation:
 [`templates/research/`](templates/research/).
+
+## Agent-ready API gate (hard for tools)
+
+Every production tool exposed to a model must be agent-ready by construction. Backend validation is
+not enough; the provider-facing schema and description are what the model sees. During **build** and
+**adapter**, produce an `agent-api-contract.md` or JSON equivalent for every production tool and
+verify it with `npm run sfn -- agent-api verify --contract <file>`. The contract must include:
+tool purpose, input/output schema, provider schema parity, required args, semantic lifecycle
+(`search -> resolve -> preview -> execute -> verify -> recover`), when to use, when not to use,
+preconditions, success signals, structured failure modes, recovery paths, cost/latency class,
+permission level, mutation flag, approval requirement, and examples. Doctrine:
+[`references/agent-ready-api.md`](references/agent-ready-api.md); copyable verifier:
+[`templates/agentApi/`](templates/agentApi/).
 
 ## gstack operating lanes (portable operating review team)
 
@@ -212,6 +230,16 @@ the authority. Doctrine + the `SoloMemoryEvent` contract + the memory tools the 
 [`templates/memory/`](templates/memory/) (types.ts, schema.ts, localMemory.ts, retrieval.ts,
 okfExport.ts, mem0Adapter.ts, solo-memory.schema.json, memory-policy.md). The LIVE implementation
 belongs in the founder's own app (e.g. `src/nodeagent/memory/`) - reference it, do not inline it here.
+
+## Build to delete (hard for rework)
+
+Disposable scaffolding is allowed; undocumented replacement is not. When a path is deleted,
+deprecated, or replaced because proof showed it failed, record a rework ledger entry with the old
+approach, why it seemed right, what failed, the failure receipt, the new approach, why it survived,
+the proof receipts, what was deleted, what survived, and the lesson. Verify with
+`npm run sfn -- rework verify --ledger rework-ledger.json`. Doctrine:
+[`references/build-to-delete.md`](references/build-to-delete.md); copyable verifier:
+[`templates/rework/`](templates/rework/).
 
 ## Output
 

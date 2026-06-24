@@ -273,7 +273,7 @@ export class SoloMemory {
         WHERE memory_fts MATCH ?
           AND m.project_id = ?
           AND m.visibility IN ${visibilityWhere}
-          AND m.benchmark_safety != 'heldout_forbidden'
+          AND m.benchmark_safety NOT IN ('heldout_forbidden', 'redacted')
           ${phaseFilter}
         ORDER BY rank
         LIMIT ${Number(limit)}
@@ -302,7 +302,7 @@ export class SoloMemory {
         JOIN memories m ON m.id = v.memory_id
         WHERE m.project_id = ?
           AND m.visibility IN ${visibilityWhere}
-          AND m.benchmark_safety != 'heldout_forbidden'
+          AND m.benchmark_safety NOT IN ('heldout_forbidden', 'redacted')
           AND v.model = ?
       `,
       args: [options.projectId, this.embeddingProvider.model],
@@ -413,6 +413,23 @@ export class SoloMemory {
   }
 
   private assertBenchmarkSafe(input: ParsedRememberInput) {
+    const secretOrPii = detectSecretOrPii(`${input.summary}\n${input.content}`);
+    if (secretOrPii) {
+      this.events.append({
+        id: `evt_${nanoid(12)}`,
+        projectId: input.projectId,
+        eventType: "quarantine_reject",
+        payload: {
+          reason: secretOrPii,
+          summary: input.summary,
+          phase: input.phase,
+          kind: input.kind,
+        },
+        createdAt: new Date().toISOString(),
+      });
+      throw new Error(`SoloMemory: refused to persist sensitive content (${secretOrPii}). Store a redacted receipt instead.`);
+    }
+
     if (input.benchmarkSafety === "heldout_forbidden") {
       this.events.append({
         id: `evt_${nanoid(12)}`,
@@ -451,4 +468,13 @@ export class SoloMemory {
       input.content,
     ].join("\n");
   }
+}
+
+function detectSecretOrPii(text: string): string | null {
+  if (/\b(?:api[_-]?key|secret|token|password)\s*[:=]\s*["']?[A-Za-z0-9_\-]{12,}/i.test(text)) return "secret-pattern";
+  if (/\b(?:OPENAI|OPENROUTER|ANTHROPIC|GITHUB|VERCEL|SUPABASE|CONVEX)_[A-Z0-9_]*KEY\s*=/i.test(text)) return "env-key-pattern";
+  if (/\bsk-[A-Za-z0-9_\-]{16,}\b/.test(text)) return "provider-key-pattern";
+  if (/\b\d{3}-\d{2}-\d{4}\b/.test(text)) return "ssn-pattern";
+  if (/\b(?:\d[ -]*?){13,16}\b/.test(text)) return "payment-card-pattern";
+  return null;
 }

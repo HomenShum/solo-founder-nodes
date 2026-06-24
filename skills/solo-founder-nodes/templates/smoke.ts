@@ -16,6 +16,10 @@ import { defaultDesignQualityCriteria, makeDesignQualityReceipt, verifyDesignQua
 import { gstackRoleRegistry, recommendGstackLanes, verifyGstackPlan, type GstackReviewPlan } from "./gstack/gstackBridge";
 import { defaultDeterministicPrework, makeExternalSetupGateReceipt, verifyExternalSetupGateReceipt } from "./setup/externalSetupGate";
 import { makeOpenRouterAgentSetupPack, rankOpenRouterModelsFromCatalog, verifyOpenRouterAgentSetupPack } from "./setup/openrouterAgentHosts";
+import { makeAgentApiContractMarkdown, makeAgentReadyToolContract, verifyAgentReadyToolContract, type AgentReadyToolContract } from "./agentApi/agentReadyApi";
+import { makeLoopRunReceipt, verifyLoopRunReceipt, type LoopRunReceipt } from "./loop/loopRunner";
+import { verifyFreshRoomProofReceipt, type FreshRoomProofReceipt } from "./proof/freshRoomReceipt";
+import { makeReworkLedger, verifyReworkLedger, type ReworkLedger } from "./rework/reworkLedger";
 
 let pass = 0;
 let fail = 0;
@@ -139,6 +143,75 @@ async function main() {
   }
   check("honor-system heldout_forbidden label still rejected", labelThrew);
 
+  await mem.remember({
+    projectId: "smoke",
+    phase: "iterate",
+    kind: "run_result",
+    summary: "held-out aggregate score only",
+    content: "heldout_n=10 mean=0.42 failure_class=export-missing",
+    benchmarkSafety: "aggregate_only",
+    metadata: { aggregateOnly: true },
+  });
+  const aggregateHits = await mem.search({ projectId: "smoke", query: "aggregate score export missing", limit: 3, minScore: 0 });
+  check("memory allows aggregate scores with aggregateOnly receipt", aggregateHits.some((hit) => hit.summary.includes("aggregate score")));
+
+  let aggregateMissingMetadataThrew = false;
+  try {
+    await mem.remember({
+      projectId: "smoke",
+      phase: "iterate",
+      kind: "run_result",
+      summary: "aggregate without metadata",
+      content: "mean=0.51",
+      benchmarkSafety: "aggregate_only",
+    });
+  } catch {
+    aggregateMissingMetadataThrew = true;
+  }
+  check("memory rejects aggregate_only without metadata.aggregateOnly", aggregateMissingMetadataThrew);
+
+  let secretThrew = false;
+  try {
+    await mem.remember({
+      projectId: "smoke",
+      phase: "setup",
+      kind: "env_fact",
+      summary: "OpenRouter key",
+      content: "OPENROUTER_API_KEY=sk-test-1234567890abcdef",
+      benchmarkSafety: "safe",
+    });
+  } catch {
+    secretThrew = true;
+  }
+  check("memory refuses API keys", secretThrew);
+
+  let piiThrew = false;
+  try {
+    await mem.remember({
+      projectId: "smoke",
+      phase: "discover",
+      kind: "project_fact",
+      summary: "founder ssn",
+      content: "SSN 123-45-6789",
+      benchmarkSafety: "safe",
+    });
+  } catch {
+    piiThrew = true;
+  }
+  check("memory refuses PII patterns", piiThrew);
+
+  await mem.remember({
+    projectId: "smoke",
+    phase: "setup",
+    kind: "env_fact",
+    summary: "redacted local-only provider setup",
+    content: "redacted provider setup notes for local operator only",
+    benchmarkSafety: "redacted",
+    visibility: "local",
+  });
+  const redactedHits = await mem.search({ projectId: "smoke", query: "redacted provider setup", limit: 5, minScore: 0 });
+  check("memory search does not return redacted contents", redactedHits.every((hit) => hit.benchmarkSafety !== "redacted"));
+
   // ---------------- Graph context: query-first orientation ----------------
   console.log("\nGraphContext (query-first self-orientation):");
   const graphRoot = mkdtempSync(join(tmpdir(), "solo-smoke-graph-"));
@@ -261,6 +334,83 @@ async function main() {
   const auditedAgentSetupVerdict = verifyOpenRouterAgentSetupPack(auditedAgentSetup);
   check("audited OpenRouter setup still verifies", auditedAgentSetupVerdict.ok, auditedAgentSetupVerdict.errors.join("; "));
   check("audited OpenRouter setup exposes catalog recommendations without replacing proved defaults", auditedAgentSetup.environment.SOLO_OPENROUTER_OPENCLAW_MODEL === "deepseek/deepseek-v4-flash" && auditedAgentSetup.environment.SOLO_OPENROUTER_AUDITED_PAID_CODE_MODEL === "cheap/current-code" && auditedAgentSetup.environment.SOLO_OPENROUTER_AUDITED_FREE_CODE_MODEL === "free/north-mini-code:free" && auditedAgentSetup.environment.SOLO_OPENROUTER_AUDITED_MULTIMODAL_MODEL === "google/gemini-flash-lite");
+
+  // ---------------- Agent-ready API: schema + lifecycle + recovery gate ----------------
+  console.log("\nAgentReadyApi (tool contracts for model-facing APIs):");
+  const writeCellContract = makeAgentReadyToolContract({
+    toolName: "write_locked_cell_results",
+    purpose: "Write evidence-bearing spreadsheet results after previewing target cells and respecting locks.",
+    lifecycle: ["search", "resolve", "preview", "execute", "verify", "recover"],
+    requiredArgs: ["ops"],
+    inputSchema: {
+      type: "object",
+      properties: {
+        ops: {
+          type: "array",
+          items: {
+            type: "object",
+            properties: {
+              cellId: { type: "string" },
+              value: { type: "string" },
+              evidenceRef: { type: "string" },
+            },
+            required: ["cellId", "value", "evidenceRef"],
+          },
+        },
+      },
+      required: ["ops"],
+    },
+    providerInputSchema: {
+      type: "object",
+      properties: {
+        ops: { type: "array" },
+      },
+      required: ["ops"],
+    },
+    outputSchema: {
+      type: "object",
+      properties: {
+        status: { type: "string", enum: ["ok", "pendingApproval", "conflict", "error"] },
+        mutationIds: { type: "array", items: { type: "string" } },
+        error: { type: "object" },
+      },
+      required: ["status"],
+    },
+    useWhen: ["writing evidence-bearing spreadsheet outputs after target cells are resolved"],
+    doNotUseWhen: ["the user is actively typing the target cell", "evidence is missing"],
+    preconditions: ["read the current cell versions", "collect evidence refs", "preview affected cells"],
+    successSignals: ["status is ok or pendingApproval", "mutationIds are returned", "verification read matches expected values"],
+    failureModes: [
+      { kind: "missing_required_arg", when: "ops is omitted", recoveryPath: "construct ops from resolved target cells and retry once", nextAction: "retry" },
+      { kind: "permission_denied", when: "write scope is not allowed", recoveryPath: "ask the human for approval or stop", nextAction: "ask_human" },
+      { kind: "cas_conflict", when: "cell version changed", recoveryPath: "re-read target cells and propose a conflict-safe patch", nextAction: "recover" },
+      { kind: "provider_timeout", when: "tool call times out", recoveryPath: "verify whether mutation landed before retrying", nextAction: "recover" },
+    ],
+    costClass: "low",
+    latencyClass: "interactive",
+    permissionLevel: "write",
+    mutates: true,
+    approvalRequired: false,
+    examples: {
+      call: { ops: [{ cellId: "Sheet1!B4", value: "42", evidenceRef: "source:10" }] },
+      success: { status: "ok", mutationIds: ["mut_1"] },
+      failure: { status: "conflict", error: { kind: "cas_conflict", missingFields: [] } },
+    },
+  });
+  const apiVerdict = verifyAgentReadyToolContract(writeCellContract);
+  const contractMd = makeAgentApiContractMarkdown(writeCellContract);
+  check("agent-ready API contract verifies", apiVerdict.ok, apiVerdict.errors.join("; "));
+  check("agent-api-contract.md names when/not-when/recovery", contractMd.includes("Use When") && contractMd.includes("Do Not Use When") && contractMd.includes("cas_conflict"));
+
+  const missingProviderArg: AgentReadyToolContract = clone(writeCellContract);
+  missingProviderArg.providerInputSchema = { type: "object", properties: {}, required: [] };
+  const missingProviderArgVerdict = verifyAgentReadyToolContract(missingProviderArg);
+  check("agent-ready API gate rejects provider schema arg loss", missingProviderArgVerdict.ok === false && missingProviderArgVerdict.errors.some((e) => e.includes("provider schema")));
+
+  const missingRecovery: AgentReadyToolContract = clone(writeCellContract);
+  missingRecovery.failureModes = [];
+  const missingRecoveryVerdict = verifyAgentReadyToolContract(missingRecovery);
+  check("agent-ready API gate rejects missing recovery paths", missingRecoveryVerdict.ok === false && missingRecoveryVerdict.errors.some((e) => e.includes("failure modes")));
 
   // ---------------- Research spine: research-backed implementation gate ----------------
   console.log("\nResearchSpine (research-backed decisions + proof target):");
@@ -437,6 +587,136 @@ async function main() {
   const badGstackPlan: GstackReviewPlan = { ...verifyGstack, selectedRoleIds: verifyGstack.selectedRoleIds.filter((id) => id !== "land-and-deploy") };
   const badGstackVerdict = verifyGstackPlan(badGstackPlan);
   check("deployment proof without land-and-deploy is rejected", badGstackVerdict.ok === false && badGstackVerdict.errors.some((e) => e.includes("land-and-deploy")));
+
+  // ---------------- Fresh-room proof receipts: NodeRoom-compatible latest.json shape ----------------
+  console.log("\nFreshRoomProofReceipt (live UI proof receipt compatibility):");
+  const proofRoot = mkdtempSync(join(tmpdir(), "solo-smoke-proof-"));
+  const touch = (rel: string, body = "proof") => {
+    const path = join(proofRoot, rel);
+    mkdirSync(join(path, ".."), { recursive: true });
+    writeFileSync(path, body, "utf8");
+    return rel;
+  };
+  const freshReceipt: FreshRoomProofReceipt = {
+    schemaVersion: 1,
+    caseId: "FR-010",
+    roomId: "room_fresh",
+    command: "npm run test:fresh-room",
+    model: "deepseek/deepseek-v4-flash",
+    runtimeProfile: "benchmark_completion",
+    prompt: "Complete the held-out spreadsheet task.",
+    tracePath: touch("trace.zip"),
+    videoPath: touch("video.webm"),
+    screenshotPaths: [touch("graded.png")],
+    exportedFiles: [touch("answer.xlsx")],
+    reopenedFiles: [touch("reopened.txt")],
+    scorer: { id: "SpreadsheetBench/evaluation.compare_workbooks", official: true, passed: true, resultPath: touch("score.json", "{\"ok\":true}") },
+    costUsd: 0.12,
+    latencyMs: 42_000,
+    tokenUsage: 22_000,
+    mutationCount: 8,
+    proofSignals: {
+      freshRoom: true,
+      liveBrowser: true,
+      memoryModeFalse: true,
+      zeroFabrication: true,
+      selfTestPassed: true,
+      exportDownloaded: true,
+      artifactReopened: true,
+    },
+    pass: true,
+  };
+  const freshReceiptVerdict = verifyFreshRoomProofReceipt(freshReceipt, { baseDir: proofRoot });
+  check("fresh-room receipt passes with live browser + official scorer proof", freshReceiptVerdict.ok, freshReceiptVerdict.errors.join("; "));
+  const noOfficialScorerReceipt: FreshRoomProofReceipt = clone(freshReceipt);
+  noOfficialScorerReceipt.scorer.official = false;
+  const noOfficialScorerVerdict = verifyFreshRoomProofReceipt(noOfficialScorerReceipt, { baseDir: proofRoot });
+  check("fresh-room receipt rejects unofficial scorer", noOfficialScorerVerdict.ok === false && noOfficialScorerVerdict.errors.some((e) => e.includes("official scorer")));
+  const noArtifactReopenReceipt: FreshRoomProofReceipt = clone(freshReceipt);
+  noArtifactReopenReceipt.proofSignals.artifactReopened = false;
+  const noArtifactReopenVerdict = verifyFreshRoomProofReceipt(noArtifactReopenReceipt, { baseDir: proofRoot });
+  check("fresh-room receipt rejects missing artifact reopen proof", noArtifactReopenVerdict.ok === false && noArtifactReopenVerdict.errors.some((e) => e.includes("artifactReopened")));
+
+  // ---------------- Build-to-delete: rework ledger ----------------
+  console.log("\nReworkLedger (build-to-delete learning preservation):");
+  const reworkLedger: ReworkLedger = makeReworkLedger({
+    projectId: "smoke",
+    entries: [
+      {
+        id: "empty-provider-tool-schema",
+        oldApproach: "Advertise production tools with empty object schemas.",
+        whyItSeemedRight: "The backend implementation had validation, so the provider schema looked secondary.",
+        failureMode: "Model called tools without required query/sourceArtifactId/ops fields.",
+        failureReceiptPath: touch("failures/fr-010-schema-loss.json", "{\"ok\":false}"),
+        newApproach: "Generate provider-facing schemas from canonical contracts and test required args.",
+        whyItSurvived: "Provider now sees required arguments before tool call generation.",
+        proofReceiptPaths: [touch("proofs/provider-schema-parity.json", "{\"ok\":true}")],
+        deletedArtifacts: ["empty tool schema fallback"],
+        keptArtifacts: ["canonical tool implementation"],
+        lesson: "The model only sees the provider contract; backend correctness is not enough.",
+      },
+    ],
+  });
+  const reworkVerdict = verifyReworkLedger(reworkLedger, { baseDir: proofRoot });
+  check("rework ledger passes complete build-to-delete entry", reworkVerdict.ok, reworkVerdict.errors.join("; "));
+  const noDeletionLedger: ReworkLedger = clone(reworkLedger);
+  noDeletionLedger.entries[0].deletedArtifacts = [];
+  const noDeletionVerdict = verifyReworkLedger(noDeletionLedger, { baseDir: proofRoot });
+  check("rework ledger rejects entries that do not delete/deprecate anything", noDeletionVerdict.ok === false && noDeletionVerdict.errors.some((e) => e.includes("deleted")));
+
+  // ---------------- Executable loop runner: phase receipt enforcement ----------------
+  console.log("\nLoopRunner (phase receipts and proof-verdict enforcement):");
+  const loopReceipt: LoopRunReceipt = makeLoopRunReceipt({
+    projectPath: proofRoot,
+    goal: "prove a fresh-room 3D app flow",
+    createdAt: "2026-06-24T00:00:00.000Z",
+  });
+  const loopFiles: Record<string, string> = {};
+  const makeLoopFile = (name: string, body = "ok") => {
+    loopFiles[name] = touch(`loop/${name}`, body);
+    return loopFiles[name];
+  };
+  for (const phase of loopReceipt.phases) {
+    phase.status = "completed";
+    phase.memoryReceiptPath = makeLoopFile(`${phase.phase}-memory.json`, "{\"ok\":true}");
+  }
+  loopReceipt.phases.find((phase) => phase.phase === "discover")!.artifacts = {
+    "graph-context": makeLoopFile("graph-context.json"),
+    "research-intake": makeLoopFile("research-intake.json"),
+  };
+  loopReceipt.phases.find((phase) => phase.phase === "benchmark")!.artifacts = {
+    "benchmark-choice": makeLoopFile("benchmark-choice.json"),
+    "heldout-manifest": makeLoopFile("heldout-manifest.json"),
+  };
+  loopReceipt.phases.find((phase) => phase.phase === "setup")!.artifacts = {
+    "setup-gate": makeLoopFile("setup-gate.json"),
+  };
+  loopReceipt.phases.find((phase) => phase.phase === "build")!.artifacts = {
+    "agent-api-contract": makeLoopFile("agent-api-contract.md"),
+    "design-quality": makeLoopFile("design-quality.json"),
+  };
+  loopReceipt.phases.find((phase) => phase.phase === "adapter")!.artifacts = {
+    "adapter-contract": makeLoopFile("adapter-contract.json"),
+    "official-scorer-binding": makeLoopFile("official-scorer-binding.json"),
+  };
+  loopReceipt.phases.find((phase) => phase.phase === "iterate")!.artifacts = {
+    "failure-hypothesis": makeLoopFile("failure-hypothesis.json"),
+    "rework-ledger": makeLoopFile("rework-ledger.json"),
+  };
+  loopReceipt.phases.find((phase) => phase.phase === "verify")!.artifacts = {
+    "proof-verdict": makeLoopFile("proof-verdict.json", "{\"ok\":true}"),
+    "fresh-room-receipt": makeLoopFile("fresh-room-latest.json"),
+  };
+  const loopVerdict = verifyLoopRunReceipt(loopReceipt, { baseDir: proofRoot });
+  check("loop runner passes only when every phase receipt exists", loopVerdict.ok, loopVerdict.errors.join("; "));
+  const noMemoryLoop = clone<LoopRunReceipt>(loopReceipt);
+  noMemoryLoop.phases.find((phase) => phase.phase === "build")!.memoryReceiptPath = undefined;
+  const noMemoryVerdict = verifyLoopRunReceipt(noMemoryLoop, { baseDir: proofRoot });
+  check("loop runner rejects phase completion without memory receipt", noMemoryVerdict.ok === false && noMemoryVerdict.errors.some((e) => e.includes("memoryReceiptPath")));
+  const badProofVerdictLoop = clone<LoopRunReceipt>(loopReceipt);
+  writeFileSync(join(proofRoot, badProofVerdictLoop.phases.find((phase) => phase.phase === "verify")!.artifacts["proof-verdict"]!), "{\"ok\":false}", "utf8");
+  const badProofVerdict = verifyLoopRunReceipt(badProofVerdictLoop, { baseDir: proofRoot });
+  check("loop runner refuses done without passing proof-verdict.json", badProofVerdict.ok === false && badProofVerdict.errors.some((e) => e.includes("proof-verdict")));
 
   // ---------------- SoloControlPlane: durable loop control ----------------
   console.log("\nSoloControlPlane (durable control plane):");

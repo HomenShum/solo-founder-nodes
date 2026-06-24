@@ -18,6 +18,7 @@ Outputs:
 - A transfer ledger: `task_id | harness_result | in_app_result | match? | evidence_path`.
 - The final verdict line: REAL CAPABILITY (transfers) vs OVERFIT (scored offline, fails in-app), with the non-transferring task ids enumerated.
 - `proof-verdict.json` for proof-pack runs, created by `npm run sfn -- proof verdict --run <dir>`, so supported major claims have actual proof artifact paths.
+- A fresh-room proof receipt for each live browser case, verified with `npm run sfn -- fresh-room verify --receipt <fresh-room-receipt.json>`.
 
 ## Procedure (agent-driven; human steers by comment)
 - **Control-plane preflight.** Load the `SoloControlPlane` loop summary and require a ready graph-context receipt. Query the graph for the real composer, upload, export, run-id, and scorer seams before driving the browser. Record every UI attempt as a trace span with screenshot/DOM/run-id attrs.
@@ -35,6 +36,7 @@ Outputs:
 the selected design skills, completed criteria, Design Brief, Component Contract, desktop/mobile
 screenshots, interaction proof, and accessibility proof. A missing or failing design-quality receipt
 downgrades the UI/product claim to UNVERIFIED even if the underlying agent action succeeded.
+6d. **Seal fresh-room proof receipts.** For every live browser case, write a fresh-room receipt containing room id, exact command, model, prompt, trace/video/screenshots, exported/reopened files, official scorer result, cost, latency, token usage, and proof signals. Run `npm run sfn -- fresh-room verify --receipt <fresh-room-receipt.json>`. A missing or failing receipt blocks `proof-verdict.json` from passing.
 7. HUMAN COMMENT POINT: if transfer fails, the user steers the next move by comment — loop back to Phase 7 (the harness was measuring something the app does not do), or back to the app wiring (the capability exists but the UI path is broken). Do NOT silently re-tune to make the number look good.
 8. **Write the in-app transfer proof to memory.** Persist to memory ([`../references/memory.md`](../references/memory.md), L2, kind `in_app_transfer`): per verified task the DOM signal, the screenshot path, the recorded run id, and the binary verdict; the suite-level REAL CAPABILITY vs OVERFIT line; and the enumerated non-transferring task ids + divergence class. Store split membership + the proof refs (screenshot/dom_signal/trace) only — NOT held-out task answers (quarantine). This closes the suite's memory loop so a future re-tune or app-wiring fix targets the non-transferring ids without re-running everything.
 
@@ -59,6 +61,7 @@ The prose in **Procedure** (steps 2-6) makes the in-app transfer doctrine human-
 - NO ANSWER-KEYS: confirm the in-app path contains no per-task detector or hardcoded output that the harness lacked (or vice-versa). If the app only works for the tuned task ids, that is overfit — fail it.
 - HELD-OUT: the verification sample must include held-out and off-distribution tasks, not only the tasks tuning optimized. Reporting transfer on tuned tasks alone is not transfer.
 - Never claim "verified in-app" on the basis of build success, `git push`, CLI exit codes, or CI-green. Live rendered DOM signal + screenshot, or it did not transfer.
+- Never claim "proof complete" without both a passing `proof-verdict.json` and passing fresh-room receipts for the live browser cases. A plain screen recording, terminal transcript, or deployment URL is evidence input, not a verdict.
 - Never claim "research-backed implementation" on citations alone. Major supported claims require both cited sources and proof artifacts; otherwise they remain `unsupported_assumption`, `rejected`, or UNVERIFIED.
 - Never claim "deployed/customer usable" without the gstack verification receipts: live QA, release/deploy, canary, security if applicable, docs/DX if applicable, and retro learning.
 - Never claim "best UI/UX", "premium UI", or "customer-ready UI" without a passing

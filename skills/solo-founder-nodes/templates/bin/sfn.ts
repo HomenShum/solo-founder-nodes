@@ -56,6 +56,10 @@ import {
   verifyOpenRouterAgentSetupPack,
   writeOpenRouterAgentSetupPack,
 } from "../setup/openrouterAgentHosts";
+import { makeLoopRunReceipt, verifyLoopRunReceipt, type LoopRunReceipt } from "../loop/loopRunner";
+import { verifyAgentReadyToolContract, type AgentReadyToolContract } from "../agentApi/agentReadyApi";
+import { verifyFreshRoomProofReceipt, type FreshRoomProofReceipt } from "../proof/freshRoomReceipt";
+import { verifyReworkLedger, type ReworkLedger } from "../rework/reworkLedger";
 
 const here = dirname(fileURLToPath(import.meta.url)); // templates/bin
 const templates = join(here, "..");                   // templates
@@ -212,7 +216,12 @@ const HELP = `sfn — Solo Founder Nodes local CLI   (run via: npm run sfn -- <c
   control start --project <p> --goal <g> [--budget <n>] [--root <path>]
   control status <loopId>     print durable loop status/resume summary
   control trigger --source <s> --key <k> --project <p> --goal <g> [--budget <n>]
+  run --project <path> --goal <g> [--out <file>]  create an enforceable loop receipt skeleton
+  run verify --receipt <file> [--base <dir>]       fail until all phase receipts and proof-verdict pass
   setup gate --goal <g> --provider <p> --env <NAME> [--setup-url <url>] [--completed <csv>] [--resume <cmd>] [--out <file>]
+  agent-api verify --contract <file>
+  fresh-room verify --receipt <file> [--base <dir>]
+  rework verify --ledger <file> [--base <dir>]
   research init --goal <g> --domain <d> [--out <file>]
   research verify [file] [--max-age-days <n>]
   proof init --goal <g> --domain <d> [--out <dir>]
@@ -320,6 +329,87 @@ async function main() {
       }
       console.error("control: start | status <loopId> | trigger");
       process.exit(2);
+    }
+    case "run": {
+      const sub = rest[0];
+      if (sub === "verify") {
+        const receiptPath = flag(rest, "--receipt");
+        const baseDir = flag(rest, "--base");
+        if (!receiptPath) {
+          console.error("run verify --receipt <file> [--base <dir>]");
+          process.exit(2);
+        }
+        const abs = resolve(receiptPath);
+        const receipt = readJson<LoopRunReceipt>(abs);
+        const verdict = verifyLoopRunReceipt(receipt, { baseDir: baseDir ? resolve(baseDir) : dirname(abs) });
+        console.log(JSON.stringify({ receipt: abs, verdict }, jbig, 2));
+        process.exit(verdict.ok ? 0 : 1);
+      }
+      const projectPath = flag(rest, "--project");
+      const goal = flag(rest, "--goal");
+      if (!projectPath || !goal) {
+        console.error("run --project <path> --goal <g> [--out <file>] | run verify --receipt <file> [--base <dir>]");
+        process.exit(2);
+      }
+      const receipt = makeLoopRunReceipt({ projectPath: resolve(projectPath), goal });
+      const verdict = verifyLoopRunReceipt(receipt, { baseDir: resolve(projectPath), requireFiles: false });
+      const out = flag(rest, "--out");
+      if (out) writeJson(resolve(out), receipt);
+      console.log(JSON.stringify(out ? { out: resolve(out), receipt, verdict } : { receipt, verdict }, jbig, 2));
+      process.exit(0);
+    }
+    case "agent-api": {
+      const sub = rest[0];
+      if (sub !== "verify") {
+        console.error("agent-api verify --contract <file>");
+        process.exit(2);
+      }
+      const contractPath = flag(rest, "--contract");
+      if (!contractPath) {
+        console.error("agent-api verify --contract <file>");
+        process.exit(2);
+      }
+      const abs = resolve(contractPath);
+      const contract = readJson<AgentReadyToolContract>(abs);
+      const verdict = verifyAgentReadyToolContract(contract);
+      console.log(JSON.stringify({ contract: abs, verdict }, jbig, 2));
+      process.exit(verdict.ok ? 0 : 1);
+    }
+    case "fresh-room": {
+      const sub = rest[0];
+      if (sub !== "verify") {
+        console.error("fresh-room verify --receipt <file> [--base <dir>]");
+        process.exit(2);
+      }
+      const receiptPath = flag(rest, "--receipt");
+      const baseDir = flag(rest, "--base");
+      if (!receiptPath) {
+        console.error("fresh-room verify --receipt <file> [--base <dir>]");
+        process.exit(2);
+      }
+      const abs = resolve(receiptPath);
+      const receipt = readJson<FreshRoomProofReceipt>(abs);
+      const verdict = verifyFreshRoomProofReceipt(receipt, { baseDir: baseDir ? resolve(baseDir) : dirname(abs) });
+      console.log(JSON.stringify({ receipt: abs, verdict }, jbig, 2));
+      process.exit(verdict.ok ? 0 : 1);
+    }
+    case "rework": {
+      const sub = rest[0];
+      if (sub !== "verify") {
+        console.error("rework verify --ledger <file> [--base <dir>]");
+        process.exit(2);
+      }
+      const ledgerPath = flag(rest, "--ledger");
+      const baseDir = flag(rest, "--base");
+      if (!ledgerPath) {
+        console.error("rework verify --ledger <file> [--base <dir>]");
+        process.exit(2);
+      }
+      const abs = resolve(ledgerPath);
+      const ledger = readJson<ReworkLedger>(abs);
+      const verdict = verifyReworkLedger(ledger, { baseDir: baseDir ? resolve(baseDir) : dirname(abs) });
+      console.log(JSON.stringify({ ledger: abs, verdict }, jbig, 2));
+      process.exit(verdict.ok ? 0 : 1);
     }
     case "setup": {
       const sub = rest[0];

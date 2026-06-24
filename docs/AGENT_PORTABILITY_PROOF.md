@@ -7,6 +7,10 @@ fresh-user 3D app build, live UI completion, production deployment, or customer-
 
 ## 2026-06-24 UTC OpenRouter Cheap-Model Run
 
+This run was captured on an older 74-test substrate. The current substrate reports `91 passed, 0
+failed`; rerun the reproduce commands below before claiming OpenClaw or Hermes are verified against
+the latest gates.
+
 Setup:
 
 - Host directory: `D:\ai-agent-hosts`
@@ -34,8 +38,8 @@ Receipts:
 
 Observed outputs:
 
-- OpenClaw returned: `PASS 17/17 receipt 311d4ca418744ba5`; model `deepseek/deepseek-v4-flash`; resolved workspace `D:\ai-agent-hosts\openclaw-workspace`; substrate smoke `74 passed, 0 failed`.
-- Hermes returned: `PASS 17/17 receipt 311d4ca418744ba5`; model `qwen/qwen3-coder-next`; substrate smoke `74 passed, 0 failed`.
+- OpenClaw returned: `PASS 17/17 receipt 311d4ca418744ba5`; model `deepseek/deepseek-v4-flash`; resolved workspace `D:\ai-agent-hosts\openclaw-workspace`; older substrate smoke `74 passed, 0 failed`.
+- Hermes returned: `PASS 17/17 receipt 311d4ca418744ba5`; model `qwen/qwen3-coder-next`; older substrate smoke `74 passed, 0 failed`.
 - DeepSeek V4 Flash is kept as OpenClaw's cheap paid default; Qwen3 Coder Next is kept as Hermes'
   coding fallback because one Hermes run on DeepSeek returned `15/16`.
 - Live catalog recommendations are carried in `SOLO_OPENROUTER_AUDITED_*` variables but remain
