@@ -2,8 +2,8 @@
 // A thin, shell-only wrapper over the SAME code the smoke proves — no new dependencies, no service.
 // It is just a convenience surface; every coding agent can run it because it is a shell command.
 import { spawnSync } from "node:child_process";
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
-import { dirname, join, resolve } from "node:path";
+import { existsSync, mkdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
+import { dirname, extname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { SoloLedger } from "../ledger/ledger";
 import { inspectGraphContext } from "../context/graphContext";
@@ -13,6 +13,7 @@ import {
   researchDomains,
   top3dComparisonRubric,
   verifyResearchPack,
+  type ProofArtifact,
   type ResearchDomain,
   type ResearchPack,
 } from "../research/researchSpine";
@@ -70,6 +71,44 @@ function readJson<T>(path: string): T {
 
 function writeJson(path: string, value: unknown) {
   writeFileSync(path, `${JSON.stringify(value, jbig, 2)}\n`, "utf8");
+}
+
+function validateProofArtifactFile(runDir: string, artifact: ProofArtifact): string[] {
+  if (!artifact.path) return [];
+  const errors: string[] = [];
+  const absPath = resolve(runDir, artifact.path);
+  if (!existsSync(absPath)) return errors;
+  const size = statSync(absPath).size;
+  const ext = extname(absPath).toLowerCase();
+  const label = `proof artifact '${artifact.id}'`;
+  if (size === 0) errors.push(`${label} file is empty`);
+
+  const expectExt = (allowed: string[]) => {
+    if (!allowed.includes(ext)) errors.push(`${label} expected ${allowed.join("/")} file, got '${ext || "<none>"}'`);
+  };
+
+  if (artifact.kind === "fullscreen-video" || artifact.kind === "playwright-video") {
+    expectExt([".mp4", ".webm", ".mov"]);
+    if (size < 1024) errors.push(`${label} video is too small to be useful`);
+  } else if (artifact.kind === "playwright-trace") {
+    expectExt([".zip"]);
+    if (size < 1024) errors.push(`${label} trace is too small to be useful`);
+  } else if (artifact.kind === "generated-asset") {
+    expectExt([".glb", ".gltf", ".usdz", ".obj", ".ply"]);
+    if (size < 100) errors.push(`${label} generated asset is too small to be useful`);
+  } else if (artifact.kind === "deployed-url") {
+    expectExt([".md", ".txt", ".json"]);
+    const text = readFileSync(absPath, "utf8");
+    if (!/https:\/\/[^\s)]+/.test(text)) errors.push(`${label} deployed-url receipt must contain an https URL`);
+  } else if (artifact.kind === "terminal-transcript") {
+    expectExt([".txt", ".log", ".md"]);
+    if (size < 100) errors.push(`${label} transcript is too small to show a real session`);
+  } else if (["provider-costs", "scorecard", "decision-log"].includes(artifact.kind)) {
+    expectExt([".md", ".json", ".txt", ".csv"]);
+    if (size < 50) errors.push(`${label} receipt is too small to be useful`);
+  }
+
+  return errors;
 }
 
 function parseDomain(value?: string): ResearchDomain {
@@ -340,6 +379,9 @@ async function main() {
           .filter((a) => a.required && a.path && !existsSync(resolve(absRun, a.path)))
           .map((a) => `${a.id}:${a.path}`);
         for (const missing of missingPaths) verdict.errors.push(`proof artifact path does not exist: ${missing}`);
+        for (const artifact of pack.proofArtifacts) {
+          for (const error of validateProofArtifactFile(absRun, artifact)) verdict.errors.push(error);
+        }
         verdict.ok = verdict.errors.length === 0;
         writeJson(join(absRun, "proof-verdict.json"), verdict);
         console.log(JSON.stringify({ run: absRun, verdict }, jbig, 2));
