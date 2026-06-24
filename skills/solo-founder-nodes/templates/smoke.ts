@@ -13,6 +13,16 @@ import { SoloControlPlane, loopPhases } from "./control/controlPlane";
 import { make3dAgentResearchPack, top3dComparisonRubric, verifyResearchPack, type ResearchPack } from "./research/researchSpine";
 import { designSkillRegistry, makeDesignFullFlow, recommendDesignSkills, verifyDesignFullFlow, verifyDesignSkillPlan, type DesignFullFlowPlan } from "./design/designSkillBridge";
 import { defaultDesignQualityCriteria, makeDesignQualityReceipt, verifyDesignQualityReceipt, type DesignQualityGateInput } from "./design/designQualityGate";
+import {
+  agentChatUxInspirationSources,
+  agentChatUxSurfaces,
+  makeAgentChatUxPlan,
+  requiredAgentChatUxCapabilities,
+  requiredAgentChatUxDomSignals,
+  verifyAgentChatUxPlan,
+  verifyAgentChatUxReceipt,
+  type AgentChatUxReceipt,
+} from "./design/agentChatUxGate";
 import { gstackRoleRegistry, recommendGstackLanes, verifyGstackPlan, type GstackReviewPlan } from "./gstack/gstackBridge";
 import { defaultDeterministicPrework, makeExternalSetupGateReceipt, verifyExternalSetupGateReceipt } from "./setup/externalSetupGate";
 import { makeOpenRouterAgentSetupPack, rankOpenRouterModelsFromCatalog, verifyOpenRouterAgentSetupPack } from "./setup/openrouterAgentHosts";
@@ -594,6 +604,63 @@ async function main() {
   const harnessVerdict = verifyDesignQualityReceipt(harnessReceipt);
   check("design quality gate rejects framed/internal harness UI", harnessVerdict.ok === false && harnessVerdict.errors.some((e) => e.includes("framed preview card")) && harnessVerdict.errors.some((e) => e.includes("internal")));
 
+  // ---------------- Agent chat UX: VisualLabs-style production workspace ----------------
+  console.log("\nAgentChatUxGate (chat as production workspace, not chatbot wrapper):");
+  const agentChatSources = agentChatUxInspirationSources();
+  check("agent chat UX sources include VisualLabs + Harness4Visuals", ["visual-labs-production-line", "harness4visuals-taste-memory"].every((id) => agentChatSources.some((source) => source.id === id)));
+  const agentChatPlan = makeAgentChatUxPlan({
+    goal: "Build a 3D asset agent workspace from screenshots and reference media.",
+    surfaceKind: "3d-asset-workspace",
+    productCategory: "3D asset generation",
+    needsModelComparison: true,
+    needsDeploymentHandoff: true,
+    createdAt: "2026-06-24T00:00:00.000Z",
+  });
+  const agentChatPlanVerdict = verifyAgentChatUxPlan(agentChatPlan);
+  check("agent chat UX plan requires workspace/artifacts/tools/costs/memory/proof", agentChatPlanVerdict.ok && ["workspace-not-chatbot", "observable-agent-loop", "learning-loop", "proof-receipt"].every((id) => agentChatPlan.stages.some((stage) => stage.id === id)), agentChatPlanVerdict.errors.join("; "));
+
+  const agentChatReceipt: AgentChatUxReceipt = {
+    schemaVersion: 1,
+    goal: "Build a 3D asset agent workspace from screenshots and reference media.",
+    surfaceKind: "3d-asset-workspace",
+    productCategory: "3D asset generation",
+    inspirationSourceIds: agentChatSources.map((source) => source.id),
+    completedCapabilities: [...requiredAgentChatUxCapabilities, "model-provider-comparison", "deployment-publish-handoff"],
+    implementedSurfaces: [...agentChatUxSurfaces],
+    evidence: {
+      desktopScreenshotPaths: ["docs/proof/agent-chat/desktop.png"],
+      mobileScreenshotPaths: ["docs/proof/agent-chat/mobile.png"],
+      interactionProofPaths: ["docs/proof/agent-chat/interaction.trace.zip"],
+      tracePaths: ["docs/proof/agent-chat/playwright-trace.zip"],
+      domTestIds: [...requiredAgentChatUxDomSignals],
+      artifactPaths: ["docs/proof/agent-chat/generated.glb", "docs/proof/agent-chat/remix-board.json"],
+      costLatencyReceiptPaths: ["docs/proof/agent-chat/cost-latency.json"],
+      memoryReceiptPaths: ["docs/proof/agent-chat/taste-memory.jsonl"],
+      approvalReceiptPaths: ["docs/proof/agent-chat/publish-dry-run.json"],
+      analyticsReceiptPaths: ["docs/proof/agent-chat/analytics-loopback.json"],
+      provenanceReceiptPaths: ["docs/proof/agent-chat/provenance.json"],
+      publishHandoffReceiptPaths: ["docs/proof/agent-chat/deploy-handoff.json"],
+      modelComparisonPaths: ["docs/proof/agent-chat/model-comparison.json"],
+    },
+    designQualityReceiptPath: "docs/proof/design-quality-receipt.json",
+    notes: ["production workspace with visible artifacts, tool calls, costs, approvals, memory export, analytics, and traces"],
+    createdAt: "2026-06-24T00:00:00.000Z",
+  };
+  const agentChatReceiptVerdict = verifyAgentChatUxReceipt(agentChatReceipt);
+  check("agent chat UX receipt passes complete production workspace evidence", agentChatReceiptVerdict.ok, agentChatReceiptVerdict.errors.join("; "));
+
+  const missingMemoryChat = clone(agentChatReceipt);
+  missingMemoryChat.evidence.memoryReceiptPaths = [];
+  const missingMemoryChatVerdict = verifyAgentChatUxReceipt(missingMemoryChat);
+  check("agent chat UX gate rejects transcript-only/no-memory export", missingMemoryChatVerdict.ok === false && missingMemoryChatVerdict.errors.some((e) => e.includes("memory/taste export")));
+
+  const genericChatOnly = clone(agentChatReceipt);
+  genericChatOnly.implementedSurfaces = ["agent-composer"];
+  genericChatOnly.evidence.domTestIds = ["agent-composer"];
+  genericChatOnly.notes = ["plain chat only generic chat box around an internal harness"];
+  const genericChatVerdict = verifyAgentChatUxReceipt(genericChatOnly);
+  check("agent chat UX gate rejects generic chat-only harness", genericChatVerdict.ok === false && genericChatVerdict.errors.some((e) => e.includes("artifact-rail")) && genericChatVerdict.errors.some((e) => e.includes("generic/internal")));
+
   // ---------------- gstack bridge: portable operating-review lanes ----------------
   console.log("\ngstackBridge (portable CEO/eng/design/QA/release roles):");
   const gstackRegistry = gstackRoleRegistry();
@@ -873,6 +940,7 @@ async function main() {
   loopReceipt.phases.find((phase) => phase.phase === "build")!.artifacts = {
     "agent-api-contract": makeLoopFile("agent-api-contract.md"),
     "design-quality": makeLoopFile("design-quality.json"),
+    "agent-chat-ux": makeLoopFile("agent-chat-ux.json"),
   };
   loopReceipt.phases.find((phase) => phase.phase === "adapter")!.artifacts = {
     "adapter-contract": makeLoopFile("adapter-contract.json"),
@@ -886,6 +954,7 @@ async function main() {
     "proof-verdict": makeLoopFile("proof-verdict.json", "{\"ok\":true}"),
     "fresh-room-receipt": makeLoopFile("fresh-room-latest.json"),
     "design-quality": makeLoopFile("verify-design-quality.json"),
+    "agent-chat-ux": makeLoopFile("verify-agent-chat-ux.json"),
   };
   const loopVerdict = verifyLoopRunReceipt(loopReceipt, { baseDir: proofRoot });
   check("loop runner passes only when every phase receipt exists", loopVerdict.ok, loopVerdict.errors.join("; "));

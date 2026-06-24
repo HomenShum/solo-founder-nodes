@@ -20,6 +20,14 @@ industry-fit/component-system decisions, missing interaction/a11y proof, visual 
 `internal-harness`, `needs-redesign`, or `not-run`, and 3D app UIs whose primary surface is a small
 framed preview instead of a full-bleed viewer/workspace.
 
+If the UI includes an agent chat surface, also run the Agent Chat UX gate:
+`npm run sfn -- chat-ux plan ...` before code and
+`npm run sfn -- chat-ux verify --receipt <agent-chat-ux-receipt.json>` after browser proof. This gate
+is inspired by the VisualLabs production-line workspace and Harness4Visuals taste-memory pipeline. It
+fails a generic chat-only surface that does not expose artifacts, tool/job status, cost/latency,
+approval/dry-run actions, analytics loopback, provenance, traces, and memory/taste export. Details:
+[`agent-chat-ux.md`](agent-chat-ux.md).
+
 ## Runtime
 
 UI gap detected →
@@ -34,6 +42,10 @@ UI gap detected →
    implement from contract -> browser/device verify. Skills may originate in Claude repositories,
    shadcn docs, GSAP, Expo, or design registries, but the loop consumes them as markdown/tooling
    instructions any coding agent can read.
+2a. **Plan the agent chat workspace** if the surface includes chat. Run
+   `npm run sfn -- chat-ux plan ...` and copy the required surfaces into the Component Contract:
+   composer, artifact rail, tool timeline, cost/latency ledger, memory insights, approval console,
+   analytics, and trace export.
 3. **Inspect / generate** via a design MCP **if connected** — Figma MCP gives structured access
    to files/components/variables/layout and can generate code from selected frames and write back
    to canvas; Codex, Claude Code, Cursor, Windsurf, and other agents can instead use screenshots,
@@ -91,6 +103,8 @@ npm run sfn -- design recommend --surface dashboard --stack "Next.js shadcn" --r
 npm run sfn -- design flow --surface dashboard --category analytics --stack "Next.js shadcn" --shadcn-mcp --runtime codex
 npm run sfn -- design recommend --surface marketing-site --style premium --visuals --animation --runtime codex
 npm run sfn -- design flow --surface 3d-app --category "3D asset generation" --style premium --visuals --animation --shadcn-mcp --runtime codex
+npm run sfn -- chat-ux plan --goal "3D asset agent workspace" --surface 3d-asset-workspace --category "3D asset generation" --model-compare --deployment
+npm run sfn -- chat-ux verify --receipt docs/proof/agent-chat-ux-receipt.json
 npm run sfn -- design recommend --surface mobile-app --platform ios --stack SwiftUI --runtime codex
 npm run sfn -- design flow --surface mobile-app --platform ios --stack SwiftUI --mobile --runtime codex
 ```

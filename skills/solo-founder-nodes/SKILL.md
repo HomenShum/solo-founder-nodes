@@ -119,6 +119,14 @@ running. For any UI-facing build, also produce a hard design-quality receipt wit
 choice, desktop/mobile screenshots, interaction proof, accessibility proof, or anti-generic review
 blocks the UI claim.
 
+**Agent chat UX:** if the product has an agent chat surface, it must behave like a production
+workspace, not a generic chat box. Use
+[`templates/design/agentChatUxGate.ts`](templates/design/agentChatUxGate.ts) or
+`npm run sfn -- chat-ux plan ...` before build and `npm run sfn -- chat-ux verify ...` after proof.
+The receipt must show artifacts, tool/job status, cost/latency, approval/dry-run actions, analytics,
+provenance, traces, and memory/taste export. Spec:
+[`references/agent-chat-ux.md`](references/agent-chat-ux.md).
+
 **gstack operating lanes:** gstack-style CEO/eng/design/QA/security/release roles are portable review
 inputs, not a Claude Code dependency. Use
 [`templates/gstack/gstackBridge.ts`](templates/gstack/gstackBridge.ts) or

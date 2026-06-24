@@ -54,6 +54,17 @@ import {
   type DesignVisualVerdict,
 } from "../design/designQualityGate";
 import {
+  agentChatUxCapabilities,
+  agentChatUxInspirationSources,
+  agentChatUxSurfaceKinds,
+  makeAgentChatUxPlan,
+  verifyAgentChatUxPlan,
+  verifyAgentChatUxReceipt,
+  type AgentChatUxCapability,
+  type AgentChatUxReceipt,
+  type AgentChatUxSurfaceKind,
+} from "../design/agentChatUxGate";
+import {
   gstackRiskLevels,
   gstackRoleRegistry,
   recommendGstackLanes,
@@ -263,6 +274,20 @@ function parseDesignQualityBar(value?: string): DesignQualityBar {
   throw new Error(`unsupported design quality bar '${value ?? ""}' (expected one of: ${allowed.join(", ")})`);
 }
 
+function parseAgentChatSurfaceKind(value?: string): AgentChatUxSurfaceKind {
+  if (value && agentChatUxSurfaceKinds.includes(value as AgentChatUxSurfaceKind)) return value as AgentChatUxSurfaceKind;
+  throw new Error(`unsupported agent chat surface '${value ?? ""}' (expected one of: ${agentChatUxSurfaceKinds.join(", ")})`);
+}
+
+function parseAgentChatCapabilities(values: string[]): AgentChatUxCapability[] {
+  const capabilities = values as AgentChatUxCapability[];
+  const invalid = capabilities.filter((capability) => !agentChatUxCapabilities.includes(capability));
+  if (invalid.length > 0) {
+    throw new Error(`unsupported agent chat capability '${invalid.join(", ")}' (expected one of: ${agentChatUxCapabilities.join(", ")})`);
+  }
+  return capabilities;
+}
+
 function parseSoloPhase(value?: string): SoloLoopPhase {
   if (value && soloLoopPhases.includes(value as SoloLoopPhase)) return value as SoloLoopPhase;
   throw new Error(`unsupported phase '${value ?? ""}' (expected one of: ${soloLoopPhases.join(", ")})`);
@@ -374,6 +399,9 @@ const HELP = `sfn - Solo Founder Nodes local CLI   (run via: npm run sfn -- <cmd
   design gate --surface <kind> --skill <id> --completed <csv> --desktop <path> --mobile <path> --brief <path> --contract <path> --interaction <path> --a11y <path> [--primary <kind>] [--verdict pass|needs-redesign|internal-harness|not-run] [--quality shipping|prototype|internal] [--note <text>] [--out <file>]
   design receipt --surface <kind> ...             alias for design gate
   design compare [--out <file>]                   print/write top 3D UI comparison rubric
+  chat-ux sources [--out <file>]
+  chat-ux plan --goal <g> [--surface <kind>] [--category <c>] [--model-compare] [--deployment] [--out <file>]
+  chat-ux verify --receipt <file>
   gstack registry [--out <file>]
   gstack recommend --phase <p> --goal <g> [--surface <s>] [--risk low|medium|high] [--ui] [--deploy] [--security] [--devex] [--docs] [--perf] [--mobile] [--out <file>]
   seal --salt <s> <id...>     seal a held-out manifest (HMAC) — keep the salt OUT of the agent's reach
@@ -1644,6 +1672,52 @@ async function main() {
         process.exit(verdict.ok ? 0 : 1);
       }
       console.error("design: registry | recommend | flow | gate | receipt | compare");
+      process.exit(2);
+    }
+    case "chat-ux":
+    case "agent-chat": {
+      const sub = rest[0];
+      if (sub === "sources") {
+        const sources = agentChatUxInspirationSources();
+        const out = flag(rest, "--out");
+        if (out) writeJson(resolve(out), sources);
+        console.log(JSON.stringify(out ? { out: resolve(out), sources } : sources, jbig, 2));
+        process.exit(0);
+      }
+      if (sub === "plan") {
+        const goal = flag(rest, "--goal");
+        if (!goal) {
+          console.error("chat-ux plan --goal <g> [--surface <kind>] [--category <c>] [--model-compare] [--deployment] [--out <file>]");
+          process.exit(2);
+        }
+        const plan = makeAgentChatUxPlan({
+          goal,
+          surfaceKind: parseAgentChatSurfaceKind(flag(rest, "--surface", "generic-agent-app")),
+          productCategory: flag(rest, "--category"),
+          needsModelComparison: rest.includes("--model-compare"),
+          needsDeploymentHandoff: rest.includes("--deployment"),
+        });
+        const verdict = verifyAgentChatUxPlan(plan);
+        const payload = { plan, verdict };
+        const out = flag(rest, "--out");
+        if (out) writeJson(resolve(out), payload);
+        console.log(JSON.stringify(out ? { out: resolve(out), ...payload } : payload, jbig, 2));
+        process.exit(verdict.ok ? 0 : 1);
+      }
+      if (sub === "verify") {
+        const receiptPath = flag(rest, "--receipt");
+        if (!receiptPath) {
+          console.error("chat-ux verify --receipt <file>");
+          process.exit(2);
+        }
+        const abs = resolve(receiptPath);
+        const receipt = readJson<AgentChatUxReceipt>(abs);
+        receipt.completedCapabilities = parseAgentChatCapabilities(receipt.completedCapabilities);
+        const verdict = verifyAgentChatUxReceipt(receipt);
+        console.log(JSON.stringify({ receipt: abs, verdict }, jbig, 2));
+        process.exit(verdict.ok ? 0 : 1);
+      }
+      console.error("chat-ux: sources | plan | verify");
       process.exit(2);
     }
     case "gstack": {

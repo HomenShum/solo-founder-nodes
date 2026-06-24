@@ -279,6 +279,16 @@ and a component-system lane; 3D apps must prove a full-bleed viewer/workspace-co
 not a tiny framed preview card. If the visual verdict is `internal-harness`, `needs-redesign`, or
 `not-run`, the UI claim is blocked even when the agent mechanics work.
 
+**Agent chat UX gate (hard for agent apps).** Agent chat surfaces must follow the VisualLabs and
+Harness4Visuals patterns: chat is a production workspace with artifacts, visible tool/job status,
+cost/latency, approval/dry-run actions, analytics loopback, provenance, trace export, and
+memory/taste export. Before build, run `npm run sfn -- chat-ux plan ...`
+([`templates/design/agentChatUxGate.ts`](templates/design/agentChatUxGate.ts)) and copy its required
+surfaces into the Component Contract. During verify, run
+`npm run sfn -- chat-ux verify --receipt <agent-chat-ux-receipt.json>`. A generic chat box, hidden
+job runner, transcript-only memory, or missing artifact/cost/provenance surface cannot pass build or
+verify. Doctrine: [`references/agent-chat-ux.md`](references/agent-chat-ux.md).
+
 ## Memory substrate (local-first, audit-safe)
 
 Each phase **reads safe project memory at start** (decisions, approvals, benchmark choice, setup env,

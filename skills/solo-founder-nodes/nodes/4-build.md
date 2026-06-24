@@ -22,11 +22,20 @@ state matrix, and planned visual proof. Do not write UI code from a blank/defaul
 post-implementation receipt must be created with `npm run sfn -- design gate ...`; missing distinctive
 direction, industry fit, component-system choice, responsive screenshots, interaction proof,
 accessibility proof, or anti-generic review means the diff is not ready.
+0d. **Gate agent chat UX before chat code.** If the app has an agent chat surface, run
+`npm run sfn -- chat-ux plan --goal "<goal>" --surface <kind> --category "<category>"` before
+implementation. Copy the required workspace surfaces into the Component Contract: real composer,
+artifact rail/workspace, tool/job timeline, cost/latency ledger, approval console, analytics loopback,
+provenance, trace export, and memory/taste export. A generic chat box around a hidden runner is not an
+acceptable app layer.
 1. **Pick the stack template.** Detect the stack (Convex/React, Next.js, Streamlit, …) and announce which template you're applying. If unknown, say so and propose the closest one — do NOT invent a universal abstraction.
 2. **Map task → capabilities.** For each benchmark task, list the tools the agent must call, the model route(s), and the UI surfaces a human needs to run it and see the result. Present this map; **the human comments here to steer architecture** (e.g. "reuse the existing tool registry, don't fork it", "route long-context to X").
 2a. **Write the agent-ready API contract before tool code lands.** For every production tool in the capability map, produce an agent-facing contract and run `npm run sfn -- agent-api verify --contract <agent-api-contract.json>`. The contract must include semantic lifecycle, input/output schemas, provider schema parity, use/do-not-use guidance, preconditions, success signals, structured failure modes, recovery paths, governance, cost/latency class, and examples. Missing or failing contracts block implementation.
 3. **Scaffold the agent layer — including the clean-probe lane.** Harness loop (observe → plan → act → extract), tool implementations (real, not answer-keys), model routing. Reuse the existing harness shape; extend the registry rather than forking. Build the **clean-probe lane from the start**: a generic writer that renders the model's own plan (no per-task/family writers) plus the wiring for a mode that forces it with the model in the loop — this is what the adapter (Phase 5) toggles and verify (Phase 6) measures as the headline. See [`../references/honest-lane.md`](../references/honest-lane.md).
 4. **Scaffold the app layer.** The input surface, a streaming trace/observability view, the result artifact, and any approval/review controls — using the app's real components so the task runs end-to-end in the live UI.
+   For agent chat apps, this must be the full production workspace from the `chat-ux` plan: composer,
+   artifact rail, visible tool/job statuses, async progress, cost/latency, approvals/dry-runs,
+   analytics, memory/taste export, provenance, and trace export.
 5. **Wire the seam.** Connect UI trigger → harness → tools → artifact, so one user action drives the whole loop and surfaces its output on screen.
 6. **Present the diff for the Gate** (below). After approval, apply it, then leave a build note with the two invocation paths (programmatic + UI) and the remaining TODO tool stubs.
 7. **Write decision/provenance memory + hand off.** Persist to memory ([`../references/memory.md`](../references/memory.md), L1/L2): which template was applied, the wired seam (UI trigger → harness → tools → artifact), the clean-probe lane that now exists, any Component Contract produced by the Design Bridge, and the still-TODO stubs (what's real vs placeholder) so Phase 5 (adapter) and Phase 6 (verify) inherit it. Then **hand off** to adapter + verify — do NOT self-certify that it works; in-app browser verification belongs to the proof phase.
@@ -46,11 +55,17 @@ accessibility proof, or anti-generic review means the diff is not ready.
   `npm run sfn -- design gate ...`. A UI that still reads as an internal harness, lacks desktop/mobile
   screenshots, lacks interaction/a11y proof, or skips industry-fit/component-system decisions is not
   ready even if the backend agent loop works.
+- **AGENT CHAT UX GATE:** any agent chat diff needs an `agent-chat-ux` receipt plan from
+  `npm run sfn -- chat-ux plan ...` before implementation and a proof receipt collected in Phase 6.
+  Missing artifacts, visible tool status, cost/latency, approvals, analytics, provenance, traces, or
+  memory/taste export means the app layer is not ready.
 
 ## Design Bridge (subroutine — mandatory for UI-facing build work)
 When the app-layer gap is a missing or visually-wrong surface, run this subroutine so IN-APP TRANSFER is achievable against a real design — not "make it pretty" guesswork. The design tool is optional; the design-quality receipt is mandatory. Full subroutine + templates: [`../references/design-bridge.md`](../references/design-bridge.md). Order is a hard guardrail: **brief FIRST, design output SECOND, implementation THIRD, browser-verify LAST.**
 1. **Gap → structured Design Brief.** Write the brief: the user job; the missing surface; the required components; the design-system tokens; layout/motion/accessibility constraints; screenshots of the current UI; and the EXACT code surfaces to change. (No giant one-shot "redesign the app" prompt.)
 2. **Select portable design skills.** Run `npm run sfn -- design recommend ...` (or call `templates/design/designSkillBridge.ts`) to choose direction/component/dashboard/animation/mobile guidance for the surface. Claude-origin skills are allowed as markdown references, but implementation must remain runnable by the current coding agent.
+2a. **Plan the agent-chat workspace.** Run `npm run sfn -- chat-ux plan ...` when the surface includes
+chat, and fold the required surfaces into the same Component Contract.
 3. **Inspect/generate via a design MCP (if connected).** Use the connected design tool (Figma MCP for structured access to files/components/variables/layout and code-from-frame; Codex/Claude/Cursor/Windsurf can also use screenshots, Open Design, or DESIGN.md/SKILL.md inputs) to pull context/assets for visual parity. The design tool is an artifact generator + validator, NOT the source of product truth.
 4. **Produce a Component Contract.** Name the components, their explicit states, the tokens used, and the props/data they bind to.
 5. **Implement from the contract — REUSE existing components.** Build from the contract using the app's real components (avoid one-off CSS drift). Record the contract for the build note.

@@ -33,7 +33,7 @@ ok("4 non-negotiables present", nn.every((n) => M.includes(n)), nn.filter((n) =>
 const nodes = ["1-discover", "2-benchmark", "3-setup", "4-build", "5-adapter", "6-verify", "7-iterate"];
 ok("7 node playbooks present", nodes.every((n) => existsSync(join(skill, "nodes", `${n}.md`))));
 ok("phase order is verify then iterate", /adapter\s*\|\s*wire[\s\S]*\|\s*6\s*\|\s*verify[\s\S]*\|\s*7\s*\|\s*iterate/i.test(master));
-const refs = ["honest-lane", "memory", "context-substrate", "control-plane", "cli-command-center", "design-bridge", "gstack-bridge", "benchmarks", "research", "research-spine"];
+const refs = ["honest-lane", "memory", "context-substrate", "control-plane", "cli-command-center", "design-bridge", "agent-chat-ux", "gstack-bridge", "benchmarks", "research", "research-spine"];
 ok("references present", refs.every((r) => existsSync(join(skill, "references", `${r}.md`))));
 
 // 4. Runnable substrate files present (Node + the smoke).
@@ -59,6 +59,7 @@ ok("templates substrate present", [
   "research/researchSpine.ts",
   "design/designSkillBridge.ts",
   "design/designQualityGate.ts",
+  "design/agentChatUxGate.ts",
   "gstack/gstackBridge.ts",
 ].every((f) => existsSync(join(skill, "templates", f))));
 ok("context/control directives present", /context-substrate/i.test(master) && /control-plane/i.test(master));
@@ -68,6 +69,7 @@ ok("optional agent host setup directive present", /Optional agent host setup/i.t
 ok("research-backed implementation directive present", /research-spine/i.test(master) && /research-backed implementation/i.test(master));
 ok("design skill portability directive present", /design skills are portable inputs/i.test(master) && /designSkillBridge/i.test(master) && /design flow/i.test(master));
 ok("design quality gate directive present", /design quality gate/i.test(master) && /best\s+UI\/UX/i.test(master) && /browser screenshots/i.test(master));
+ok("agent chat UX gate directive present", /Agent chat UX gate/i.test(master) && /agentChatUxGate/i.test(master) && /chat-ux verify/i.test(master));
 ok("gstack operating lanes directive present", /gstack/i.test(master) && /gstackBridge/i.test(master) && /portable operating/i.test(master));
 ok("nested phase RALPH directive present", /Nested phase RALPH/i.test(master) && /phase verify/i.test(master));
 ok("3D/fresh-user/trust proof directives present", /3D founder scenario/i.test(master) && /fresh-user/i.test(master) && /trust verify/i.test(master));

@@ -15,6 +15,8 @@ npm run sfn -- design recommend --surface mobile-app --platform ios --stack Swif
 npm run sfn -- design flow --surface 3d-app --category "3D asset generation" --style premium --visuals --animation --shadcn-mcp --runtime codex
 npm run sfn -- design flow --surface dashboard --category analytics --stack "Next.js shadcn" --shadcn-mcp --runtime codex
 npm run sfn -- design gate --surface 3d-app --skill frontend-design,ui-ux-pro-max,shadcn-ui,premium-frontend-ui,gsap-skills --completed surface-classification,distinctive-direction,industry-fit,component-system,state-matrix,responsive-proof,visual-screenshot-proof,interaction-proof,accessibility-check,anti-generic-review --desktop docs/proof/playwright-results/fresh-founder-flow-chromium/fresh-founder-flow.png --mobile docs/proof/playwright-results/fresh-founder-flow-mobile/fresh-founder-flow.png --brief docs/proof/design-flow.json --contract docs/decisions/implementation-receipts.md --interaction docs/proof/playwright-report/index.html --a11y docs/proof/scorecard.md --primary workspace-console --verdict pass --quality shipping
+npm run sfn -- chat-ux plan --goal "3D asset agent workspace" --surface 3d-asset-workspace --category "3D asset generation" --model-compare --deployment
+npm run sfn -- chat-ux verify --receipt docs/proof/agent-chat-ux-receipt.json
 ```
 
 The short recommendation order remains:
@@ -32,6 +34,12 @@ verification.
 fails when the UI is still an internal harness, lacks desktop/mobile screenshots, skips
 industry-fit/component-system decisions, omits interaction/a11y proof, or claims a 3D app with a small
 framed preview instead of a full-bleed viewer/workspace surface.
+
+`chat-ux plan` / `chat-ux verify` is the hard agent-workspace seal. Use it for every UI-facing agent
+app so the chat surface is not just a generic composer: it must expose artifacts, tool/job status,
+cost/latency, approvals, analytics, provenance, traces, and memory/taste export. The sources are the
+VisualLabs production-line repo and the Harness4Visuals taste-memory repo; the gate consumes them as
+portable design/product patterns, not as runtime dependencies.
 
 Selection rules:
 

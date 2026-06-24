@@ -55,6 +55,8 @@ npm run sfn -- agents openrouter-audit --out openrouter-model-audit.json
 npm run sfn -- agents openrouter-plan --audit openrouter-model-audit.json --out agent-host-setup
 npm run sfn -- design recommend --surface saas-app --runtime codex
 npm run sfn -- design flow --surface 3d-app --category "3D asset generation" --visuals --animation --runtime codex
+npm run sfn -- chat-ux plan --goal "3D asset agent workspace" --surface 3d-asset-workspace --category "3D asset generation" --model-compare
+npm run sfn -- chat-ux verify --receipt docs/proof/agent-chat-ux-receipt.json
 npm run sfn -- gstack recommend --phase verify --goal <g> --ui --deploy --security
 npm run sfn -- seal --salt <s> <taskId...>  # seal a held-out manifest (HMAC) — keep the salt OUT of the agent's reach
 npm run sfn -- ledger list                  # list recorded eval runs
@@ -106,7 +108,9 @@ npm run sfn -- ledger verify <runId>        # re-verify a run's hash-chain (tamp
   outside the agent process.
 - **`rework/` - Build-to-delete ledger**: records replaced/deleted approaches, failure receipts,
   surviving proof, and lessons.
-- **`design/`**: the design-bridge templates (brief / component contract / visual-regression checklist).
+- **`design/`**: the design-bridge templates (brief / component contract / visual-regression checklist)
+  plus the agent-chat UX gate that forces VisualLabs-style artifacts, tool status, costs, approvals,
+  analytics, provenance, and Harness4Visuals-style memory/taste export.
 - **`gstack/` - gstack Bridge**: portable CEO/eng/design/QA/security/release operating-review lanes.
 - **`setup/openrouterAgentHosts.ts` - Optional agent hosts**: OpenRouter/OpenClaw/Hermes setup pack
   generator with cheap current model policy, secret hygiene, and conformance commands. The core skill

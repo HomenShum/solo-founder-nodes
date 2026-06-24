@@ -36,6 +36,12 @@ Outputs:
 the selected design skills, completed criteria, Design Brief, Component Contract, desktop/mobile
 screenshots, interaction proof, and accessibility proof. A missing or failing design-quality receipt
 downgrades the UI/product claim to UNVERIFIED even if the underlying agent action succeeded.
+6c2. **Seal agent chat UX.** For every agent chat surface, write an `agent-chat-ux-receipt.json` with
+desktop/mobile screenshots, DOM test ids, interaction proof, traces, generated artifacts,
+cost/latency receipts, memory/taste export receipts, approval/dry-run receipts, analytics loopback,
+provenance, and the linked design-quality receipt. Run
+`npm run sfn -- chat-ux verify --receipt <agent-chat-ux-receipt.json>`. A generic chat-only surface
+or hidden job runner downgrades the claim to UNVERIFIED.
 6d. **Seal fresh-room proof receipts.** For every live browser case, write a fresh-room receipt containing room id, exact command, model, prompt, trace/video/screenshots, exported/reopened files, official scorer result, cost, latency, token usage, and proof signals. Run `npm run sfn -- fresh-room verify --receipt <fresh-room-receipt.json>`. A missing or failing receipt blocks `proof-verdict.json` from passing.
 7. **Write the failure route for Phase 7 iterate.** If transfer fails, classify the route without fixing yet: `discover` if the user need was wrong, `benchmark` if the benchmark/rubric measured the wrong thing, `setup` if environment/provider/deploy facts are missing, `build` if the app/UI cannot express the capability, or `adapter` if the harness path diverges from the product path. Do NOT silently re-tune to make the number look good; Phase 7 consumes this verified failure evidence and chooses the smallest research-backed change.
 8. **Write the in-app transfer proof to memory.** Persist to memory ([`../references/memory.md`](../references/memory.md), L2, kind `in_app_transfer`): per verified task the DOM signal, the screenshot path, the recorded run id, and the binary verdict; the suite-level REAL CAPABILITY vs OVERFIT line; and the enumerated non-transferring task ids + divergence class. Store split membership + the proof refs (screenshot/dom_signal/trace) only — NOT held-out task answers (quarantine). This closes the suite's memory loop so a future re-tune or app-wiring fix targets the non-transferring ids without re-running everything.
@@ -66,6 +72,9 @@ The prose in **Procedure** (steps 2-6) makes the in-app transfer doctrine human-
 - Never claim "deployed/customer usable" without the gstack verification receipts: live QA, release/deploy, canary, security if applicable, docs/DX if applicable, and retro learning.
 - Never claim "best UI/UX", "premium UI", or "customer-ready UI" without a passing
   `design-quality-receipt` that includes desktop/mobile screenshots and interaction/a11y proof.
+- Never claim "superior agent chat UX", "production agent workspace", or "VisualLabs-style chat"
+  without a passing `agent-chat-ux` receipt that proves artifacts, tool/job status, costs, approvals,
+  analytics, provenance, traces, and memory/taste export in the actual UI.
 
 ## Design Bridge (subroutine — only when the task needs UI parity)
 If the verified task includes any UI-facing surface, run the Design Bridge verification before declaring transfer. This is the verify-side mirror of the build-phase Bridge: build constructs the surface, verify proves the surface renders the proof to spec. Full subroutine: [`../references/design-bridge.md`](../references/design-bridge.md).
@@ -76,6 +85,8 @@ If the verified task includes any UI-facing surface, run the Design Bridge verif
 - **Design-token usage** — confirm the surface uses the app's design tokens (no one-off CSS drift); compare against the design-system reference.
 - **Design-skill decisions** — confirm any selected design-skill guidance appears as concrete brief/contract decisions, not Claude-only commands or unrelated style drift.
 - **Design-quality receipt** - run `npm run sfn -- design gate ...` and require a passing receipt.
+- **Agent-chat UX receipt** - when the proof includes chat, run
+  `npm run sfn -- chat-ux verify --receipt <agent-chat-ux-receipt.json>` and require a passing receipt.
 Order guardrail: the proof (correct cited answer) comes FIRST; design parity is verified SECOND. A pretty surface that shows the wrong answer still FAILS transfer.
 
 ## Gate
