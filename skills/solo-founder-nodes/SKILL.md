@@ -55,6 +55,13 @@ worktree leases, improvement candidates). Specs:
 [`references/control-plane.md`](references/control-plane.md); templates in
 [`templates/context/`](templates/context/) and [`templates/control/`](templates/control/).
 
+**Command center:** use `npm run sfn -- dashboard --project <path>` as the clean visualization of the
+loop. Hooks observe the agent; receipts prove the work; the CLI makes the whole loop visible. Normalize
+agent telemetry into `.solo/events.jsonl` with `SoloEvent`, inspect adapters with
+`npm run sfn -- agent matrix`, and remember that generic/no-hooks agents cannot self-report
+completion. Spec: [`references/cli-command-center.md`](references/cli-command-center.md); templates in
+[`templates/events/`](templates/events/) and [`templates/dashboard/`](templates/dashboard/).
+
 **Research spine:** at `discover`, create or refresh `research-spine.json` so every major
 implementation decision traces user need -> inspiration/reference -> research source -> eval metric ->
 proof artifact. From `build` onward, block uncited decisions; from `verify` onward, block supported

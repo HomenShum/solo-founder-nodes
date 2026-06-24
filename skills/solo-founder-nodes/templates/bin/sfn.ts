@@ -8,6 +8,18 @@ import { fileURLToPath } from "node:url";
 import { SoloLedger } from "../ledger/ledger";
 import { inspectGraphContext } from "../context/graphContext";
 import { SoloControlPlane } from "../control/controlPlane";
+import { makeDashboardSnapshot, renderDashboard } from "../dashboard/dashboard";
+import {
+  agentHostMatrix,
+  assertSoloEventName,
+  formatAgentMatrix,
+  makeAgentRunReceipt,
+  makeHookInstallPlan,
+  readSoloEventLog,
+  recordSoloEvent,
+  writeHookInstallPlan,
+  type SupportedHookTarget,
+} from "../events/soloEventBus";
 import {
   make3dAgentResearchPack,
   researchDomains,
@@ -60,15 +72,21 @@ import { makeLoopRunReceipt, verifyLoopRunReceipt, type LoopRunReceipt } from ".
 import {
   completeRalphMilestone,
   createRalphLedger,
+  doctorRalphLoop,
   loadRalphLoop,
   parseRalphMilestone,
+  pauseRalphLoop,
+  ralphPaths,
   ralphStatus,
   startRalphMilestone,
   verifyRalphMilestone,
 } from "../loop/ralphLedger";
+import { SoloMemory } from "../memory/localMemory";
+import { exportMemoryToOkf } from "../memory/okfExport";
+import type { RememberInput } from "../memory/types";
 import { verifyAgentReadyToolContract, type AgentReadyToolContract } from "../agentApi/agentReadyApi";
 import { verifyFreshRoomProofReceipt, type FreshRoomProofReceipt } from "../proof/freshRoomReceipt";
-import { verifyReworkLedger, type ReworkLedger } from "../rework/reworkLedger";
+import { makeReworkLedger, verifyReworkLedger, type ReworkLedger, type ReworkLedgerEntry } from "../rework/reworkLedger";
 
 const here = dirname(fileURLToPath(import.meta.url)); // templates/bin
 const templates = join(here, "..");                   // templates
@@ -216,11 +234,35 @@ function parseGstackRisk(value?: string): GstackRiskLevel {
   throw new Error(`unsupported gstack risk '${value ?? ""}' (expected one of: ${gstackRiskLevels.join(", ")})`);
 }
 
-const HELP = `sfn — Solo Founder Nodes local CLI   (run via: npm run sfn -- <cmd>)
+async function openProjectMemory(projectPath: string) {
+  const paths = ralphPaths(resolve(projectPath));
+  const memory = new SoloMemory({
+    dbUrl: `file:${paths.memoryDbPath}`,
+    eventLogPath: join(paths.soloDir, "memory.events.jsonl"),
+  });
+  await memory.init();
+  return { memory, paths };
+}
+
+function parseHookTarget(value?: string): SupportedHookTarget {
+  const allowed = ["all", ...agentHostMatrix().map((row) => row.id)];
+  if (value && allowed.includes(value)) return value as SupportedHookTarget;
+  throw new Error(`unsupported agent hook target '${value ?? ""}' (expected one of: ${allowed.join(", ")})`);
+}
+
+function writeReceipt(projectPath: string, relativePath: string, payload: unknown) {
+  const abs = resolve(projectPath, relativePath);
+  writeJson(abs, payload);
+  return abs;
+}
+
+const HELP = `sfn - Solo Founder Nodes local CLI   (run via: npm run sfn -- <cmd>)
 
   doctor                      check node + deps readiness
   smoke                       run the substrate proof (expect all assertions to pass)
   conformance                 run the cross-agent portability probe (PASS + receipt)
+  dashboard [--project <path>] [--json] [--events <n>]
+  event record --event <name> --agent <host> [--project <path>] [--phase <p>] [--milestone <R|A|L|P|H>] [--status ok|error|blocked|started|stopped|info] [--message <m>]
   context inspect [root]      inspect Graphify-style graph context receipt
   control start --project <p> --goal <g> [--budget <n>] [--root <path>]
   control status <loopId>     print durable loop status/resume summary
@@ -229,20 +271,43 @@ const HELP = `sfn — Solo Founder Nodes local CLI   (run via: npm run sfn -- <c
   loop status [--project <path>]
   loop resume [--loop-id <id>] [--project <path>]
   loop start --from <R|A|L|P|H> [--project <path>]
+  loop pause --message <m> [--project <path>] [--next <cmd>]
+  loop events [--project <path>] [--limit <n>]
+  loop doctor [--project <path>]
   loop verify --milestone <R|A|L|P|H> [--project <path>]
   loop complete --milestone <R|A|L|P|H> --receipt <path>... [--project <path>]
+  agent list|matrix
+  agent install-hooks --target <host|all> [--project <path>] [--dry-run]
+  agent run --host <host> --goal <g> [--project <path>] [--command <cmd>] [--execute]
+  agent fanout --host <h1,h2> --goal <g> [--project <path>] [--out <file>]
+  agent collect [--project <path>] [--limit <n>]
   run --project <path> --goal <g> [--out <file>]  create an enforceable loop receipt skeleton
   run verify --receipt <file> [--base <dir>]       fail until all phase receipts and proof-verdict pass
   setup gate --goal <g> --provider <p> --env <NAME> [--setup-url <url>] [--completed <csv>] [--resume <cmd>] [--out <file>]
   agent-api verify --contract <file>
   fresh-room verify --receipt <file> [--base <dir>]
+  noderoom run-fresh-room --case <id> --base-url <url> [--headed] [--record-video] [--trace on|off] [--focus-mode on|off] [--model-mode <m>] [--budget <profile>]
+  noderoom watch --case <id> [--project <path>] [--focus-mode]
+  noderoom export-proof --receipt <file> [--base <dir>]
+  noderoom judge-video --video <file>
+  memory add --project <path> --project-id <id> --summary <s> [--content <c>] [--phase <p>] [--kind <k>] [--tag <t>]
+  memory search --project <path> --project-id <id> --query <q> [--limit <n>]
+  memory quarantine --project <path> --project-id <id> --summary <s> --content <c>
+  memory export-okf --project <path> --project-id <id> [--out <dir>]
+  memory doctor [--project <path>]
   rework verify --ledger <file> [--base <dir>]
+  rework add --project <path> --project-id <id> --id <id> --old <text> --why <text> --failure <text> --failure-receipt <path> --new <text> --survived <text> --proof <path> --deleted <text> --kept <text> --lesson <text>
+  rework list [--project <path>]
+  rework explain --ledger <file> [--base <dir>]
   research init --goal <g> --domain <d> [--out <file>]
   research verify [file] [--max-age-days <n>]
   proof init --goal <g> --domain <d> [--out <dir>]
   proof start --run <dir>
+  proof receipt --run <dir>
   proof collect --run <dir> --artifact <id> --path <path> [--sha256 <hash>]
+  proof verify --run <dir>
   proof verdict --run <dir>
+  proof publish --run <dir> [--out <file>]
   compare top3d [--out <file>]  print/write the 3D provider comparison rubric
   agents openrouter-plan [--out <dir>] [--host-root <path>] [--audit <file>]
   agents openrouter-audit [--catalog <file>] [--out <file>] [--max <n>]
@@ -250,6 +315,8 @@ const HELP = `sfn — Solo Founder Nodes local CLI   (run via: npm run sfn -- <c
   design recommend --surface <kind> [--stack <s>] [--runtime <r>] [--style <preset>] [--platform <p>] [--animation] [--visuals] [--mobile] [--shadcn] [--shadcn-mcp] [--out <file>]
   design flow --surface <kind> [--category <c>] [--stack <s>] [--runtime <r>] [--style <preset>] [--platform <p>] [--animation] [--visuals] [--mobile] [--shadcn] [--shadcn-mcp] [--out <file>]
   design gate --surface <kind> --skill <id> --completed <csv> --desktop <path> --mobile <path> --brief <path> --contract <path> --interaction <path> --a11y <path> [--primary <kind>] [--verdict pass|needs-redesign|internal-harness|not-run] [--quality shipping|prototype|internal] [--note <text>] [--out <file>]
+  design receipt --surface <kind> ...             alias for design gate
+  design compare [--out <file>]                   print/write top 3D UI comparison rubric
   gstack registry [--out <file>]
   gstack recommend --phase <p> --goal <g> [--surface <s>] [--risk low|medium|high] [--ui] [--deploy] [--security] [--devex] [--docs] [--perf] [--mobile] [--out <file>]
   seal --salt <s> <id...>     seal a held-out manifest (HMAC) — keep the salt OUT of the agent's reach
@@ -291,6 +358,47 @@ async function main() {
       process.exit(sh("npm", ["run", "smoke"], templates, true));
     case "conformance":
       process.exit(sh(process.execPath, [conformanceMjs, ...rest], skill, false));
+    case "dashboard": {
+      const projectPath = resolve(flag(rest, "--project", ".")!);
+      const eventLimit = Number(flag(rest, "--events", "12"));
+      if (rest.includes("--json")) {
+        console.log(JSON.stringify(makeDashboardSnapshot(projectPath, { eventLimit }), jbig, 2));
+      } else {
+        console.log(renderDashboard(projectPath, { eventLimit }));
+      }
+      process.exit(0);
+    }
+    case "event": {
+      const sub = rest[0];
+      if (sub !== "record") {
+        console.error("event record --event <name> --agent <host> [--project <path>] [--phase <p>] [--milestone <R|A|L|P|H>] [--status ok|error|blocked|started|stopped|info] [--message <m>]");
+        process.exit(2);
+      }
+      const event = assertSoloEventName(flag(rest, "--event") ?? "");
+      const agentHost = flag(rest, "--agent");
+      if (!agentHost) {
+        console.error("event record requires --agent <host>");
+        process.exit(2);
+      }
+      const projectPath = resolve(flag(rest, "--project", ".")!);
+      const milestone = flag(rest, "--milestone") ? parseRalphMilestone(flag(rest, "--milestone")) : undefined;
+      const recorded = recordSoloEvent(projectPath, {
+        event,
+        agentHost,
+        milestone,
+        phase: flag(rest, "--phase"),
+        status: (flag(rest, "--status", "info") as never),
+        message: flag(rest, "--message"),
+        command: flag(rest, "--command"),
+        filePath: flag(rest, "--file"),
+        toolName: flag(rest, "--tool"),
+        receiptPath: flag(rest, "--receipt"),
+        source: flag(rest, "--source", "sfn"),
+        cwd: process.cwd(),
+      });
+      console.log(JSON.stringify(recorded, jbig, 2));
+      process.exit(0);
+    }
     case "context": {
       if (rest[0] !== "inspect") {
         console.error("context: inspect [root]");
@@ -378,6 +486,26 @@ async function main() {
         console.log(JSON.stringify({ ...result, resumeCommand: `npm run sfn -- loop start --from ${result.loop.currentMilestone}` }, jbig, 2));
         process.exit(0);
       }
+      if (sub === "pause") {
+        const message = flag(rest, "--message");
+        if (!message) {
+          console.error("loop pause --message <m> [--project <path>] [--next <cmd>]");
+          process.exit(2);
+        }
+        const result = pauseRalphLoop(projectPath, { message, nextAction: flag(rest, "--next") });
+        console.log(JSON.stringify(result, jbig, 2));
+        process.exit(0);
+      }
+      if (sub === "events") {
+        const limit = Number(flag(rest, "--limit", "50"));
+        console.log(JSON.stringify({ projectPath, events: readSoloEventLog(projectPath, limit) }, jbig, 2));
+        process.exit(0);
+      }
+      if (sub === "doctor") {
+        const report = doctorRalphLoop(projectPath);
+        console.log(JSON.stringify(report, jbig, 2));
+        process.exit(report.ok ? 0 : 1);
+      }
       if (sub === "start") {
         const milestone = parseRalphMilestone(flag(rest, "--from"));
         const result = startRalphMilestone(projectPath, milestone);
@@ -401,7 +529,7 @@ async function main() {
         console.log(JSON.stringify(result, jbig, 2));
         process.exit(0);
       }
-      console.error("loop: init | status | resume | start --from <R|A|L|P|H> | verify --milestone <R|A|L|P|H> | complete --milestone <R|A|L|P|H> --receipt <path>...");
+      console.error("loop: init | status | resume | pause | events | doctor | start --from <R|A|L|P|H> | verify --milestone <R|A|L|P|H> | complete --milestone <R|A|L|P|H> --receipt <path>...");
       process.exit(2);
     }
     case "run": {
@@ -467,23 +595,275 @@ async function main() {
       console.log(JSON.stringify({ receipt: abs, verdict }, jbig, 2));
       process.exit(verdict.ok ? 0 : 1);
     }
+    case "noderoom": {
+      const sub = rest[0];
+      if (sub === "run-fresh-room") {
+        const caseId = flag(rest, "--case");
+        const baseUrl = flag(rest, "--base-url");
+        if (!caseId || !baseUrl) {
+          console.error("noderoom run-fresh-room --case <id> --base-url <url> [--headed] [--record-video] [--trace on|off] [--focus-mode on|off] [--model-mode <m>] [--budget <profile>]");
+          process.exit(2);
+        }
+        const projectPath = resolve(flag(rest, "--project", ".")!);
+        const receipt = {
+          schemaVersion: 1,
+          kind: "noderoom-fresh-room-command",
+          caseId,
+          baseUrl,
+          headed: rest.includes("--headed"),
+          recordVideo: rest.includes("--record-video"),
+          trace: flag(rest, "--trace", "on"),
+          focusMode: flag(rest, "--focus-mode", rest.includes("--focus") ? "on" : "off"),
+          modelMode: flag(rest, "--model-mode", "top_paid"),
+          budget: flag(rest, "--budget", "benchmark_completion"),
+          command: [
+            "npm run nodeagent:fresh-room --",
+            `--case ${caseId}`,
+            `--base-url ${baseUrl}`,
+            rest.includes("--headed") ? "--headed" : "",
+            rest.includes("--record-video") ? "--record-video" : "",
+            `--trace ${flag(rest, "--trace", "on")}`,
+            `--focus-mode ${flag(rest, "--focus-mode", "on")}`,
+            `--model-mode ${flag(rest, "--model-mode", "top_paid")}`,
+            `--budget ${flag(rest, "--budget", "benchmark_completion")}`,
+          ].filter(Boolean).join(" "),
+          requiredProof: ["fullscreen or Playwright video", "trace zip", "fresh-room latest.json", "proof-verdict.json", "visual verification of recording"],
+          status: "handoff_ready",
+          warning: "This command receipt is not a pass. Run it in NodeRoom and verify exported proof receipts.",
+        };
+        const out = writeReceipt(projectPath, `.solo/receipts/P-proof-run/noderoom-${caseId}.json`, receipt);
+        recordSoloEvent(projectPath, {
+          event: "eval.start",
+          agentHost: "noderoom",
+          milestone: "P",
+          status: "started",
+          message: `Fresh-room handoff ${caseId}`,
+          receiptPath: out,
+          source: "sfn-noderoom",
+        });
+        console.log(JSON.stringify({ out, receipt }, jbig, 2));
+        process.exit(0);
+      }
+      if (sub === "watch") {
+        const projectPath = resolve(flag(rest, "--project", ".")!);
+        console.log(renderDashboard(projectPath, { eventLimit: Number(flag(rest, "--events", "20")) }));
+        process.exit(0);
+      }
+      if (sub === "export-proof") {
+        const receiptPath = flag(rest, "--receipt");
+        const baseDir = flag(rest, "--base");
+        if (!receiptPath) {
+          console.error("noderoom export-proof --receipt <file> [--base <dir>]");
+          process.exit(2);
+        }
+        const abs = resolve(receiptPath);
+        const receipt = readJson<FreshRoomProofReceipt>(abs);
+        const verdict = verifyFreshRoomProofReceipt(receipt, { baseDir: baseDir ? resolve(baseDir) : dirname(abs) });
+        console.log(JSON.stringify({ receipt: abs, verdict }, jbig, 2));
+        process.exit(verdict.ok ? 0 : 1);
+      }
+      if (sub === "judge-video") {
+        const video = flag(rest, "--video");
+        if (!video) {
+          console.error("noderoom judge-video --video <file>");
+          process.exit(2);
+        }
+        const abs = resolve(video);
+        const exists = existsSync(abs);
+        const sizeBytes = exists ? statSync(abs).size : 0;
+        const verdict = {
+          ok: exists && sizeBytes > 1024,
+          video: abs,
+          exists,
+          sizeBytes,
+          requiredNext: "Open the recording or frame-audit it before claiming it captured the correct UI session.",
+        };
+        console.log(JSON.stringify(verdict, jbig, 2));
+        process.exit(verdict.ok ? 0 : 1);
+      }
+      console.error("noderoom: run-fresh-room | watch | export-proof | judge-video");
+      process.exit(2);
+    }
+    case "memory": {
+      const sub = rest[0];
+      const projectPath = resolve(flag(rest, "--project", ".")!);
+      if (sub === "add") {
+        const projectId = flag(rest, "--project-id");
+        const summary = flag(rest, "--summary");
+        if (!projectId || !summary) {
+          console.error("memory add --project <path> --project-id <id> --summary <s> [--content <c>] [--phase <p>] [--kind <k>] [--tag <t>]");
+          process.exit(2);
+        }
+        const { memory } = await openProjectMemory(projectPath);
+        const input: RememberInput = {
+          projectId,
+          phase: (flag(rest, "--phase", "runtime") as never),
+          kind: (flag(rest, "--kind", "decision") as never),
+          summary,
+          content: flag(rest, "--content", ""),
+          tags: flags(rest, "--tag"),
+          evidenceRefs: flags(rest, "--evidence").map((ref) => ({ type: "file" as const, ref })),
+          benchmarkSafety: (flag(rest, "--safety", "safe") as never),
+        };
+        const result = await memory.remember(input);
+        recordSoloEvent(projectPath, {
+          event: "memory.write",
+          agentHost: flag(rest, "--agent", "sfn") ?? "sfn",
+          status: "ok",
+          message: summary,
+          source: "sfn-memory",
+        });
+        console.log(JSON.stringify(result, jbig, 2));
+        process.exit(0);
+      }
+      if (sub === "search") {
+        const projectId = flag(rest, "--project-id");
+        const query = flag(rest, "--query");
+        if (!projectId || !query) {
+          console.error("memory search --project <path> --project-id <id> --query <q> [--limit <n>]");
+          process.exit(2);
+        }
+        const { memory } = await openProjectMemory(projectPath);
+        const hits = await memory.search({ projectId, query, limit: Number(flag(rest, "--limit", "8")), minScore: Number(flag(rest, "--min-score", "0")) });
+        console.log(JSON.stringify(hits, jbig, 2));
+        process.exit(0);
+      }
+      if (sub === "quarantine") {
+        const projectId = flag(rest, "--project-id");
+        const summary = flag(rest, "--summary");
+        const content = flag(rest, "--content");
+        if (!projectId || !summary || !content) {
+          console.error("memory quarantine --project <path> --project-id <id> --summary <s> --content <c>");
+          process.exit(2);
+        }
+        const { memory } = await openProjectMemory(projectPath);
+        let rejected = false;
+        try {
+          await memory.remember({
+            projectId,
+            phase: "runtime",
+            kind: "run_result",
+            summary,
+            content,
+            benchmarkSafety: "heldout_forbidden",
+          });
+        } catch {
+          rejected = true;
+        }
+        const payload = { ok: rejected, rejected, reason: "heldout_forbidden writes must not enter durable memory" };
+        recordSoloEvent(projectPath, {
+          event: "memory.write",
+          agentHost: "sfn",
+          status: rejected ? "blocked" : "error",
+          message: summary,
+          source: "sfn-memory-quarantine",
+          payload,
+        });
+        console.log(JSON.stringify(payload, jbig, 2));
+        process.exit(rejected ? 0 : 1);
+      }
+      if (sub === "export-okf") {
+        const projectId = flag(rest, "--project-id");
+        if (!projectId) {
+          console.error("memory export-okf --project <path> --project-id <id> [--out <dir>]");
+          process.exit(2);
+        }
+        const { memory } = await openProjectMemory(projectPath);
+        const result = await exportMemoryToOkf({ memory, projectId, outDir: flag(rest, "--out") ? resolve(flag(rest, "--out")!) : join(ralphPaths(projectPath).soloDir, "okf-memory") });
+        console.log(JSON.stringify(result, jbig, 2));
+        process.exit(0);
+      }
+      if (sub === "doctor") {
+        const paths = ralphPaths(projectPath);
+        const exists = existsSync(paths.memoryDbPath);
+        const payload = { ok: true, memoryDbPath: paths.memoryDbPath, exists, note: exists ? "memory db present" : "memory db will be created on first add/search" };
+        console.log(JSON.stringify(payload, jbig, 2));
+        process.exit(0);
+      }
+      console.error("memory: add | search | quarantine | export-okf | doctor");
+      process.exit(2);
+    }
     case "rework": {
       const sub = rest[0];
-      if (sub !== "verify") {
-        console.error("rework verify --ledger <file> [--base <dir>]");
-        process.exit(2);
+      if (sub === "verify" || sub === "explain") {
+        const ledgerPath = flag(rest, "--ledger");
+        const baseDir = flag(rest, "--base");
+        if (!ledgerPath) {
+          console.error(`rework ${sub} --ledger <file> [--base <dir>]`);
+          process.exit(2);
+        }
+        const abs = resolve(ledgerPath);
+        const ledger = readJson<ReworkLedger>(abs);
+        const verdict = verifyReworkLedger(ledger, { baseDir: baseDir ? resolve(baseDir) : dirname(abs) });
+        const payload = sub === "explain"
+          ? {
+              ledger: abs,
+              verdict,
+              lessons: ledger.entries.map((entry) => ({
+                id: entry.id,
+                failureMode: entry.failureMode,
+                newApproach: entry.newApproach,
+                lesson: entry.lesson,
+              })),
+            }
+          : { ledger: abs, verdict };
+        console.log(JSON.stringify(payload, jbig, 2));
+        process.exit(verdict.ok ? 0 : 1);
       }
-      const ledgerPath = flag(rest, "--ledger");
-      const baseDir = flag(rest, "--base");
-      if (!ledgerPath) {
-        console.error("rework verify --ledger <file> [--base <dir>]");
-        process.exit(2);
+      if (sub === "list") {
+        const projectPath = resolve(flag(rest, "--project", ".")!);
+        const path = ralphPaths(projectPath).reworkLedgerPath;
+        if (!existsSync(path)) {
+          console.log(JSON.stringify({ path, entries: [], warning: "no rework ledger yet" }, jbig, 2));
+          process.exit(0);
+        }
+        const ledger = readJson<ReworkLedger>(path);
+        console.log(JSON.stringify({ path, entries: ledger.entries }, jbig, 2));
+        process.exit(0);
       }
-      const abs = resolve(ledgerPath);
-      const ledger = readJson<ReworkLedger>(abs);
-      const verdict = verifyReworkLedger(ledger, { baseDir: baseDir ? resolve(baseDir) : dirname(abs) });
-      console.log(JSON.stringify({ ledger: abs, verdict }, jbig, 2));
-      process.exit(verdict.ok ? 0 : 1);
+      if (sub === "add") {
+        const projectPath = resolve(flag(rest, "--project", ".")!);
+        const projectId = flag(rest, "--project-id");
+        const id = flag(rest, "--id");
+        const required = ["--old", "--why", "--failure", "--failure-receipt", "--new", "--survived", "--proof", "--deleted", "--kept", "--lesson"];
+        if (!projectId || !id || required.some((name) => !flag(rest, name))) {
+          console.error("rework add --project <path> --project-id <id> --id <id> --old <text> --why <text> --failure <text> --failure-receipt <path> --new <text> --survived <text> --proof <path> --deleted <text> --kept <text> --lesson <text>");
+          process.exit(2);
+        }
+        const paths = ralphPaths(projectPath);
+        const existing = existsSync(paths.reworkLedgerPath)
+          ? readJson<ReworkLedger>(paths.reworkLedgerPath)
+          : makeReworkLedger({ projectId, entries: [] });
+        const entry: ReworkLedgerEntry = {
+          id,
+          oldApproach: flag(rest, "--old")!,
+          whyItSeemedRight: flag(rest, "--why")!,
+          failureMode: flag(rest, "--failure")!,
+          failureReceiptPath: flag(rest, "--failure-receipt")!,
+          newApproach: flag(rest, "--new")!,
+          whyItSurvived: flag(rest, "--survived")!,
+          proofReceiptPaths: flags(rest, "--proof"),
+          deletedArtifacts: csvFlags(rest, "--deleted"),
+          keptArtifacts: csvFlags(rest, "--kept"),
+          lesson: flag(rest, "--lesson")!,
+        };
+        existing.entries = existing.entries.filter((candidate) => candidate.id !== id);
+        existing.entries.push(entry);
+        writeJson(paths.reworkLedgerPath, existing);
+        recordSoloEvent(projectPath, {
+          event: "rework.recorded",
+          agentHost: flag(rest, "--agent", "sfn") ?? "sfn",
+          milestone: "H",
+          status: "ok",
+          message: entry.lesson,
+          receiptPath: paths.reworkLedgerPath,
+          source: "sfn-rework",
+        });
+        console.log(JSON.stringify({ path: paths.reworkLedgerPath, ledger: existing }, jbig, 2));
+        process.exit(0);
+      }
+      console.error("rework: add | list | explain | verify");
+      process.exit(2);
     }
     case "setup": {
       const sub = rest[0];
@@ -582,6 +962,19 @@ async function main() {
         console.log(JSON.stringify({ run: resolve(runDir), manifest }, jbig, 2));
         process.exit(0);
       }
+      if (sub === "receipt") {
+        const runDir = flag(rest, "--run");
+        if (!runDir) {
+          console.error("proof receipt --run <dir>");
+          process.exit(2);
+        }
+        const absRun = resolve(runDir);
+        const manifest = readJson<Record<string, unknown>>(join(absRun, "proof-manifest.json"));
+        const verdictPath = join(absRun, "proof-verdict.json");
+        const verdict = existsSync(verdictPath) ? readJson<Record<string, unknown>>(verdictPath) : { ok: false, missing: true };
+        console.log(JSON.stringify({ run: absRun, manifest, verdict }, jbig, 2));
+        process.exit(0);
+      }
       if (sub === "collect") {
         const runDir = flag(rest, "--run");
         const artifactId = flag(rest, "--artifact");
@@ -615,10 +1008,10 @@ async function main() {
         console.log(JSON.stringify({ run: absRun, collected }, jbig, 2));
         process.exit(0);
       }
-      if (sub === "verdict") {
+      if (sub === "verdict" || sub === "verify") {
         const runDir = flag(rest, "--run");
         if (!runDir) {
-          console.error("proof verdict --run <dir>");
+          console.error(`proof ${sub} --run <dir>`);
           process.exit(2);
         }
         const absRun = resolve(runDir);
@@ -636,7 +1029,30 @@ async function main() {
         console.log(JSON.stringify({ run: absRun, verdict }, jbig, 2));
         process.exit(verdict.ok ? 0 : 1);
       }
-      console.error("proof: init | start | collect | verdict");
+      if (sub === "publish") {
+        const runDir = flag(rest, "--run");
+        if (!runDir) {
+          console.error("proof publish --run <dir> [--out <file>]");
+          process.exit(2);
+        }
+        const absRun = resolve(runDir);
+        const manifest = readJson<Record<string, unknown>>(join(absRun, "proof-manifest.json"));
+        const verdictPath = join(absRun, "proof-verdict.json");
+        const verdict = existsSync(verdictPath) ? readJson<Record<string, unknown>>(verdictPath) : { ok: false, missing: true };
+        const summary = {
+          schemaVersion: 1,
+          run: absRun,
+          manifest,
+          verdict,
+          publishable: verdict.ok === true,
+          warning: verdict.ok === true ? undefined : "Do not publish a capability claim until proof verdict passes.",
+        };
+        const out = flag(rest, "--out");
+        if (out) writeJson(resolve(out), summary);
+        console.log(JSON.stringify(out ? { out: resolve(out), summary } : summary, jbig, 2));
+        process.exit(verdict.ok === true ? 0 : 1);
+      }
+      console.error("proof: init | start | receipt | collect | verify | verdict | publish");
       process.exit(2);
     }
     case "compare": {
@@ -654,6 +1070,95 @@ async function main() {
         console.log(JSON.stringify(rubric, jbig, 2));
       }
       process.exit(0);
+    }
+    case "agent": {
+      const sub = rest[0];
+      if (sub === "list") {
+        console.log(JSON.stringify(agentHostMatrix(), jbig, 2));
+        process.exit(0);
+      }
+      if (sub === "matrix") {
+        if (rest.includes("--json")) console.log(JSON.stringify(agentHostMatrix(), jbig, 2));
+        else console.log(formatAgentMatrix());
+        process.exit(0);
+      }
+      if (sub === "install-hooks") {
+        const target = parseHookTarget(flag(rest, "--target", "generic"));
+        const projectPath = resolve(flag(rest, "--project", ".")!);
+        const dryRun = rest.includes("--dry-run");
+        const result = dryRun
+          ? { ...makeHookInstallPlan(target), dryRun: true, writtenFiles: [] as string[] }
+          : writeHookInstallPlan(projectPath, target, { dryRun: false });
+        console.log(JSON.stringify({ projectPath, result }, jbig, 2));
+        process.exit(0);
+      }
+      if (sub === "run") {
+        const host = flag(rest, "--host");
+        const goal = flag(rest, "--goal");
+        if (!host || !goal) {
+          console.error("agent run --host <host> --goal <g> [--project <path>] [--command <cmd>] [--execute]");
+          process.exit(2);
+        }
+        const projectPath = resolve(flag(rest, "--project", ".")!);
+        const receipt = makeAgentRunReceipt({
+          projectPath,
+          host,
+          goal,
+          command: flag(rest, "--command"),
+          dryRun: !rest.includes("--execute"),
+        });
+        const out = writeReceipt(projectPath, ".solo/receipts/agent-run-receipt.json", receipt);
+        recordSoloEvent(projectPath, {
+          event: "session.start",
+          agentHost: host,
+          status: "started",
+          message: goal,
+          receiptPath: out,
+          source: "sfn-agent-run",
+        });
+        console.log(JSON.stringify({ out, receipt }, jbig, 2));
+        process.exit(0);
+      }
+      if (sub === "fanout") {
+        const hosts = csvFlags(rest, "--host");
+        const goal = flag(rest, "--goal");
+        const projectPath = resolve(flag(rest, "--project", ".")!);
+        if (hosts.length === 0 || !goal) {
+          console.error("agent fanout --host <h1,h2> --goal <g> [--project <path>] [--out <file>]");
+          process.exit(2);
+        }
+        const receipts = hosts.map((host) => makeAgentRunReceipt({ projectPath, host, goal, dryRun: true }));
+        const payload = {
+          schemaVersion: 1,
+          goal,
+          hosts,
+          receipts,
+          status: "planned",
+          warning: "Fanout plans do not count as proof. Collect receipts from each host and verify live UI proof.",
+        };
+        const out = flag(rest, "--out");
+        if (out) writeJson(resolve(out), payload);
+        console.log(JSON.stringify(out ? { out: resolve(out), payload } : payload, jbig, 2));
+        process.exit(0);
+      }
+      if (sub === "collect") {
+        const projectPath = resolve(flag(rest, "--project", ".")!);
+        const limit = Number(flag(rest, "--limit", "100"));
+        const events = readSoloEventLog(projectPath, limit);
+        const receiptEvents = events.filter((event) => event.event === "receipt.write" || event.kind === "receipt");
+        const payload = {
+          projectPath,
+          eventCount: events.length,
+          receiptEventCount: receiptEvents.length,
+          proofVerdict: doctorRalphLoop(projectPath).proofVerdict,
+          selfReportWarning: "Telemetry is not proof. A passing proof verdict or fresh-room receipt is required.",
+          events,
+        };
+        console.log(JSON.stringify(payload, jbig, 2));
+        process.exit(0);
+      }
+      console.error("agent: list | matrix | install-hooks | run | fanout | collect");
+      process.exit(2);
     }
     case "agents": {
       const sub = rest[0];
@@ -755,12 +1260,19 @@ async function main() {
         console.log(JSON.stringify(out ? { out: resolve(out), ...payload } : payload, jbig, 2));
         process.exit(verdict.ok ? 0 : 1);
       }
-      if (sub === "gate") {
+      if (sub === "compare") {
+        const rubric = top3dComparisonRubric();
+        const out = flag(rest, "--out");
+        if (out) writeJson(resolve(out), rubric);
+        console.log(JSON.stringify(out ? { out: resolve(out), rubric } : rubric, jbig, 2));
+        process.exit(0);
+      }
+      if (sub === "gate" || sub === "receipt") {
         const surfaceKind = parseSurfaceKind(flag(rest, "--surface", "saas-app"));
         const selectedSkillIds = csvFlags(rest, "--skill");
         const completedCriteria = csvFlags(rest, "--completed") as DesignQualityCriterion[];
         if (selectedSkillIds.length === 0 || completedCriteria.length === 0) {
-          console.error("design gate --surface <kind> --skill <id> --completed <csv> --desktop <path> --mobile <path> --brief <path> --contract <path> --interaction <path> --a11y <path> [--primary <kind>] [--out <file>]");
+          console.error(`design ${sub} --surface <kind> --skill <id> --completed <csv> --desktop <path> --mobile <path> --brief <path> --contract <path> --interaction <path> --a11y <path> [--primary <kind>] [--out <file>]`);
           process.exit(2);
         }
         const receipt = makeDesignQualityReceipt({
@@ -785,7 +1297,7 @@ async function main() {
         console.log(JSON.stringify(out ? { out: resolve(out), ...payload } : payload, jbig, 2));
         process.exit(verdict.ok ? 0 : 1);
       }
-      console.error("design: registry | recommend | flow | gate");
+      console.error("design: registry | recommend | flow | gate | receipt | compare");
       process.exit(2);
     }
     case "gstack": {

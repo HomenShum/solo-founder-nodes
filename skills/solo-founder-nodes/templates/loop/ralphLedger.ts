@@ -85,6 +85,18 @@ export type RalphVerification = {
   resumeCommand: string;
 };
 
+export type RalphDoctorReport = {
+  ok: boolean;
+  repoPath: string;
+  loopState: boolean;
+  events: boolean;
+  receiptsDir: boolean;
+  proofVerdict: "pass" | "fail" | "missing" | "invalid";
+  reworkLedger: boolean;
+  errors: string[];
+  warnings: string[];
+};
+
 export const ralphMilestoneLabels: Record<RalphMilestone, string> = {
   R: "Reality / Research",
   A: "Acceptance Bar",
@@ -282,6 +294,33 @@ export function completeRalphMilestone(repoPath: string, milestone: RalphMilesto
   return { loop, paths };
 }
 
+export function pauseRalphLoop(
+  repoPath: string,
+  input: { kind?: BlockedKind; message: string; nextAction?: string; now?: string },
+) {
+  const { loop, paths } = loadRalphLoop(repoPath);
+  const now = input.now ?? new Date().toISOString();
+  const state = loop.milestones[loop.currentMilestone];
+  loop.status = "blocked";
+  state.status = "blocked";
+  state.blockedOn = {
+    kind: input.kind ?? "approval",
+    message: input.message,
+    nextAction: input.nextAction ?? `npm run sfn -- loop resume --loop-id ${loop.loopId}`,
+  };
+  state.resumeCommand = state.blockedOn.nextAction;
+  loop.updatedAt = now;
+  writeLoopState(paths.statePath, loop);
+  appendStepEvent(paths, {
+    loopId: loop.loopId,
+    milestone: loop.currentMilestone,
+    kind: "blocker",
+    message: input.message,
+    attrs: { blockedOn: state.blockedOn },
+  });
+  return { loop, paths };
+}
+
 export function recordRalphStep(repoPath: string, event: Omit<SoloStepEvent, "id" | "createdAt" | "loopId">) {
   const { loop, paths } = loadRalphLoop(repoPath);
   appendStepEvent(paths, { ...event, loopId: loop.loopId });
@@ -316,6 +355,55 @@ export function parseRalphMilestone(value?: string): RalphMilestone {
   throw new Error(`unsupported RALPH milestone '${value ?? ""}' (expected one of: ${ralphMilestones.join(", ")})`);
 }
 
+export function doctorRalphLoop(repoPath: string): RalphDoctorReport {
+  const paths = ralphPaths(resolve(repoPath));
+  const errors: string[] = [];
+  const warnings: string[] = [];
+  const loopState = existsSync(paths.statePath);
+  const events = existsSync(paths.eventsPath);
+  const receiptsDir = existsSync(paths.receiptsDir);
+  const reworkLedger = existsSync(paths.reworkLedgerPath);
+  if (!loopState) errors.push(`missing loop-state.json: ${paths.statePath}`);
+  if (!events) warnings.push(`missing events.jsonl: ${paths.eventsPath}`);
+  if (!receiptsDir) errors.push(`missing receipts dir: ${paths.receiptsDir}`);
+
+  let proofVerdict: RalphDoctorReport["proofVerdict"] = "missing";
+  if (existsSync(paths.proofVerdictPath)) {
+    try {
+      const parsed = JSON.parse(readFileSync(paths.proofVerdictPath, "utf8")) as { ok?: unknown };
+      proofVerdict = parsed.ok === true ? "pass" : "fail";
+    } catch {
+      proofVerdict = "invalid";
+    }
+  }
+
+  if (loopState) {
+    try {
+      const loop = JSON.parse(readFileSync(paths.statePath, "utf8")) as SoloLoopRun;
+      for (const milestone of ralphMilestones) {
+        if (!loop.milestones[milestone]) errors.push(`loop-state missing milestone ${milestone}`);
+      }
+      if (loop.currentMilestone === "P" && proofVerdict !== "pass") {
+        warnings.push("current milestone is P but proof-verdict.json is not passing");
+      }
+    } catch {
+      errors.push("loop-state.json is not valid JSON");
+    }
+  }
+
+  return {
+    ok: errors.length === 0,
+    repoPath: resolve(repoPath),
+    loopState,
+    events,
+    receiptsDir,
+    proofVerdict,
+    reworkLedger,
+    errors,
+    warnings,
+  };
+}
+
 function makeInitialMilestones(): Record<RalphMilestone, SoloLoopMilestoneState> {
   return Object.fromEntries(
     ralphMilestones.map((milestone) => [
@@ -328,7 +416,7 @@ function makeInitialMilestones(): Record<RalphMilestone, SoloLoopMilestoneState>
         resumeCommand: `npm run sfn -- loop start --from ${milestone}`,
       },
     ]),
-  ) as Record<RalphMilestone, SoloLoopMilestoneState>;
+  ) as unknown as Record<RalphMilestone, SoloLoopMilestoneState>;
 }
 
 function ensureRalphDirs(paths: RalphLedgerPaths) {

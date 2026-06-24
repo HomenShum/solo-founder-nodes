@@ -18,9 +18,13 @@ import { defaultDeterministicPrework, makeExternalSetupGateReceipt, verifyExtern
 import { makeOpenRouterAgentSetupPack, rankOpenRouterModelsFromCatalog, verifyOpenRouterAgentSetupPack } from "./setup/openrouterAgentHosts";
 import { makeAgentApiContractMarkdown, makeAgentReadyToolContract, verifyAgentReadyToolContract, type AgentReadyToolContract } from "./agentApi/agentReadyApi";
 import { makeLoopRunReceipt, verifyLoopRunReceipt, type LoopRunReceipt } from "./loop/loopRunner";
+import { makeDashboardSnapshot, renderDashboard } from "./dashboard/dashboard";
+import { formatAgentMatrix, makeAgentMatrixRows, makeHookInstallPlan, readSoloEvents, recordSoloEvent } from "./events/soloEventBus";
 import {
   completeRalphMilestone,
   createRalphLedger,
+  doctorRalphLoop,
+  pauseRalphLoop,
   ralphPaths,
   startRalphMilestone,
   verifyRalphMilestone,
@@ -775,6 +779,39 @@ async function main() {
   ralphReceipt("proof-verdict.json", "{\"ok\":true}");
   const goodRalphProof = verifyRalphMilestone(ralphRoot, "P");
   check("RALPH proof milestone accepts passing proof-verdict", goodRalphProof.ok, goodRalphProof.errors.join("; "));
+
+  // ---------------- CLI command center: event bus + dashboard + agent matrix ----------------
+  console.log("\nCommandCenter (events, hooks, dashboard):");
+  const soloEvent = recordSoloEvent(ralphRoot, {
+    event: "tool.post",
+    agentHost: "codex",
+    milestone: "P",
+    phase: "verify",
+    status: "ok",
+    message: "smoke proof event",
+    source: "smoke",
+  });
+  const soloEvents = readSoloEvents(ralphRoot, 10);
+  check("universal SoloEvent appends to .solo/events.jsonl", soloEvent.id.startsWith("evt_") && soloEvents.some((event) => event.id === soloEvent.id));
+
+  const matrix = makeAgentMatrixRows();
+  const matrixText = formatAgentMatrix(matrix);
+  check("agent matrix includes hook-native and proof-only hosts", ["codex", "claude-code", "windsurf", "generic"].every((id) => matrix.some((row) => row.id === id)) && matrix.some((row) => row.id === "generic" && row.selfReportedCompletionAllowed === false));
+  check("agent matrix renders as CLI table", matrixText.includes("host | family") && matrixText.includes("self-report"));
+
+  const codexHookPlan = makeHookInstallPlan("codex", "2026-06-24T00:00:00.000Z");
+  check("hook plan writes shared recorder and Codex hook files", codexHookPlan.files.some((file) => file.path === ".solo/bin/record-event") && codexHookPlan.files.some((file) => file.path === ".codex/config.toml"));
+  check("hook plan carries no-self-report warning", codexHookPlan.warnings.some((warning) => warning.includes("Generic/no-hooks agents")));
+
+  const dashboard = renderDashboard(ralphRoot, { eventLimit: 8 });
+  const dashboardSnapshot = makeDashboardSnapshot(ralphRoot, { eventLimit: 8 });
+  check("dashboard renders loop, proof, metrics, and agent hosts", dashboard.includes("SOLO FOUNDER COMMAND CENTER") && dashboard.includes("Proof:") && dashboard.includes("Agent Hosts:"));
+  check("dashboard snapshot exposes proof and event metrics", dashboardSnapshot.activeProof.status === "pass" && dashboardSnapshot.metrics.eventCount >= 1);
+
+  const doctor = doctorRalphLoop(ralphRoot);
+  check("loop doctor passes complete local command-center layout", doctor.ok && doctor.proofVerdict === "pass", doctor.errors.join("; "));
+  const paused = pauseRalphLoop(ralphRoot, { message: "waiting for human provider key", nextAction: "npm run sfn -- setup gate" });
+  check("loop pause records resumable blocker", paused.loop.status === "blocked" && paused.loop.milestones[paused.loop.currentMilestone].blockedOn?.nextAction.includes("setup gate") === true);
 
   // ---------------- SoloControlPlane: durable loop control ----------------
   console.log("\nSoloControlPlane (durable control plane):");

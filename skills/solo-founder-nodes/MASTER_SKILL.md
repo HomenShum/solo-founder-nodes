@@ -73,6 +73,29 @@ models by evidence:
 Treat model choice as a receipt-backed policy, not a hardcoded eternal truth. If the catalog changes,
 rerun smoke + agent conformance before changing claims.
 
+## CLI command center + universal event bus (hard)
+
+The clean visualization is the CLI command center, not a static diagram. Use
+`npm run sfn -- dashboard --project <path>` to show loop state, active proof status, agent hosts,
+runtime, metrics, artifacts, and recent events. The slogan is binding:
+**Hooks observe the agent. Receipts prove the work. The CLI makes the whole loop visible.**
+
+All agent hosts normalize telemetry into the universal `SoloEvent` bus in `.solo/events.jsonl`:
+`session.start`, `session.stop`, `phase.start`, `phase.stop`, `prompt.submit`, `tool.pre`,
+`tool.post`, `tool.error`, `file.read.pre`, `file.write.pre`, `file.write.post`,
+`command.run.pre`, `command.run.post`, `browser.proof.start`, `browser.proof.stop`,
+`receipt.write`, `memory.write`, `eval.start`, `eval.stop`, and `rework.recorded`. Native hooks are
+allowed when a host supports them; otherwise use the external proof wrapper. Generic/no-hooks agents
+must not self-report completion. Install or inspect adapter plans with
+`npm run sfn -- agent matrix` and
+`npm run sfn -- agent install-hooks --target <codex|claude-code|windsurf|devin|cursor|trae|openclaw|hermes|generic|all> --project <path>`.
+
+NodeRoom proof runs are surfaced through `npm run sfn -- noderoom run-fresh-room ...`, but a handoff
+receipt is not a pass. Only verified fresh-room receipts, trace/video artifacts, visual recording
+checks, and a passing proof verdict count. Doctrine: [`references/cli-command-center.md`](references/cli-command-center.md);
+copyable implementation: [`templates/events/`](templates/events/) and
+[`templates/dashboard/`](templates/dashboard/).
+
 ## Context substrate + control plane (required for full autonomy)
 
 The agent must not rely on chat context alone. At `discover`, build or refresh a graph-context receipt

@@ -18,19 +18,28 @@ agent-agnostic surface: every coding agent can run it.
 npm run sfn -- doctor                       # node + deps readiness
 npm run sfn -- smoke                        # the substrate proof (expect all assertions to pass)
 npm run sfn -- conformance                  # the cross-agent portability probe (PASS + receipt)
+npm run sfn -- dashboard --project .        # command-center view over loop/proof/events/agents/artifacts
+npm run sfn -- event record --event tool.post --agent codex --project .
 npm run sfn -- context inspect <app-root>   # inspect Graphify-style graph context readiness
 npm run sfn -- control start --project <p> --goal <g> --budget 5 --root <app-root>
 npm run sfn -- control status <loopId>      # resume summary: phase, approvals, traces, improvements
 npm run sfn -- research init --goal <g> --domain 3d-generation
 npm run sfn -- loop init --goal <g> --project <path>
 npm run sfn -- loop status --project <path>
+npm run sfn -- loop events --project <path>
+npm run sfn -- loop doctor --project <path>
 npm run sfn -- loop resume --loop-id <id> --project <path>
 npm run sfn -- loop start --from <R|A|L|P|H> --project <path>
 npm run sfn -- loop verify --milestone <R|A|L|P|H> --project <path>
+npm run sfn -- agent matrix                 # host adapters, hook files, proof mode, self-report policy
+npm run sfn -- agent install-hooks --target codex --project . --dry-run
+npm run sfn -- noderoom run-fresh-room --case FR-010 --base-url <url> --headed --record-video --trace on --focus-mode on --model-mode top_paid --budget benchmark_completion
 npm run sfn -- run --project <path> --goal <g> --out loop-run.json
 npm run sfn -- run verify --receipt loop-run.json
 npm run sfn -- agent-api verify --contract agent-api-contract.json
 npm run sfn -- fresh-room verify --receipt docs/eval/fresh-room/<case-id>/latest.json
+npm run sfn -- memory add --project . --project-id <id> --summary <s>
+npm run sfn -- rework list --project .
 npm run sfn -- rework verify --ledger rework-ledger.json
 npm run sfn -- agents openrouter-audit --out openrouter-model-audit.json
 npm run sfn -- agents openrouter-plan --audit openrouter-model-audit.json --out agent-host-setup
@@ -56,6 +65,10 @@ npm run sfn -- ledger verify <runId>        # re-verify a run's hash-chain (tamp
   unless the app has a ready graph report + graph JSON, forcing query-first orientation.
 - **`control/` - `SoloControlPlane`**: durable loop state for triggers, checkpoints, approvals, budget
   stops, trace spans, worktree leases, and trace-sourced improvement candidates.
+- **`events/` - `SoloEvent` bus + agent matrix**: normalizes agent hooks into `.solo/events.jsonl`,
+  generates host hook/rules plans, and blocks self-reported completion for no-hooks agents.
+- **`dashboard/` - CLI command center**: renders the active loop, proof verdict, metrics, artifacts,
+  recent events, runtime, and agent host policy from local receipts.
 - **`research/` - Research Spine**: research-backed decision receipts, claim gates, proof artifacts,
   and 3D-agent comparison rubric.
 - **`loop/` - RALPH Loop Ledger + Loop Runner**: `.solo/loop-state.json`, `events.jsonl`, milestone

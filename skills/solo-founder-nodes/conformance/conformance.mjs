@@ -32,7 +32,7 @@ ok("4 non-negotiables present", nn.every((n) => M.includes(n)), nn.filter((n) =>
 // 3. Progressive-disclosure playbooks + references all present (no missing links).
 const nodes = ["1-discover", "2-benchmark", "3-setup", "4-build", "5-adapter", "6-iterate", "7-verify"];
 ok("7 node playbooks present", nodes.every((n) => existsSync(join(skill, "nodes", `${n}.md`))));
-const refs = ["honest-lane", "memory", "context-substrate", "control-plane", "design-bridge", "gstack-bridge", "benchmarks", "research", "research-spine"];
+const refs = ["honest-lane", "memory", "context-substrate", "control-plane", "cli-command-center", "design-bridge", "gstack-bridge", "benchmarks", "research", "research-spine"];
 ok("references present", refs.every((r) => existsSync(join(skill, "references", `${r}.md`))));
 
 // 4. Runnable substrate files present (Node + the smoke).
@@ -43,6 +43,8 @@ ok("templates substrate present", [
   "memory/localMemory.ts",
   "context/graphContext.ts",
   "control/controlPlane.ts",
+  "events/soloEventBus.ts",
+  "dashboard/dashboard.ts",
   "setup/externalSetupGate.ts",
   "setup/openrouterAgentHosts.ts",
   "research/researchSpine.ts",
@@ -51,6 +53,7 @@ ok("templates substrate present", [
   "gstack/gstackBridge.ts",
 ].every((f) => existsSync(join(skill, "templates", f))));
 ok("context/control directives present", /context-substrate/i.test(master) && /control-plane/i.test(master));
+ok("CLI command center directive present", /CLI command center/i.test(master) && /SoloEvent/i.test(master) && /dashboard --project/i.test(master));
 ok("external setup gate directive present", /External setup gate/i.test(master) && /deterministic prework/i.test(master) && /server-side secret/i.test(master));
 ok("optional agent host setup directive present", /Optional agent host setup/i.test(master) && /agents openrouter-plan/i.test(master) && /OpenRouter model catalog/i.test(master));
 ok("research-backed implementation directive present", /research-spine/i.test(master) && /research-backed implementation/i.test(master));
