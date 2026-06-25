@@ -68,10 +68,15 @@ the loop must not stop. Add a remote compute setup lane and keep the same proof 
 
 - Hugging Face Jobs GPU for repeatable batch generation. Pass the token only as `HF_TOKEN` and submit
   it with `hf jobs run --secrets HF_TOKEN`; never put the token value on the command line.
-- Hugging Face hosted Spaces, such as the Tencent Hunyuan3D-2 Space, for the fastest manual or
-  semiautomated model-generated mesh when the laptop cannot run inference.
+- Hugging Face hosted Spaces, such as the Tencent Hunyuan3D-2 Space or Microsoft TRELLIS.2 Space, for
+  the fastest manual or semiautomated model-generated mesh/GLB when the laptop cannot run inference.
+  Hosted Spaces require a privacy/provenance receipt because source images are processed off-machine;
+  use only non-sensitive, user-owned/licensed, public-domain, or clean-room source images.
 - Hugging Face Inference Endpoints, RunPod, Modal, Lambda, GMI, or similar GPU runtimes when TRELLIS
   needs a Linux/16GB+ CUDA environment or when the product needs a persistent API.
 
 The remote lane still cannot pass until it produces the same output proofs: runtime log, generated
-asset, mesh validation, reopen proof, UI screenshot, cost/latency receipt, and blocked-claim verdict.
+asset, mesh validation, reopen proof, UI screenshot, cost/latency or hosted-run receipt, and
+blocked-claim verdict. For TRELLIS.2 Space specifically, require the uploaded-source screenshot or
+receipt, `Generate` run evidence, `Extract GLB` downloaded asset, mesh validation, reopen proof, and
+the asset loaded back into the actual product UI before saying "TRELLIS.2-generated."

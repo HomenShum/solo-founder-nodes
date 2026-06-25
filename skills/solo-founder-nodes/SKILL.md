@@ -193,7 +193,8 @@ receipt has generated asset, runtime log, mesh validation, DCC/viewer reopen pro
 screenshot evidence. Block model-generated claims when the lane is only planned or blocked. Record
 `HF_TOKEN` as the env contract only; never record token values. If local runtime is blocked by CPU-only
 Torch, VRAM, OS, or install constraints, route to Hugging Face Jobs GPU, a hosted Hunyuan3D Space,
-Inference Endpoints, or another approved remote GPU lane with the same proof requirements. Doctrine:
+the Microsoft TRELLIS.2 hosted Space, Inference Endpoints, or another approved remote GPU lane with
+the same source/privacy, output, mesh validation, reopen, and live-UI proof requirements. Doctrine:
 [`references/local-3d-model-ralph.md`](references/local-3d-model-ralph.md); implementation:
 [`templates/threeD/localModelRalph.ts`](templates/threeD/localModelRalph.ts).
 

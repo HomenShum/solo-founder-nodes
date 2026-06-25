@@ -328,8 +328,9 @@ valid evidence for setup honesty, but it cannot support a model-generated asset 
 is legal only when the receipt includes the generated asset, runtime log, mesh validation, DCC/viewer
 reopen proof, and actual UI screenshot. Record only the `HF_TOKEN` env contract and presence boolean;
 never record token values. If local runtime is blocked, route to a remote compute lane such as
-Hugging Face Jobs GPU, a hosted Hunyuan3D Space, an Inference Endpoint, or another approved GPU cloud;
-the same runtime/output/reopen/UI proof contract still applies. Doctrine: [`references/local-3d-model-ralph.md`](references/local-3d-model-ralph.md);
+Hugging Face Jobs GPU, a hosted Hunyuan3D Space, the Microsoft TRELLIS.2 hosted Space, an Inference
+Endpoint, or another approved GPU cloud; the same source/privacy, runtime/output, mesh validation,
+reopen, and actual UI proof contract still applies. Doctrine: [`references/local-3d-model-ralph.md`](references/local-3d-model-ralph.md);
 copyable implementation: [`templates/threeD/localModelRalph.ts`](templates/threeD/localModelRalph.ts).
 
 **3D asset quality gate:** coherent/prototype/industry-grade asset claims require more than a visible
