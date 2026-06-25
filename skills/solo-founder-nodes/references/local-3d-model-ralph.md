@@ -60,3 +60,18 @@ Local model RALPH does not replace component RALPH or the 3D asset quality gate.
 execution. Component RALPH proves the asset is decomposed into functional parts. Assembly coherence
 proves the parts work together. The asset quality gate proves mesh/material/export quality. All four are
 needed before a professional 3D asset claim is allowed.
+
+Remote fallback:
+
+If local preflight is blocked by CPU-only Torch, missing VRAM, missing Linux, or missing model runtime,
+the loop must not stop. Add a remote compute setup lane and keep the same proof contract:
+
+- Hugging Face Jobs GPU for repeatable batch generation. Pass the token only as `HF_TOKEN` and submit
+  it with `hf jobs run --secrets HF_TOKEN`; never put the token value on the command line.
+- Hugging Face hosted Spaces, such as the Tencent Hunyuan3D-2 Space, for the fastest manual or
+  semiautomated model-generated mesh when the laptop cannot run inference.
+- Hugging Face Inference Endpoints, RunPod, Modal, Lambda, GMI, or similar GPU runtimes when TRELLIS
+  needs a Linux/16GB+ CUDA environment or when the product needs a persistent API.
+
+The remote lane still cannot pass until it produces the same output proofs: runtime log, generated
+asset, mesh validation, reopen proof, UI screenshot, cost/latency receipt, and blocked-claim verdict.

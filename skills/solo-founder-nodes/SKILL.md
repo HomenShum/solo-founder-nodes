@@ -191,7 +191,9 @@ local model lane with `npm run sfn -- 3d model-plan --goal "<goal>" --model
 `npm run sfn -- 3d model-verify --receipt <receipt.json>`. `--require-pass` is only valid after the
 receipt has generated asset, runtime log, mesh validation, DCC/viewer reopen proof, and real UI
 screenshot evidence. Block model-generated claims when the lane is only planned or blocked. Record
-`HF_TOKEN` as the env contract only; never record token values. Doctrine:
+`HF_TOKEN` as the env contract only; never record token values. If local runtime is blocked by CPU-only
+Torch, VRAM, OS, or install constraints, route to Hugging Face Jobs GPU, a hosted Hunyuan3D Space,
+Inference Endpoints, or another approved remote GPU lane with the same proof requirements. Doctrine:
 [`references/local-3d-model-ralph.md`](references/local-3d-model-ralph.md); implementation:
 [`templates/threeD/localModelRalph.ts`](templates/threeD/localModelRalph.ts).
 
