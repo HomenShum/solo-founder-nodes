@@ -218,16 +218,30 @@ compositional goals when the assembly ledger is missing or incomplete. Doctrine:
 **Domain RALPH Packs (professional invariants):** Generic RALPH proves the process; Domain RALPH
 proves that the work is good for the user's specific industry/task. When the goal is domain-specific,
 professional, visual, agentic, financial, deployment-facing, or benchmark-facing, run
-`npm run sfn -- domain init --goal "<goal>" --project .` and
-`npm run sfn -- domain verify --project .`. The domain pack must define ontology, professional
-invariants, proof gates, visual checks when applicable, and regression fixtures. If a user reports a
+`npm run sfn -- domain research --goal "<goal>" --project .`, then
+`npm run sfn -- domain synthesize --goal "<goal>" --project .`, then
+`npm run sfn -- domain verify --project .`. R does not end with a research summary; it must produce a
+self-researched domain pack with ontology, professional invariants, proof gates, source tiers, visual
+checks when applicable, child RALPH targets, negative fixtures, and regression fixtures. If a user reports a
 failure, convert it into a permanent gate with
 `npm run sfn -- domain classify-report --file <report>` and
 `npm run sfn -- domain add-regression --file <report> --project .`; do not only patch the visible bug.
 The fresh-context judge blocks parent `L/P/H` claims when required domain gates are missing or failing.
 Doctrine: [`references/domain-packs.md`](references/domain-packs.md); copyable implementation:
 [`templates/domain-pack/domainJudge.ts`](templates/domain-pack/domainJudge.ts). Doctrine:
-**Every user-reported domain failure becomes a permanent proof gate.**
+**No self-researched domain pack, no build. No domain proof, no domain claim. Every user-reported domain failure becomes a permanent proof gate.**
+
+**Acceptance Compiler (domain pack -> proof registry):** after Domain RALPH produces the pack, A must
+compile that pack into executable proof obligations before Live Build can be claimed:
+`npm run sfn -- acceptance compile --project . --no-files` and
+`npm run sfn -- acceptance verify --project . --no-files`. The compiler writes
+`.solo/receipts/A/acceptance-bar.json` and `.solo/receipts/A/proof-registry.json`, carrying child
+component/assembly/operation RALPH targets and negative fixtures. `--no-files` is valid only while
+creating the pre-build contract; later proof phases must produce the files named by the registry. The
+fresh-context judge blocks parent `L/P/H` claims when the compiler receipt is missing or incomplete.
+Doctrine: [`references/acceptance-compiler.md`](references/acceptance-compiler.md); copyable
+implementation: [`templates/acceptance/acceptanceCompiler.ts`](templates/acceptance/acceptanceCompiler.ts).
+Doctrine: **No proof gate registry, no build.**
 
 **Operation RALPH (workflow actions):** object proof is not workflow proof. When the user expects
 brush selection, delete, material replacement, moving/resizing, hotspot creation, animation, export,

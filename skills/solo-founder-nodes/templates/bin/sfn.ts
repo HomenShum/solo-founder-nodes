@@ -160,14 +160,23 @@ import {
 import {
   addRegressionToDomainPack,
   classifyDomainFromText,
+  domainResearchBriefRelativePath,
   domainPackPath,
   makeDomainPack,
+  makeDomainResearchBrief,
   makeDomainRegressionFixture,
   readDomainPack,
+  renderDomainResearchBrief,
   verifyDomainPack,
   type DomainGateStatus,
   type DomainPack,
 } from "../domain-pack/domainJudge";
+import {
+  makeAcceptanceCompileReceipt,
+  readAcceptanceCompileReceipt,
+  verifyAcceptanceCompileReceipt,
+  type AcceptanceCompileReceipt,
+} from "../acceptance/acceptanceCompiler";
 import {
   makeOperationRalphReceipt,
   operationRalphPath,
@@ -299,6 +308,11 @@ function readJson<T>(path: string): T {
 function writeJson(path: string, value: unknown) {
   mkdirSync(dirname(path), { recursive: true });
   writeFileSync(path, `${JSON.stringify(value, jbig, 2)}\n`, "utf8");
+}
+
+function writeText(path: string, value: string) {
+  mkdirSync(dirname(path), { recursive: true });
+  writeFileSync(path, value, "utf8");
 }
 
 async function fetchOpenRouterCatalog() {
@@ -621,10 +635,15 @@ const HELP = `sfn - Solo Founder Nodes local CLI   (run via: npm run sfn -- <cmd
   assembly verify --receipt <file> [--base <dir>] [--no-files]
   assembly status [--project <path>] [--receipt <file>]
   domain init --goal <g> [--domain <d|auto>] [--completed] [--project <path>] [--out <file>]
+  domain research --goal <g> [--domain <d|auto>] [--project <path>] [--out <file>]
+  domain synthesize --goal <g> [--domain <d|auto>] [--completed] [--project <path>] [--out <file>]
+  domain critique [--project <path>] [--pack <file>] [--no-files] [--planned-ok]
   domain classify|classify-report (--input <text>|--file <path>) [--out <file>]
   domain add-regression (--input <text>|--file <path>) [--domain <d|auto>] [--project <path>] [--pack <file>] [--covered] [--out <file>]
   domain verify [--project <path>] [--pack <file>] [--no-files] [--planned-ok]
   domain status [--project <path>] [--pack <file>]
+  acceptance compile [--project <path>] [--pack <file>] [--out <file>] [--no-files]
+  acceptance verify [--project <path>] [--receipt <file>] [--no-files]
   operation init --goal <g> [--domain <d>] [--operations <file>] [--completed] [--project <path>] [--out <file>]
   operation verify [--project <path>] [--receipt <file>] [--no-files] [--planned-ok]
   operation status [--project <path>] [--receipt <file>]
@@ -1885,6 +1904,23 @@ async function main() {
       const sub = rest[0];
       const projectPath = resolve(flag(rest, "--project", ".")!);
       const packPath = flag(rest, "--pack") ? resolve(flag(rest, "--pack")!) : domainPackPath(projectPath);
+      if (sub === "research") {
+        const goal = flag(rest, "--goal");
+        if (!goal) {
+          console.error("domain research --goal <g> [--domain <d|auto>] [--project <path>] [--out <file>]");
+          process.exit(2);
+        }
+        const domainArg = flag(rest, "--domain", "auto")!;
+        const brief = makeDomainResearchBrief({
+          goal,
+          domain: domainArg === "auto" ? classifyDomainFromText(goal) : domainArg,
+        });
+        const target = flag(rest, "--out") ? resolve(flag(rest, "--out")!) : resolve(projectPath, domainResearchBriefRelativePath);
+        writeText(target, renderDomainResearchBrief(brief));
+        writeJson(`${target}.json`, brief);
+        console.log(JSON.stringify({ out: target, json: `${target}.json`, brief }, jbig, 2));
+        process.exit(0);
+      }
       if (sub === "init") {
         const goal = flag(rest, "--goal");
         if (!goal) {
@@ -1905,6 +1941,33 @@ async function main() {
           requireCompleted: !rest.includes("--planned-ok"),
         });
         console.log(JSON.stringify({ out: target, pack, verdict }, jbig, 2));
+        process.exit(0);
+      }
+      if (sub === "synthesize") {
+        const goal = flag(rest, "--goal");
+        if (!goal) {
+          console.error("domain synthesize --goal <g> [--domain <d|auto>] [--completed] [--project <path>] [--out <file>]");
+          process.exit(2);
+        }
+        const domainArg = flag(rest, "--domain", "auto")!;
+        const domain = domainArg === "auto" ? classifyDomainFromText(goal) : domainArg;
+        const brief = makeDomainResearchBrief({ goal, domain });
+        const briefPath = resolve(projectPath, domainResearchBriefRelativePath);
+        writeText(briefPath, renderDomainResearchBrief(brief));
+        writeJson(`${briefPath}.json`, brief);
+        const pack = makeDomainPack({
+          goal,
+          domain,
+          status: parseDomainGateStatus(rest.includes("--completed") ? "pass" : flag(rest, "--status", "planned")),
+        });
+        const target = flag(rest, "--out") ? resolve(flag(rest, "--out")!) : packPath;
+        writeJson(target, pack);
+        const verdict = verifyDomainPack(pack, {
+          baseDir: projectPath,
+          requireFiles: false,
+          requireCompleted: !rest.includes("--planned-ok"),
+        });
+        console.log(JSON.stringify({ out: target, researchBrief: briefPath, pack, verdict }, jbig, 2));
         process.exit(0);
       }
       if (sub === "classify-report" || sub === "classify") {
@@ -1979,7 +2042,71 @@ async function main() {
         console.log(JSON.stringify({ pack: packPath, verdict }, jbig, 2));
         process.exit(verdict.ok ? 0 : 1);
       }
-      console.error("domain: init | classify | classify-report | add-regression | verify | status");
+      if (sub === "critique") {
+        const pack = existsSync(packPath) ? readJson<DomainPack>(packPath) : readDomainPack(projectPath);
+        if (!pack) {
+          console.error("domain critique [--project <path>] [--pack <file>] [--no-files] [--planned-ok]");
+          process.exit(2);
+        }
+        const verdict = verifyDomainPack(pack, {
+          baseDir: projectPath,
+          requireFiles: !rest.includes("--no-files"),
+          requireCompleted: !rest.includes("--planned-ok"),
+          required: true,
+        });
+        const critique = {
+          ok: verdict.ok,
+          domain: verdict.domain,
+          checks: {
+            selfResearch: pack.selfResearch?.producedBy === "self-research",
+            sourceTiers: pack.sourceTiersUsed?.length ?? 0,
+            invariants: pack.invariants.length,
+            proofGates: pack.proofGates.length,
+            negativeFixtures: pack.negativeFixtures?.length ?? 0,
+            childRALPH: pack.childRALPH,
+          },
+          verdict,
+        };
+        console.log(JSON.stringify({ pack: packPath, critique }, jbig, 2));
+        process.exit(verdict.ok ? 0 : 1);
+      }
+      console.error("domain: init | research | synthesize | critique | classify | classify-report | add-regression | verify | status");
+      process.exit(2);
+    }
+    case "acceptance": {
+      const sub = rest[0];
+      const projectPath = resolve(flag(rest, "--project", ".")!);
+      const packPath = flag(rest, "--pack") ? resolve(flag(rest, "--pack")!) : domainPackPath(projectPath);
+      const receiptPath = flag(rest, "--receipt")
+        ? resolve(flag(rest, "--receipt")!)
+        : resolve(projectPath, ".solo/receipts/A/acceptance-bar.json");
+      if (sub === "compile") {
+        if (!existsSync(packPath)) {
+          console.error("acceptance compile [--project <path>] [--pack <file>] [--out <file>] [--no-files]");
+          process.exit(2);
+        }
+        const pack = readJson<DomainPack>(packPath);
+        const receipt = makeAcceptanceCompileReceipt({ pack, sourceDomainPack: packPath });
+        const target = flag(rest, "--out") ? resolve(flag(rest, "--out")!) : receiptPath;
+        writeJson(target, receipt);
+        writeJson(resolve(projectPath, ".solo/receipts/A/proof-registry.json"), receipt.proofRegistry);
+        const verdict = verifyAcceptanceCompileReceipt(receipt, {
+          baseDir: projectPath,
+          requireFiles: !rest.includes("--no-files"),
+        });
+        console.log(JSON.stringify({ out: target, proofRegistry: resolve(projectPath, ".solo/receipts/A/proof-registry.json"), receipt, verdict }, jbig, 2));
+        process.exit(verdict.ok ? 0 : 1);
+      }
+      if (sub === "verify" || sub === "status") {
+        const receipt = existsSync(receiptPath) ? readAcceptanceCompileReceipt(receiptPath) : undefined;
+        const verdict = verifyAcceptanceCompileReceipt(receipt, {
+          baseDir: projectPath,
+          requireFiles: !rest.includes("--no-files"),
+        });
+        console.log(JSON.stringify({ receipt: receiptPath, verdict }, jbig, 2));
+        process.exit(verdict.ok ? 0 : 1);
+      }
+      console.error("acceptance: compile | verify | status");
       process.exit(2);
     }
     case "operation": {

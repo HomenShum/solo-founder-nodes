@@ -69,9 +69,15 @@ import {
   addRegressionToDomainPack,
   classifyDomainFromText,
   makeDomainPack,
+  makeDomainResearchBrief,
   makeDomainRegressionFixture,
+  renderDomainResearchBrief,
   verifyDomainPack,
 } from "./domain-pack/domainJudge";
+import {
+  makeAcceptanceCompileReceipt,
+  verifyAcceptanceCompileReceipt,
+} from "./acceptance/acceptanceCompiler";
 import {
   makeOperationRalphReceipt,
   verifyOperationRalphReceipt,
@@ -101,7 +107,7 @@ import { makeFreshUserEmulationPlan, verifyFreshUserEmulationReceipt, type Fresh
 import { makeTrustRootReceipt, verifyTrustRootReceipt } from "./trust/trustRoot";
 import { makeDashboardSnapshot, renderDashboard } from "./dashboard/dashboard";
 import { formatAgentMatrix, makeAgentMatrixRows, makeHookInstallPlan, readSoloEvents, recordSoloEvent } from "./events/soloEventBus";
-import { judgeCurrentLoop } from "./judge/freshContextJudge";
+import { deterministicFreshContextJudge, judgeCurrentLoop } from "./judge/freshContextJudge";
 import {
   completeRalphMilestone,
   createRalphLedger,
@@ -1034,10 +1040,51 @@ async function main() {
   });
   const domainVerdict = verifyDomainPack(domainPack, { baseDir: proofRoot, requireFiles: false });
   check("domain pack passes when blocker gates are complete", domainVerdict.ok, domainVerdict.errors.join("; "));
+  check(
+    "domain pack is produced by self-research with source tiers",
+    domainPack.selfResearch.producedBy === "self-research"
+      && domainPack.sourceTiersUsed.includes("T4")
+      && domainPack.ontology.artifacts.length > 0,
+  );
+  check(
+    "domain pack carries child RALPH and negative fixtures",
+    domainPack.childRALPH.components.length > 0
+      && domainPack.childRALPH.assemblies.length > 0
+      && domainPack.childRALPH.operations.length > 0
+      && domainPack.negativeFixtures.length > 0,
+  );
+  const domainResearchBrief = makeDomainResearchBrief({
+    goal: "build a 3D eyewear generator",
+    domain: "3d-assets",
+    generatedAt: "2026-06-24T00:00:00.000Z",
+  });
+  check(
+    "self-research brief renders a domain proof contract",
+    renderDomainResearchBrief(domainResearchBrief).includes("no self-researched domain pack, no build")
+      && domainResearchBrief.acceptanceImplications.some((item) => item.includes("proof gate")),
+  );
   const flatPartsOnlyPack = clone(domainPack);
   flatPartsOnlyPack.proofGates = [];
   const flatPartsVerdict = verifyDomainPack(flatPartsOnlyPack, { baseDir: proofRoot, requireFiles: false });
   check("domain pack rejects flat parts with no professional gates", flatPartsVerdict.ok === false && flatPartsVerdict.errors.some((e) => e.includes("proof gates")));
+  const noSelfResearchPack = clone(domainPack);
+  noSelfResearchPack.selfResearch.producedBy = "manual" as never;
+  noSelfResearchPack.selfResearch.briefPath = "";
+  noSelfResearchPack.sourceTiersUsed = [];
+  const noSelfResearchVerdict = verifyDomainPack(noSelfResearchPack, { baseDir: proofRoot, requireFiles: false });
+  check(
+    "domain pack rejects missing self-research substrate",
+    noSelfResearchVerdict.ok === false
+      && noSelfResearchVerdict.errors.some((error) => error.includes("self-research")),
+  );
+  const noNegativeFixturePack = clone(domainPack);
+  noNegativeFixturePack.negativeFixtures = [];
+  const noNegativeFixtureVerdict = verifyDomainPack(noNegativeFixturePack, { baseDir: proofRoot, requireFiles: false });
+  check(
+    "domain pack rejects blocker invariant without negative fixture",
+    noNegativeFixtureVerdict.ok === false
+      && noNegativeFixtureVerdict.missingProofs.some((proof) => proof.includes("negativeFixture")),
+  );
   const missingHingeGatePack = clone(domainPack);
   missingHingeGatePack.proofGates.find((gate) => gate.id === "assembly-coherence")!.status = "blocked";
   const missingHingeGateVerdict = verifyDomainPack(missingHingeGatePack, { baseDir: proofRoot, requireFiles: false });
@@ -1074,6 +1121,27 @@ async function main() {
   const vtuberPack = makeDomainPack({ goal: "Vtuber avatar with skeleton and blendshapes", domain: "avatar-vtuber", status: "planned" });
   const vtuberVerdict = verifyDomainPack(vtuberPack, { baseDir: proofRoot, requireFiles: false });
   check("Vtuber claim without skeleton/blendshape proof fails", vtuberVerdict.ok === false && vtuberVerdict.blockerGateIds.includes("skeleton-proof") && vtuberVerdict.blockerGateIds.includes("blendshape-proof"));
+
+  console.log("\nAcceptanceCompiler (domain pack -> executable proof contract):");
+  const acceptanceReceipt = makeAcceptanceCompileReceipt({ pack: domainPack });
+  const acceptanceVerdict = verifyAcceptanceCompileReceipt(acceptanceReceipt, { baseDir: proofRoot, requireFiles: false });
+  check(
+    "acceptance compiler turns domain pack into child RALPH and proof registry",
+    acceptanceVerdict.ok
+      && acceptanceReceipt.childRALPH.components.length > 0
+      && acceptanceReceipt.proofRegistry.some((gate) => gate.gateId === "assembly-coherence"),
+    acceptanceVerdict.errors.join("; "),
+  );
+  const missingAcceptanceReceipt = clone(acceptanceReceipt);
+  missingAcceptanceReceipt.negativeFixtures = [];
+  missingAcceptanceReceipt.verdict.ok = false;
+  missingAcceptanceReceipt.verdict.missingProofs = ["invariant:assembly-interface-coherence:negativeFixture"];
+  const missingAcceptanceVerdict = verifyAcceptanceCompileReceipt(missingAcceptanceReceipt, { baseDir: proofRoot, requireFiles: false });
+  check(
+    "acceptance compiler rejects proof contract without negative fixtures",
+    missingAcceptanceVerdict.ok === false
+      && missingAcceptanceVerdict.missingProofs.some((proof) => proof.includes("negativeFixture")),
+  );
 
   console.log("\nOperationRalph (workflow action proof):");
   const operationReceipt = makeOperationRalphReceipt({
@@ -1599,6 +1667,75 @@ async function main() {
   const noLoopJudgeRoot = mkdtempSync(join(tmpdir(), `solo-no-loop-judge-${process.pid}-`));
   const noLoopJudge = judgeCurrentLoop({ projectPath: noLoopJudgeRoot, lastAssistantMessage: "done" });
   check("fresh-context judge blocks completion without loop-state", noLoopJudge.verdict.verdict === "blocked" && noLoopJudge.verdict.blockClaim && noLoopJudge.verdict.missingReceipts.includes(".solo/loop-state.json"));
+
+  const domainContractLoop = createRalphLedger({ repoPath: mkdtempSync(join(tmpdir(), `solo-domain-contract-${process.pid}-`)), goal: "finance diligence app with sourced professional claims", now: "2026-06-24T00:00:00.000Z" }).loop;
+  domainContractLoop.currentMilestone = "L";
+  const missingDomainContractJudge = deterministicFreshContextJudge({
+    schemaVersion: 1,
+    projectPath: noLoopJudgeRoot,
+    currentMilestone: "L",
+    loop: domainContractLoop,
+    missingReceipts: [],
+    recentEvents: [],
+    proofVerdict: { exists: false, ok: false, status: "missing" },
+    componentLayer: { exists: false, required: false, ok: true, status: "not_required", reason: "not required", missingProofs: [] },
+    assemblyLayer: { exists: false, required: false, ok: true, reason: "not required", missingProofs: [] },
+    domainLayer: {
+      exists: false,
+      required: true,
+      ok: false,
+      domain: "finance-nodeagent",
+      reason: "Missing self-researched domain pack.",
+      missingProofs: [".solo/domain/domain-pack.json"],
+    },
+    acceptanceLayer: {
+      exists: false,
+      required: true,
+      ok: false,
+      reason: "Missing compiled acceptance proof contract.",
+      missingProofs: [".solo/receipts/A/acceptance-bar.json"],
+    },
+    operationLayer: { exists: false, required: false, ok: true, reason: "not required", missingProofs: [] },
+    directionLayer: { exists: false, required: false, ok: true, reason: "not required", missingProofs: [] },
+    prometheusLayer: { exists: false, ok: true, reason: "not active", missingProofs: [] },
+    lastAssistantMessage: "ready to build",
+  });
+  check(
+    "fresh-context judge blocks Live Build without self-researched domain pack",
+    missingDomainContractJudge.verdict === "not_done"
+      && missingDomainContractJudge.missingReceipts.includes(".solo/domain/domain-pack.json"),
+    missingDomainContractJudge.reason,
+  );
+
+  const missingAcceptanceContractJudge = deterministicFreshContextJudge({
+    schemaVersion: 1,
+    projectPath: noLoopJudgeRoot,
+    currentMilestone: "L",
+    loop: domainContractLoop,
+    missingReceipts: [],
+    recentEvents: [],
+    proofVerdict: { exists: false, ok: false, status: "missing" },
+    componentLayer: { exists: false, required: false, ok: true, status: "not_required", reason: "not required", missingProofs: [] },
+    assemblyLayer: { exists: false, required: false, ok: true, reason: "not required", missingProofs: [] },
+    domainLayer: { exists: true, required: true, ok: true, domain: "finance-nodeagent", reason: "domain ok", missingProofs: [] },
+    acceptanceLayer: {
+      exists: false,
+      required: true,
+      ok: false,
+      reason: "Missing compiled acceptance proof contract.",
+      missingProofs: [".solo/receipts/A/acceptance-bar.json"],
+    },
+    operationLayer: { exists: false, required: false, ok: true, reason: "not required", missingProofs: [] },
+    directionLayer: { exists: false, required: false, ok: true, reason: "not required", missingProofs: [] },
+    prometheusLayer: { exists: false, ok: true, reason: "not active", missingProofs: [] },
+    lastAssistantMessage: "ready to build",
+  });
+  check(
+    "fresh-context judge blocks Live Build without acceptance compiler receipt",
+    missingAcceptanceContractJudge.verdict === "not_done"
+      && missingAcceptanceContractJudge.missingReceipts.includes(".solo/receipts/A/acceptance-bar.json"),
+    missingAcceptanceContractJudge.reason,
+  );
 
   const noComponentLedgerRoot = mkdtempSync(join(tmpdir(), `solo-no-component-ledger-${process.pid}-`));
   const noComponentLedger = createRalphLedger({ repoPath: noComponentLedgerRoot, goal: "prove a coherent 3D asset pipeline", now: "2026-06-24T00:00:00.000Z" });

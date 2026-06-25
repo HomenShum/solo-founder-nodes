@@ -32,6 +32,10 @@ import {
   readOperationRalphReceipt,
   verifyOperationRalphReceipt,
 } from "../operation/operationRalph";
+import {
+  readAcceptanceCompileReceipt,
+  verifyAcceptanceCompileReceipt,
+} from "../acceptance/acceptanceCompiler";
 
 export type FreshContextJudgeVerdictKind =
   | "done"
@@ -73,6 +77,13 @@ export type FreshContextJudgeInput = {
     required: boolean;
     ok: boolean;
     domain: string;
+    reason: string;
+    missingProofs: string[];
+  };
+  acceptanceLayer: {
+    exists: boolean;
+    required: boolean;
+    ok: boolean;
     reason: string;
     missingProofs: string[];
   };
@@ -148,6 +159,7 @@ export function makeFreshContextJudgeInput(input: {
     assemblyLayerRequired: assemblyLayer.required,
     lastAssistantMessage: input.lastAssistantMessage,
   });
+  const acceptanceLayer = readAcceptanceLayer(projectPath, domainLayer.required);
   const operationLayer = readOperationLayer(projectPath, loop, input.lastAssistantMessage);
   const directionLayer = readDirectionLayer(projectPath, {
     initialUserGoal: input.initialUserGoal,
@@ -167,6 +179,7 @@ export function makeFreshContextJudgeInput(input: {
     componentLayer,
     assemblyLayer,
     domainLayer,
+    acceptanceLayer,
     operationLayer,
     directionLayer,
     prometheusLayer,
@@ -340,8 +353,27 @@ export function deterministicFreshContextJudge(input: FreshContextJudgeInput): F
           kind: "command",
           command: input.domainLayer.exists
             ? "npm run sfn -- domain verify --project ."
-            : `npm run sfn -- domain init --domain ${input.domainLayer.domain} --goal "<goal>" --project .`,
+            : `npm run sfn -- domain synthesize --domain ${input.domainLayer.domain} --goal "<goal>" --project .`,
           description: "Complete required domain-specific proof gates before claiming the parent work is professionally correct.",
+        },
+      ],
+    });
+  }
+
+  if (["L", "P", "H"].includes(current) && input.acceptanceLayer.required && input.acceptanceLayer.ok !== true) {
+    return verdict({
+      kind: "not_done",
+      confidence: 0.97,
+      currentMilestone: current,
+      reason: input.acceptanceLayer.reason,
+      missingReceipts: input.acceptanceLayer.missingProofs,
+      actions: [
+        {
+          kind: "command",
+          command: input.acceptanceLayer.exists
+            ? "npm run sfn -- acceptance verify --project ."
+            : "npm run sfn -- acceptance compile --project . --no-files",
+          description: "Compile the self-researched domain pack into executable acceptance proof gates before Live Build can be claimed.",
         },
       ],
     });
@@ -605,6 +637,38 @@ function readDomainLayer(
     reason: verdict.ok
       ? "Domain RALPH pack gates are satisfied."
       : "Domain RALPH pack is incomplete: ontology, professional invariants, regression fixtures, or blocker proof gates are missing.",
+    missingProofs: verdict.missingProofs,
+  };
+}
+
+function readAcceptanceLayer(
+  projectPath: string,
+  required: boolean,
+): FreshContextJudgeInput["acceptanceLayer"] {
+  const path = resolve(projectPath, ".solo/receipts/A/acceptance-bar.json");
+  const receipt = readAcceptanceCompileReceipt(path);
+  if (!receipt) {
+    return {
+      exists: false,
+      required,
+      ok: !required,
+      reason: required
+        ? "A domain-specific parent claim needs an Acceptance Compiler receipt; research must become executable proof gates before build."
+        : "Acceptance compiler is not required for this generic claim.",
+      missingProofs: required ? [".solo/receipts/A/acceptance-bar.json"] : [],
+    };
+  }
+  const verdict = verifyAcceptanceCompileReceipt(receipt, {
+    baseDir: projectPath,
+    requireFiles: false,
+  });
+  return {
+    exists: true,
+    required,
+    ok: verdict.ok,
+    reason: verdict.ok
+      ? "Acceptance compiler receipt is satisfied."
+      : "Acceptance compiler is incomplete: proof registry, child RALPH targets, or negative fixtures are missing.",
     missingProofs: verdict.missingProofs,
   };
 }

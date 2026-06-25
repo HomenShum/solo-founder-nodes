@@ -22,12 +22,28 @@ export type DomainPackId = (typeof domainPackIds)[number];
 export type DomainGateStatus = "planned" | "pass" | "partial" | "blocked";
 export type DomainSeverity = "blocker" | "major" | "minor";
 export type RegressionStatus = "planned" | "covered" | "parked";
+export type ResearchSourceTier = "T0" | "T1" | "T2" | "T3" | "T4" | "T5";
+export type DomainPackVerdict = "draft" | "accepted" | "needs_research";
+
+export type DomainResearchBrief = {
+  schemaVersion: 1;
+  briefKind: "domain-self-research";
+  goal: string;
+  domain: DomainPackId;
+  generatedAt: string;
+  sourceTiersUsed: ResearchSourceTier[];
+  researchQuestions: string[];
+  findings: string[];
+  acceptanceImplications: string[];
+  requiredPackArtifacts: string[];
+};
 
 export type DomainInvariant = {
   id: string;
   description: string;
   severity: DomainSeverity;
   professionalFailure: string;
+  failureExample: string;
   proofGateIds: string[];
 };
 
@@ -72,16 +88,38 @@ export type DomainPack = {
     entities: string[];
     relationships: string[];
     operations: string[];
+    artifacts: string[];
+  };
+  sourceTiersUsed: ResearchSourceTier[];
+  selfResearch: {
+    producedBy: "self-research";
+    briefPath: string;
+    researchQuestions: string[];
+    acceptanceImplications: string[];
   };
   invariants: DomainInvariant[];
   proofGates: DomainProofGate[];
   visualChecks: DomainVisualCheck[];
   regressionFixtures: DomainRegressionFixture[];
+  negativeFixtures: Array<{
+    id: string;
+    description: string;
+    shouldFailGate: string;
+  }>;
+  childRALPH: {
+    components: string[];
+    assemblies: string[];
+    operations: string[];
+    exports: string[];
+  };
   exports: string[];
+  verdict: DomainPackVerdict;
   parentGate: {
     domainProofRequired: true;
     userReportedFailuresBecomeGates: true;
     genericProofIsInsufficient: true;
+    selfResearchRequired: true;
+    proofGatesRequiredBeforeBuild: true;
   };
 };
 
@@ -96,6 +134,7 @@ export type DomainJudgeVerdict = {
 };
 
 export const domainPackRelativePath = ".solo/domain/domain-pack.json";
+export const domainResearchBriefRelativePath = ".solo/receipts/R/domain-research-brief.md";
 export const domainRegressionRelativeDir = ".solo/domain/regressions";
 
 export function domainPackPath(projectPath: string) {
@@ -104,6 +143,69 @@ export function domainPackPath(projectPath: string) {
 
 export function domainRegressionDir(projectPath: string) {
   return resolve(projectPath, domainRegressionRelativeDir);
+}
+
+export function makeDomainResearchBrief(input: {
+  goal: string;
+  domain?: string;
+  generatedAt?: string;
+}): DomainResearchBrief {
+  const domain = normalizeDomainPackId(input.domain ?? classifyDomainFromText(input.goal));
+  const seed = domainSeed(domain);
+  return {
+    schemaVersion: 1,
+    briefKind: "domain-self-research",
+    goal: input.goal,
+    domain,
+    generatedAt: input.generatedAt ?? new Date().toISOString(),
+    sourceTiersUsed: sourceTiersForDomain(domain),
+    researchQuestions: [
+      `What professional workflow is implied by ${seed.name}?`,
+      "What entities, relationships, operations, and artifacts define this domain?",
+      "Which blocker failures would make an output unusable even if it renders?",
+      "Which receipts prove those failures cannot slip through?",
+    ],
+    findings: seed.invariants.map((item) => `${item.id}: ${item.description}`),
+    acceptanceImplications: [
+      "R must produce a domain pack, not only a research summary.",
+      "A must compile every blocker invariant into an executable proof gate.",
+      "L must not begin until the domain pack and acceptance proof contract exist.",
+      "P must prove the gates through receipts from the actual app/runtime.",
+      "H must convert user-reported failures into permanent regression fixtures.",
+    ],
+    requiredPackArtifacts: [
+      domainResearchBriefRelativePath,
+      domainPackRelativePath,
+      ".solo/receipts/A/acceptance-bar.json",
+      ".solo/receipts/A/proof-registry.json",
+    ],
+  };
+}
+
+export function renderDomainResearchBrief(brief: DomainResearchBrief) {
+  return [
+    "# Domain Self-Research Brief",
+    "",
+    `Goal: ${brief.goal}`,
+    `Domain: ${brief.domain}`,
+    `Generated: ${brief.generatedAt}`,
+    `Source tiers: ${brief.sourceTiersUsed.join(", ")}`,
+    "",
+    "## Research Questions",
+    ...brief.researchQuestions.map((item) => `- ${item}`),
+    "",
+    "## Findings",
+    ...brief.findings.map((item) => `- ${item}`),
+    "",
+    "## Acceptance Implications",
+    ...brief.acceptanceImplications.map((item) => `- ${item}`),
+    "",
+    "## Required Pack Artifacts",
+    ...brief.requiredPackArtifacts.map((item) => `- ${item}`),
+    "",
+    "Rule: no self-researched domain pack, no build; no domain proof, no domain claim.",
+    "",
+  ].join("\n");
 }
 
 export function classifyDomainFromText(text: string): DomainPackId {
@@ -133,6 +235,8 @@ export function makeDomainPack(input: {
   const domain = normalizeDomainPackId(input.domain ?? classifyDomainFromText(input.goal));
   const seed = domainSeed(domain);
   const status = input.status ?? "planned";
+  const sourceTiersUsed = sourceTiersForDomain(domain);
+  const proofGates = seed.proofGates.map((gate) => ({ ...gate, status }));
   return {
     schemaVersion: 1,
     packKind: "domain-pack",
@@ -143,15 +247,27 @@ export function makeDomainPack(input: {
     jobsToBeDone: seed.jobsToBeDone,
     generatedAt: input.generatedAt ?? new Date().toISOString(),
     ontology: seed.ontology,
+    sourceTiersUsed,
+    selfResearch: {
+      producedBy: "self-research",
+      briefPath: domainResearchBriefRelativePath,
+      researchQuestions: makeDomainResearchBrief({ goal: input.goal, domain }).researchQuestions,
+      acceptanceImplications: makeDomainResearchBrief({ goal: input.goal, domain }).acceptanceImplications,
+    },
     invariants: seed.invariants,
-    proofGates: seed.proofGates.map((gate) => ({ ...gate, status })),
+    proofGates,
     visualChecks: seed.visualChecks,
     regressionFixtures: [],
+    negativeFixtures: makeNegativeFixtures(seed.invariants, proofGates),
+    childRALPH: makeChildRalph(seed),
     exports: seed.exports,
+    verdict: status === "pass" ? "accepted" : "draft",
     parentGate: {
       domainProofRequired: true,
       userReportedFailuresBecomeGates: true,
       genericProofIsInsufficient: true,
+      selfResearchRequired: true,
+      proofGatesRequiredBeforeBuild: true,
     },
   };
 }
@@ -185,19 +301,37 @@ export function verifyDomainPack(
   if (pack.parentGate?.domainProofRequired !== true) errors.push("domain pack must require domain proof");
   if (pack.parentGate?.userReportedFailuresBecomeGates !== true) errors.push("domain pack must convert user reports into gates");
   if (pack.parentGate?.genericProofIsInsufficient !== true) errors.push("domain pack must reject generic proof as sufficient");
+  if (pack.parentGate?.selfResearchRequired !== true) errors.push("domain pack must require self-research before build");
+  if (pack.parentGate?.proofGatesRequiredBeforeBuild !== true) errors.push("domain pack must require proof gates before build");
   if ((pack.ontology?.entities ?? []).length === 0) errors.push("domain pack requires ontology entities");
   if ((pack.ontology?.relationships ?? []).length === 0) errors.push("domain pack requires ontology relationships");
   if ((pack.ontology?.operations ?? []).length === 0) errors.push("domain pack requires ontology operations");
+  if ((pack.ontology?.artifacts ?? []).length === 0) errors.push("domain pack requires ontology artifacts");
+  if ((pack.sourceTiersUsed ?? []).length === 0) errors.push("domain pack requires source-tiered self-research");
+  if (pack.selfResearch?.producedBy !== "self-research") errors.push("domain pack must be produced by self-research");
+  if (!pack.selfResearch?.briefPath) errors.push("domain pack requires self-research brief path");
+  if (requireFiles && pack.selfResearch?.briefPath && !existsSync(resolve(baseDir, pack.selfResearch.briefPath))) {
+    errors.push(`domain self-research brief file does not exist: ${pack.selfResearch.briefPath}`);
+    missingProofs.push(pack.selfResearch.briefPath);
+  }
+  if ((pack.selfResearch?.researchQuestions ?? []).length === 0) errors.push("domain pack requires self-research questions");
+  if ((pack.selfResearch?.acceptanceImplications ?? []).length === 0) errors.push("domain pack requires acceptance implications");
   if ((pack.targetUsers ?? []).length === 0) errors.push("domain pack requires target users");
   if ((pack.jobsToBeDone ?? []).length === 0) errors.push("domain pack requires jobs to be done");
   if ((pack.exports ?? []).length === 0) errors.push("domain pack requires export targets");
   if ((pack.invariants ?? []).length === 0) errors.push("domain pack requires professional invariants");
   if ((pack.proofGates ?? []).length === 0) errors.push("domain pack requires proof gates");
+  if ((pack.childRALPH?.components ?? []).length === 0) errors.push("domain pack requires child component RALPH targets");
+  if ((pack.childRALPH?.assemblies ?? []).length === 0) errors.push("domain pack requires child assembly RALPH targets");
+  if ((pack.childRALPH?.operations ?? []).length === 0) errors.push("domain pack requires child operation RALPH targets");
+  if ((pack.childRALPH?.exports ?? []).length === 0) errors.push("domain pack requires child export RALPH targets");
+  if (!["draft", "accepted", "needs_research"].includes(pack.verdict)) errors.push("domain pack requires verdict");
 
   const gateById = new Map((pack.proofGates ?? []).map((gate) => [gate.id, gate]));
+  const negativeFixtureGateIds = new Set((pack.negativeFixtures ?? []).map((fixture) => fixture.shouldFailGate));
   for (const invariant of pack.invariants ?? []) {
-    if (!invariant.id || !invariant.description || !invariant.professionalFailure) {
-      errors.push("domain invariant requires id, description, and professionalFailure");
+    if (!invariant.id || !invariant.description || !invariant.professionalFailure || !invariant.failureExample) {
+      errors.push("domain invariant requires id, description, professionalFailure, and failureExample");
     }
     if ((invariant.proofGateIds ?? []).length === 0) {
       errors.push(`domain invariant ${invariant.id} requires proofGateIds`);
@@ -208,6 +342,20 @@ export function verifyDomainPack(
         errors.push(`domain invariant ${invariant.id} references missing proof gate ${gateId}`);
         missingProofs.push(`domain.gate:${gateId}`);
       }
+    }
+    if (invariant.severity === "blocker" && !(invariant.proofGateIds ?? []).some((gateId) => negativeFixtureGateIds.has(gateId))) {
+      errors.push(`blocker invariant ${invariant.id} requires a negative fixture`);
+      missingProofs.push(`domain.invariant:${invariant.id}:negativeFixture`);
+    }
+  }
+
+  for (const fixture of pack.negativeFixtures ?? []) {
+    if (!fixture.id || !fixture.description || !fixture.shouldFailGate) {
+      errors.push(`negative fixture ${fixture.id || "<missing>"} is incomplete`);
+    }
+    if (fixture.shouldFailGate && !gateById.has(fixture.shouldFailGate)) {
+      errors.push(`negative fixture ${fixture.id} references missing proof gate ${fixture.shouldFailGate}`);
+      missingProofs.push(`domain.negativeFixture:${fixture.id}:${fixture.shouldFailGate}`);
     }
   }
 
@@ -312,11 +460,19 @@ export function addRegressionToDomainPack(pack: DomainPack, fixture: DomainRegre
       description: `User-reported invariant for ${fixture.expectedFailure}.`,
       severity: "blocker",
       professionalFailure: fixture.expectedFailure,
+      failureExample: fixture.expectedFailure,
       proofGateIds: [fixture.proofGateId],
     });
   }
   if (!next.regressionFixtures.some((item) => item.id === fixture.id)) {
     next.regressionFixtures.push(fixture);
+  }
+  if (!next.negativeFixtures.some((item) => item.shouldFailGate === fixture.proofGateId)) {
+    next.negativeFixtures.push({
+      id: `negative-${slugify(fixture.proofGateId)}`,
+      description: fixture.expectedFailure,
+      shouldFailGate: fixture.proofGateId,
+    });
   }
   return next;
 }
@@ -381,7 +537,7 @@ function normalizeDomainPackId(value: string): DomainPackId {
   return classifyDomainFromText(value);
 }
 
-function domainSeed(domain: DomainPackId): Omit<DomainPack, "schemaVersion" | "packKind" | "id" | "goal" | "generatedAt" | "regressionFixtures" | "parentGate"> {
+function domainSeed(domain: DomainPackId): Omit<DomainPack, "schemaVersion" | "packKind" | "id" | "goal" | "generatedAt" | "sourceTiersUsed" | "selfResearch" | "regressionFixtures" | "negativeFixtures" | "childRALPH" | "verdict" | "parentGate"> {
   if (domain === "construction-mockups") {
     return packSeed(
       "Construction Mockups",
@@ -688,7 +844,7 @@ function packSeed(
   visualChecks: DomainVisualCheck[],
   exports: string[],
 ) {
-  return { name, targetUsers, jobsToBeDone, ontology: { entities, relationships, operations }, invariants, proofGates, visualChecks, exports };
+  return { name, targetUsers, jobsToBeDone, ontology: { entities, relationships, operations, artifacts: exports }, invariants, proofGates, visualChecks, exports };
 }
 
 function invariant(
@@ -698,7 +854,7 @@ function invariant(
   professionalFailure: string,
   proofGateIds: string[],
 ): DomainInvariant {
-  return { id, description, severity, professionalFailure, proofGateIds };
+  return { id, description, severity, professionalFailure, failureExample: professionalFailure, proofGateIds };
 }
 
 function gate(id: string, label: string, command: string, requiredReceipt: string): DomainProofGate {
@@ -715,6 +871,40 @@ function gate(id: string, label: string, command: string, requiredReceipt: strin
 
 function visual(id: string, label: string, canonicalViews: string[]): DomainVisualCheck {
   return { id, label, screenshotOrVideoRequired: true, canonicalViews };
+}
+
+function sourceTiersForDomain(domain: DomainPackId): ResearchSourceTier[] {
+  if (domain === "generic") return ["T0", "T1"];
+  if (["3d-assets", "construction-mockups", "manufacturing-parts", "avatar-vtuber", "film-vfx", "game-assets"].includes(domain)) {
+    return ["T0", "T1", "T2", "T4", "T5"];
+  }
+  if (["finance-nodeagent", "video-remix", "image-editing", "agent-app"].includes(domain)) return ["T0", "T1", "T2", "T3", "T4"];
+  return ["T0", "T1", "T2", "T3"];
+}
+
+function makeNegativeFixtures(invariants: DomainInvariant[], gates: DomainProofGate[]) {
+  const gateIds = new Set(gates.map((gate) => gate.id));
+  return invariants
+    .filter((invariant) => invariant.severity === "blocker")
+    .flatMap((invariant) => invariant.proofGateIds
+      .filter((gateId) => gateIds.has(gateId))
+      .slice(0, 1)
+      .map((gateId) => ({
+        id: `negative-${slugify(invariant.id)}`,
+        description: invariant.failureExample || invariant.professionalFailure,
+        shouldFailGate: gateId,
+      })));
+}
+
+function makeChildRalph(seed: ReturnType<typeof domainSeed>) {
+  const entities = seed.ontology.entities;
+  const relationships = seed.ontology.relationships;
+  return {
+    components: entities.slice(0, Math.max(1, Math.min(8, entities.length))),
+    assemblies: relationships.slice(0, Math.max(1, Math.min(6, relationships.length))),
+    operations: seed.ontology.operations,
+    exports: seed.exports,
+  };
 }
 
 function classifyMissingInvariant(domain: DomainPackId, report: string) {

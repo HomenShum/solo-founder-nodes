@@ -10,10 +10,15 @@
     "goal",
     "targetUsers",
     "jobsToBeDone",
+    "sourceTiersUsed",
+    "selfResearch",
     "ontology",
     "invariants",
     "proofGates",
+    "negativeFixtures",
+    "childRALPH",
     "exports",
+    "verdict",
     "parentGate"
   ],
   "properties": {
@@ -25,11 +30,27 @@
     "jobsToBeDone": { "type": "array", "items": { "type": "string" }, "minItems": 1 },
     "ontology": {
       "type": "object",
-      "required": ["entities", "relationships", "operations"],
+      "required": ["entities", "relationships", "operations", "artifacts"],
       "properties": {
         "entities": { "type": "array", "items": { "type": "string" }, "minItems": 1 },
         "relationships": { "type": "array", "items": { "type": "string" }, "minItems": 1 },
-        "operations": { "type": "array", "items": { "type": "string" }, "minItems": 1 }
+        "operations": { "type": "array", "items": { "type": "string" }, "minItems": 1 },
+        "artifacts": { "type": "array", "items": { "type": "string" }, "minItems": 1 }
+      }
+    },
+    "sourceTiersUsed": {
+      "type": "array",
+      "items": { "enum": ["T0", "T1", "T2", "T3", "T4", "T5"] },
+      "minItems": 1
+    },
+    "selfResearch": {
+      "type": "object",
+      "required": ["producedBy", "briefPath", "researchQuestions", "acceptanceImplications"],
+      "properties": {
+        "producedBy": { "const": "self-research" },
+        "briefPath": { "type": "string", "minLength": 1 },
+        "researchQuestions": { "type": "array", "items": { "type": "string" }, "minItems": 1 },
+        "acceptanceImplications": { "type": "array", "items": { "type": "string" }, "minItems": 1 }
       }
     },
     "invariants": {
@@ -46,27 +67,55 @@
       "type": "array",
       "items": { "$ref": "./regression-fixture.schema.json" }
     },
+    "negativeFixtures": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/negativeFixture" },
+      "minItems": 1
+    },
+    "childRALPH": {
+      "type": "object",
+      "required": ["components", "assemblies", "operations", "exports"],
+      "properties": {
+        "components": { "type": "array", "items": { "type": "string" }, "minItems": 1 },
+        "assemblies": { "type": "array", "items": { "type": "string" }, "minItems": 1 },
+        "operations": { "type": "array", "items": { "type": "string" }, "minItems": 1 },
+        "exports": { "type": "array", "items": { "type": "string" }, "minItems": 1 }
+      }
+    },
     "exports": { "type": "array", "items": { "type": "string" }, "minItems": 1 },
+    "verdict": { "enum": ["draft", "accepted", "needs_research"] },
     "parentGate": {
       "type": "object",
-      "required": ["domainProofRequired", "userReportedFailuresBecomeGates", "genericProofIsInsufficient"],
+      "required": ["domainProofRequired", "userReportedFailuresBecomeGates", "genericProofIsInsufficient", "selfResearchRequired", "proofGatesRequiredBeforeBuild"],
       "properties": {
         "domainProofRequired": { "const": true },
         "userReportedFailuresBecomeGates": { "const": true },
-        "genericProofIsInsufficient": { "const": true }
+        "genericProofIsInsufficient": { "const": true },
+        "selfResearchRequired": { "const": true },
+        "proofGatesRequiredBeforeBuild": { "const": true }
       }
     }
   },
   "$defs": {
     "invariant": {
       "type": "object",
-      "required": ["id", "description", "severity", "professionalFailure", "proofGateIds"],
+      "required": ["id", "description", "severity", "professionalFailure", "failureExample", "proofGateIds"],
       "properties": {
         "id": { "type": "string", "minLength": 1 },
         "description": { "type": "string", "minLength": 1 },
         "severity": { "enum": ["blocker", "major", "minor"] },
         "professionalFailure": { "type": "string", "minLength": 1 },
+        "failureExample": { "type": "string", "minLength": 1 },
         "proofGateIds": { "type": "array", "items": { "type": "string" }, "minItems": 1 }
+      }
+    },
+    "negativeFixture": {
+      "type": "object",
+      "required": ["id", "description", "shouldFailGate"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "description": { "type": "string", "minLength": 1 },
+        "shouldFailGate": { "type": "string", "minLength": 1 }
       }
     }
   }

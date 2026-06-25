@@ -115,13 +115,18 @@ no assembly/interface proof, no professional workflow claim.
 
 **Domain RALPH Packs:** generic RALPH proves process; domain packs prove domain-specific professional
 correctness. When the goal is domain-specific or professional, run
-`npm run sfn -- domain init --goal "<goal>" --project .` and
-`npm run sfn -- domain verify --project .`. If the user reports a failure, run
+`npm run sfn -- domain research --goal "<goal>" --project .`,
+`npm run sfn -- domain synthesize --goal "<goal>" --project .`, and
+`npm run sfn -- domain verify --project .`. Then compile acceptance before build with
+`npm run sfn -- acceptance compile --project . --no-files`. If the user reports a failure, run
 `npm run sfn -- domain classify-report --file <report>` and
 `npm run sfn -- domain add-regression --file <report> --project .` so the bug becomes a permanent
 proof gate. Spec: [`references/domain-packs.md`](references/domain-packs.md); implementation:
-[`templates/domain-pack/domainJudge.ts`](templates/domain-pack/domainJudge.ts). Doctrine:
-every user-reported domain failure becomes a permanent proof gate.
+[`templates/domain-pack/domainJudge.ts`](templates/domain-pack/domainJudge.ts). Acceptance compiler:
+[`references/acceptance-compiler.md`](references/acceptance-compiler.md) and
+[`templates/acceptance/acceptanceCompiler.ts`](templates/acceptance/acceptanceCompiler.ts). Doctrine:
+no self-researched domain pack, no build; no proof gate registry, no build; every user-reported domain
+failure becomes a permanent proof gate.
 
 **Operation RALPH:** object proof is not workflow proof. For brush selection, deletion, material
 replacement, moving/resizing, hotspot creation, animation, or export workflows, run
