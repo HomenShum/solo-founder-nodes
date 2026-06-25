@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://solo-founder-nodes.local/regression-fixture.schema.json",
+  "title": "Solo Founder Domain Regression Fixture",
+  "type": "object",
+  "required": [
+    "id",
+    "sourceReport",
+    "domain",
+    "missingInvariantId",
+    "proofGateId",
+    "fixturePath",
+    "expectedFailure",
+    "status"
+  ],
+  "properties": {
+    "id": { "type": "string", "minLength": 1 },
+    "sourceReport": { "type": "string", "minLength": 1 },
+    "domain": { "type": "string", "minLength": 1 },
+    "missingInvariantId": { "type": "string", "minLength": 1 },
+    "proofGateId": { "type": "string", "minLength": 1 },
+    "fixturePath": { "type": "string", "minLength": 1 },
+    "expectedFailure": { "type": "string", "minLength": 1 },
+    "status": { "enum": ["planned", "covered", "parked"] }
+  }
+}

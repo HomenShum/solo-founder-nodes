@@ -22,6 +22,12 @@ import {
   readAssemblyCoherenceReceipt,
   verifyAssemblyCoherenceReceipt,
 } from "../assembly/assemblyCoherence";
+import {
+  classifyDomainFromText,
+  domainPackRequiredFor,
+  readDomainPack,
+  verifyDomainPack,
+} from "../domain-pack/domainJudge";
 
 export type FreshContextJudgeVerdictKind =
   | "done"
@@ -55,6 +61,14 @@ export type FreshContextJudgeInput = {
     exists: boolean;
     required: boolean;
     ok: boolean;
+    reason: string;
+    missingProofs: string[];
+  };
+  domainLayer: {
+    exists: boolean;
+    required: boolean;
+    ok: boolean;
+    domain: string;
     reason: string;
     missingProofs: string[];
   };
@@ -118,6 +132,11 @@ export function makeFreshContextJudgeInput(input: {
   const recentEvents = readSoloEventLog(projectPath, input.eventLimit ?? 20);
   const componentLayer = readComponentLayer(projectPath, loop);
   const assemblyLayer = readAssemblyLayer(projectPath, loop, componentLayer.required);
+  const domainLayer = readDomainLayer(projectPath, loop, {
+    componentLayerRequired: componentLayer.required,
+    assemblyLayerRequired: assemblyLayer.required,
+    lastAssistantMessage: input.lastAssistantMessage,
+  });
   const directionLayer = readDirectionLayer(projectPath, {
     initialUserGoal: input.initialUserGoal,
     lastAssistantMessage: input.lastAssistantMessage,
@@ -135,6 +154,7 @@ export function makeFreshContextJudgeInput(input: {
     proofVerdict,
     componentLayer,
     assemblyLayer,
+    domainLayer,
     directionLayer,
     prometheusLayer,
     lastAssistantMessage: input.lastAssistantMessage,
@@ -290,6 +310,25 @@ export function deterministicFreshContextJudge(input: FreshContextJudgeInput): F
             ? "npm run sfn -- assembly verify --receipt .solo/ledgers/assembly-coherence.json --base ."
             : 'npm run sfn -- assembly init --domain <domain> --goal "<goal>" --completed --project .',
           description: "Complete required subassembly/interface proofs before claiming the composed parent artifact is done.",
+        },
+      ],
+    });
+  }
+
+  if (["L", "P", "H"].includes(current) && input.domainLayer.required && input.domainLayer.ok !== true) {
+    return verdict({
+      kind: "not_done",
+      confidence: 0.97,
+      currentMilestone: current,
+      reason: input.domainLayer.reason,
+      missingReceipts: input.domainLayer.missingProofs,
+      actions: [
+        {
+          kind: "command",
+          command: input.domainLayer.exists
+            ? "npm run sfn -- domain verify --project ."
+            : `npm run sfn -- domain init --domain ${input.domainLayer.domain} --goal "<goal>" --project .`,
+          description: "Complete required domain-specific proof gates before claiming the parent work is professionally correct.",
         },
       ],
     });
@@ -487,6 +526,53 @@ function readAssemblyLayer(
     reason: verdict.ok
       ? "Assembly coherence layer is satisfied."
       : "Assembly coherence is incomplete: subassembly interfaces, no-floating proof, or evidence files are missing.",
+    missingProofs: verdict.missingProofs,
+  };
+}
+
+function readDomainLayer(
+  projectPath: string,
+  loop: SoloLoopRun | undefined,
+  input: {
+    componentLayerRequired: boolean;
+    assemblyLayerRequired: boolean;
+    lastAssistantMessage?: string;
+  },
+): FreshContextJudgeInput["domainLayer"] {
+  const pack = readDomainPack(projectPath);
+  const domain = pack?.id ?? classifyDomainFromText(`${loop?.goal ?? ""}\n${input.lastAssistantMessage ?? ""}`);
+  const required = domainPackRequiredFor({
+    goal: loop?.goal,
+    lastAssistantMessage: input.lastAssistantMessage,
+    componentLayerRequired: input.componentLayerRequired,
+    assemblyLayerRequired: input.assemblyLayerRequired,
+  });
+  if (!pack) {
+    return {
+      exists: false,
+      required,
+      ok: !required,
+      domain,
+      reason: required
+        ? "A domain-specific parent claim needs a Domain RALPH pack; generic RALPH proves process, not professional correctness."
+        : "Domain pack is not required for this generic claim.",
+      missingProofs: required ? [".solo/domain/domain-pack.json"] : [],
+    };
+  }
+  const verdict = verifyDomainPack(pack, {
+    baseDir: projectPath,
+    requireFiles: true,
+    requireCompleted: true,
+    required,
+  });
+  return {
+    exists: true,
+    required,
+    ok: verdict.ok,
+    domain: verdict.domain,
+    reason: verdict.ok
+      ? "Domain RALPH pack gates are satisfied."
+      : "Domain RALPH pack is incomplete: ontology, professional invariants, regression fixtures, or blocker proof gates are missing.",
     missingProofs: verdict.missingProofs,
   };
 }

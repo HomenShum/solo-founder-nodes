@@ -65,6 +65,12 @@ import {
   makeAssemblyCoherenceReceipt,
   verifyAssemblyCoherenceReceipt,
 } from "./assembly/assemblyCoherence";
+import {
+  addRegressionToDomainPack,
+  makeDomainPack,
+  makeDomainRegressionFixture,
+  verifyDomainPack,
+} from "./domain-pack/domainJudge";
 import { judgeComponentLayer } from "./component-ralph/componentJudge";
 import {
   appendPrometheusVersion,
@@ -1014,6 +1020,35 @@ async function main() {
   noFloatingGateReceipt.interfaces = noFloatingGateReceipt.interfaces.filter((edge) => edge.kind !== "non-floating");
   const noFloatingGateVerdict = verifyAssemblyCoherenceReceipt(noFloatingGateReceipt, { baseDir: proofRoot });
   check("assembly coherence rejects missing no-floating/no-orphan gate", noFloatingGateVerdict.ok === false && noFloatingGateVerdict.missingProofs.includes("assembly.interface:no-floating"));
+
+  console.log("\nDomainPack (domain-specific professional invariants):");
+  const domainPack = makeDomainPack({
+    goal: "build a brush-crop image to 3D asset app with export and proof",
+    domain: "3d-assets",
+    status: "pass",
+  });
+  const domainVerdict = verifyDomainPack(domainPack, { baseDir: proofRoot, requireFiles: false });
+  check("domain pack passes when blocker gates are complete", domainVerdict.ok, domainVerdict.errors.join("; "));
+  const flatPartsOnlyPack = clone(domainPack);
+  flatPartsOnlyPack.proofGates = [];
+  const flatPartsVerdict = verifyDomainPack(flatPartsOnlyPack, { baseDir: proofRoot, requireFiles: false });
+  check("domain pack rejects flat parts with no professional gates", flatPartsVerdict.ok === false && flatPartsVerdict.errors.some((e) => e.includes("proof gates")));
+  const missingHingeGatePack = clone(domainPack);
+  missingHingeGatePack.proofGates.find((gate) => gate.id === "assembly-coherence")!.status = "blocked";
+  const missingHingeGateVerdict = verifyDomainPack(missingHingeGatePack, { baseDir: proofRoot, requireFiles: false });
+  check(
+    "domain pack rejects missing hinge/temple assembly gate",
+    missingHingeGateVerdict.ok === false && missingHingeGateVerdict.blockerGateIds.includes("assembly-coherence"),
+  );
+  const userReportFixture = makeDomainRegressionFixture({
+    report: "The generated eyewear model still has floating temple arms detached from the hinges.",
+  });
+  const regressionPack = addRegressionToDomainPack(domainPack, userReportFixture);
+  const regressionVerdict = verifyDomainPack(regressionPack, { baseDir: proofRoot, requireFiles: false });
+  check(
+    "user-reported domain failure becomes a blocking regression gate",
+    regressionVerdict.ok === false && regressionVerdict.missingProofs.includes(userReportFixture.fixturePath),
+  );
 
   console.log("\nPrometheusMode (versioned engineering loop over artifact attempts):");
   check("prometheus targets cover non-3D domains", prometheusTargets.includes("finance-workflow") && prometheusTargets.includes("agent-app"));

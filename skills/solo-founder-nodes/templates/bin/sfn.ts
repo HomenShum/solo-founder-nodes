@@ -157,6 +157,19 @@ import {
   type AssemblyInterfaceInput,
   type AssemblyInterfaceStatus,
 } from "../assembly/assemblyCoherence";
+import {
+  addRegressionToDomainPack,
+  classifyDomainFromText,
+  domainPackPath,
+  domainRegressionDir,
+  makeDomainPack,
+  makeDomainRegressionFixture,
+  readDomainPack,
+  verifyDomainPack,
+  type DomainGateStatus,
+  type DomainPack,
+  type DomainPackId,
+} from "../domain-pack/domainJudge";
 import { judgeComponentLayer } from "../component-ralph/componentJudge";
 import {
   appendPrometheusVersion,
@@ -452,6 +465,13 @@ function parseAssemblyStatus(value?: string): AssemblyInterfaceStatus {
   throw new Error(`unsupported assembly status '${status}' (expected one of: ${allowed.join(", ")})`);
 }
 
+function parseDomainGateStatus(value?: string): DomainGateStatus {
+  const status = value ?? "planned";
+  const allowed: DomainGateStatus[] = ["planned", "pass", "partial", "blocked"];
+  if (allowed.includes(status as DomainGateStatus)) return status as DomainGateStatus;
+  throw new Error(`unsupported domain gate status '${status}' (expected one of: ${allowed.join(", ")})`);
+}
+
 function parsePrometheusTarget(value: string | undefined, goal = ""): PrometheusTarget {
   if (!value) return inferPrometheusTarget(goal);
   if (prometheusTargets.includes(value as PrometheusTarget)) return value as PrometheusTarget;
@@ -586,6 +606,11 @@ const HELP = `sfn - Solo Founder Nodes local CLI   (run via: npm run sfn -- <cmd
   assembly init --goal <g> [--domain <d>] [--components <file>] [--interfaces <file>] [--completed] [--project <path>] [--out <file>]
   assembly verify --receipt <file> [--base <dir>] [--no-files]
   assembly status [--project <path>] [--receipt <file>]
+  domain init --goal <g> [--domain <d|auto>] [--completed] [--project <path>] [--out <file>]
+  domain classify-report (--input <text>|--file <path>) [--out <file>]
+  domain add-regression (--input <text>|--file <path>) [--domain <d|auto>] [--project <path>] [--pack <file>] [--covered] [--out <file>]
+  domain verify [--project <path>] [--pack <file>] [--no-files] [--planned-ok]
+  domain status [--project <path>] [--pack <file>]
   prometheus init --goal <g> [--target <domain>] [--iterations <n>] [--project <path>] [--run-id <id>]
   prometheus run --goal <g> [--target <domain>] [--iterations <n>] [--project <path>] [--record]
   prometheus status [--project <path>] [--run <id>]
@@ -1837,6 +1862,107 @@ async function main() {
         process.exit(verdict.ok ? 0 : 1);
       }
       console.error("assembly: init | verify | status");
+      process.exit(2);
+    }
+    case "domain": {
+      const sub = rest[0];
+      const projectPath = resolve(flag(rest, "--project", ".")!);
+      const packPath = flag(rest, "--pack") ? resolve(flag(rest, "--pack")!) : domainPackPath(projectPath);
+      if (sub === "init") {
+        const goal = flag(rest, "--goal");
+        if (!goal) {
+          console.error("domain init --goal <g> [--domain <d|auto>] [--completed] [--project <path>] [--out <file>]");
+          process.exit(2);
+        }
+        const domainArg = flag(rest, "--domain", "auto")!;
+        const pack = makeDomainPack({
+          goal,
+          domain: domainArg === "auto" ? classifyDomainFromText(goal) : domainArg,
+          status: parseDomainGateStatus(rest.includes("--completed") ? "pass" : flag(rest, "--status", "planned")),
+        });
+        const target = flag(rest, "--out") ? resolve(flag(rest, "--out")!) : packPath;
+        writeJson(target, pack);
+        const verdict = verifyDomainPack(pack, {
+          baseDir: projectPath,
+          requireFiles: false,
+          requireCompleted: !rest.includes("--planned-ok"),
+        });
+        console.log(JSON.stringify({ out: target, pack, verdict }, jbig, 2));
+        process.exit(0);
+      }
+      if (sub === "classify-report") {
+        const report = readInputText(rest);
+        if (!report.trim()) {
+          console.error("domain classify-report (--input <text>|--file <path>) [--out <file>]");
+          process.exit(2);
+        }
+        const fixture = makeDomainRegressionFixture({
+          report,
+          domain: flag(rest, "--domain"),
+          status: rest.includes("--covered") ? "covered" : "planned",
+        });
+        const payload = {
+          domain: fixture.domain,
+          missingInvariantId: fixture.missingInvariantId,
+          proofGateId: fixture.proofGateId,
+          expectedFailure: fixture.expectedFailure,
+          fixture,
+        };
+        const out = flag(rest, "--out");
+        if (out) writeJson(resolve(out), payload);
+        console.log(JSON.stringify(out ? { out: resolve(out), ...payload } : payload, jbig, 2));
+        process.exit(0);
+      }
+      if (sub === "add-regression") {
+        const report = readInputText(rest);
+        if (!report.trim()) {
+          console.error("domain add-regression (--input <text>|--file <path>) [--domain <d|auto>] [--project <path>] [--pack <file>] [--covered] [--out <file>]");
+          process.exit(2);
+        }
+        const existing = existsSync(packPath) ? readJson<DomainPack>(packPath) : undefined;
+        const domainArg = flag(rest, "--domain");
+        const domain = domainArg && domainArg !== "auto"
+          ? domainArg
+          : existing?.id ?? classifyDomainFromText(`${existing?.goal ?? ""}\n${report}`);
+        const fixture = makeDomainRegressionFixture({
+          report,
+          domain,
+          status: rest.includes("--covered") ? "covered" : "planned",
+        });
+        const basePack = existing ?? makeDomainPack({
+          goal: flag(rest, "--goal", "User-reported domain failure"),
+          domain: fixture.domain,
+          status: "planned",
+        });
+        const pack = addRegressionToDomainPack(basePack, fixture);
+        const target = flag(rest, "--out") ? resolve(flag(rest, "--out")!) : packPath;
+        writeJson(target, pack);
+        const fixturePath = resolve(projectPath, fixture.fixturePath);
+        writeJson(fixturePath, fixture);
+        const verdict = verifyDomainPack(pack, {
+          baseDir: projectPath,
+          requireFiles: false,
+          requireCompleted: !rest.includes("--planned-ok"),
+        });
+        console.log(JSON.stringify({ out: target, fixturePath, fixture, verdict }, jbig, 2));
+        process.exit(0);
+      }
+      if (sub === "verify" || sub === "status") {
+        const pack = existsSync(packPath) ? readJson<DomainPack>(packPath) : readDomainPack(projectPath);
+        if (!pack) {
+          console.error("domain verify [--project <path>] [--pack <file>] [--no-files] [--planned-ok]");
+          process.exit(2);
+        }
+        const verdict = verifyDomainPack(pack, {
+          baseDir: projectPath,
+          requireFiles: !rest.includes("--no-files"),
+          requireCompleted: !rest.includes("--planned-ok"),
+          required: true,
+        });
+        console.log(JSON.stringify({ pack: packPath, verdict }, jbig, 2));
+        process.exit(verdict.ok ? 0 : 1);
+      }
+      console.error("domain: init | classify-report | add-regression | verify | status");
       process.exit(2);
     }
     case "prometheus": {

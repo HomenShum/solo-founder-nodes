@@ -215,6 +215,20 @@ compositional goals when the assembly ledger is missing or incomplete. Doctrine:
 [`templates/assembly/assemblyCoherence.ts`](templates/assembly/assemblyCoherence.ts). Doctrine:
 **No assembly/interface proof, no professional workflow claim.**
 
+**Domain RALPH Packs (professional invariants):** Generic RALPH proves the process; a domain pack
+proves that the work is good for the user's specific industry/task. When the goal is domain-specific,
+professional, visual, agentic, financial, deployment-facing, or benchmark-facing, run
+`npm run sfn -- domain init --goal "<goal>" --project .` and
+`npm run sfn -- domain verify --project .`. The domain pack must define ontology, professional
+invariants, proof gates, visual checks when applicable, and regression fixtures. If a user reports a
+failure, convert it into a permanent gate with
+`npm run sfn -- domain classify-report --file <report>` and
+`npm run sfn -- domain add-regression --file <report> --project .`; do not only patch the visible bug.
+The fresh-context judge blocks parent `L/P/H` claims when required domain gates are missing or failing.
+Doctrine: [`references/domain-packs.md`](references/domain-packs.md); copyable implementation:
+[`templates/domain-pack/domainJudge.ts`](templates/domain-pack/domainJudge.ts). Doctrine:
+**Every user-reported domain failure becomes a permanent proof gate.**
+
 **Prometheus Mode (versioned engineering loop):** when the user wants a product to improve over
 attempts, or when the proof story is "watch the artifact get better," wrap the parent RALPH loop in
 Prometheus Mode:

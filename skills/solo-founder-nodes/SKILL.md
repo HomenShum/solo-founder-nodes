@@ -113,6 +113,16 @@ binding before any professional workflow or whole-product claim. Spec:
 [`templates/assembly/assemblyCoherence.ts`](templates/assembly/assemblyCoherence.ts). Doctrine:
 no assembly/interface proof, no professional workflow claim.
 
+**Domain RALPH Packs:** generic RALPH proves process; domain packs prove domain-specific professional
+correctness. When the goal is domain-specific or professional, run
+`npm run sfn -- domain init --goal "<goal>" --project .` and
+`npm run sfn -- domain verify --project .`. If the user reports a failure, run
+`npm run sfn -- domain classify-report --file <report>` and
+`npm run sfn -- domain add-regression --file <report> --project .` so the bug becomes a permanent
+proof gate. Spec: [`references/domain-packs.md`](references/domain-packs.md); implementation:
+[`templates/domain-pack/domainJudge.ts`](templates/domain-pack/domainJudge.ts). Doctrine:
+every user-reported domain failure becomes a permanent proof gate.
+
 **Prometheus Mode:** when the user wants the agent to keep improving a product over attempts, run
 `npm run sfn -- prometheus init --goal "<goal>" --target <domain> --project .`, then
 `npm run sfn -- prometheus run --goal "<goal>" --iterations <n> --record --project .`, then

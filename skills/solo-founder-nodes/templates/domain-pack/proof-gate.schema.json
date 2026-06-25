@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://solo-founder-nodes.local/proof-gate.schema.json",
+  "title": "Solo Founder Domain Proof Gate",
+  "type": "object",
+  "required": [
+    "id",
+    "label",
+    "command",
+    "requiredReceipt",
+    "blocksParentClaim",
+    "status"
+  ],
+  "properties": {
+    "id": { "type": "string", "minLength": 1 },
+    "label": { "type": "string", "minLength": 1 },
+    "command": { "type": "string", "minLength": 1 },
+    "requiredReceipt": { "type": "string", "minLength": 1 },
+    "blocksParentClaim": { "type": "boolean" },
+    "status": { "enum": ["planned", "pass", "partial", "blocked"] },
+    "evidencePaths": {
+      "type": "array",
+      "items": { "type": "string" }
+    }
+  }
+}
