@@ -28,6 +28,10 @@ import {
   readDomainPack,
   verifyDomainPack,
 } from "../domain-pack/domainJudge";
+import {
+  readOperationRalphReceipt,
+  verifyOperationRalphReceipt,
+} from "../operation/operationRalph";
 
 export type FreshContextJudgeVerdictKind =
   | "done"
@@ -69,6 +73,13 @@ export type FreshContextJudgeInput = {
     required: boolean;
     ok: boolean;
     domain: string;
+    reason: string;
+    missingProofs: string[];
+  };
+  operationLayer: {
+    exists: boolean;
+    required: boolean;
+    ok: boolean;
     reason: string;
     missingProofs: string[];
   };
@@ -137,6 +148,7 @@ export function makeFreshContextJudgeInput(input: {
     assemblyLayerRequired: assemblyLayer.required,
     lastAssistantMessage: input.lastAssistantMessage,
   });
+  const operationLayer = readOperationLayer(projectPath, loop, input.lastAssistantMessage);
   const directionLayer = readDirectionLayer(projectPath, {
     initialUserGoal: input.initialUserGoal,
     lastAssistantMessage: input.lastAssistantMessage,
@@ -155,6 +167,7 @@ export function makeFreshContextJudgeInput(input: {
     componentLayer,
     assemblyLayer,
     domainLayer,
+    operationLayer,
     directionLayer,
     prometheusLayer,
     lastAssistantMessage: input.lastAssistantMessage,
@@ -329,6 +342,25 @@ export function deterministicFreshContextJudge(input: FreshContextJudgeInput): F
             ? "npm run sfn -- domain verify --project ."
             : `npm run sfn -- domain init --domain ${input.domainLayer.domain} --goal "<goal>" --project .`,
           description: "Complete required domain-specific proof gates before claiming the parent work is professionally correct.",
+        },
+      ],
+    });
+  }
+
+  if (["L", "P", "H"].includes(current) && input.operationLayer.required && input.operationLayer.ok !== true) {
+    return verdict({
+      kind: "not_done",
+      confidence: 0.97,
+      currentMilestone: current,
+      reason: input.operationLayer.reason,
+      missingReceipts: input.operationLayer.missingProofs,
+      actions: [
+        {
+          kind: "command",
+          command: input.operationLayer.exists
+            ? "npm run sfn -- operation verify --project ."
+            : `npm run sfn -- operation init --goal "<goal>" --domain ${input.domainLayer.domain || "<domain>"} --project .`,
+          description: "Complete required Operation RALPH proof for edit/export workflows before claiming the parent workflow works.",
         },
       ],
     });
@@ -573,6 +605,41 @@ function readDomainLayer(
     reason: verdict.ok
       ? "Domain RALPH pack gates are satisfied."
       : "Domain RALPH pack is incomplete: ontology, professional invariants, regression fixtures, or blocker proof gates are missing.",
+    missingProofs: verdict.missingProofs,
+  };
+}
+
+function readOperationLayer(
+  projectPath: string,
+  loop: SoloLoopRun | undefined,
+  lastAssistantMessage?: string,
+): FreshContextJudgeInput["operationLayer"] {
+  const receipt = readOperationRalphReceipt(projectPath);
+  const text = `${loop?.goal ?? ""}\n${lastAssistantMessage ?? ""}`;
+  const required = /brush|select|delete|replace|material|move|resize|edit|export|hotspot|animate|operation|workflow action/i.test(text);
+  if (!receipt) {
+    return {
+      exists: false,
+      required,
+      ok: !required,
+      reason: required
+        ? "The parent claim includes edit/export workflow actions, so Operation RALPH proof is required; object proof is not workflow proof."
+        : "Operation RALPH is not required for this goal.",
+      missingProofs: required ? [".solo/operation/operation-ralph.json"] : [],
+    };
+  }
+  const verdict = verifyOperationRalphReceipt(receipt, {
+    baseDir: projectPath,
+    requireFiles: true,
+    requireCompleted: true,
+  });
+  return {
+    exists: true,
+    required,
+    ok: verdict.ok,
+    reason: verdict.ok
+      ? "Operation RALPH proof is satisfied."
+      : "Operation RALPH is incomplete: live action, before/after proof, or regression hardening is missing.",
     missingProofs: verdict.missingProofs,
   };
 }

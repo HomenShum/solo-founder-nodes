@@ -67,10 +67,15 @@ import {
 } from "./assembly/assemblyCoherence";
 import {
   addRegressionToDomainPack,
+  classifyDomainFromText,
   makeDomainPack,
   makeDomainRegressionFixture,
   verifyDomainPack,
 } from "./domain-pack/domainJudge";
+import {
+  makeOperationRalphReceipt,
+  verifyOperationRalphReceipt,
+} from "./operation/operationRalph";
 import { judgeComponentLayer } from "./component-ralph/componentJudge";
 import {
   appendPrometheusVersion,
@@ -1048,6 +1053,45 @@ async function main() {
   check(
     "user-reported domain failure becomes a blocking regression gate",
     regressionVerdict.ok === false && regressionVerdict.missingProofs.includes(userReportFixture.fixturePath),
+  );
+  check("domain classifier routes construction material swap to construction mockups", classifyDomainFromText("brush a wall and replace brick with wood").includes("construction"));
+  const constructionPack = makeDomainPack({
+    goal: "brush select a wall, replace brick with wood, export and reopen a construction mockup",
+    domain: "construction-mockups",
+    status: "pass",
+  });
+  const constructionVerdict = verifyDomainPack(constructionPack, { baseDir: proofRoot, requireFiles: false });
+  check(
+    "construction domain pack requires operations and before/after/export gates",
+    constructionVerdict.ok
+      && constructionPack.ontology.operations.includes("replace-material")
+      && constructionPack.proofGates.some((gate) => gate.id === "material-replacement-proof"),
+    constructionVerdict.errors.join("; "),
+  );
+  const gamePack = makeDomainPack({ goal: "game asset for Unity with collision and LOD", domain: "game-assets", status: "planned" });
+  const gameVerdict = verifyDomainPack(gamePack, { baseDir: proofRoot, requireFiles: false });
+  check("game asset claim without collision/LOD/import proof fails", gameVerdict.ok === false && gameVerdict.blockerGateIds.includes("collision-lod-proof"));
+  const vtuberPack = makeDomainPack({ goal: "Vtuber avatar with skeleton and blendshapes", domain: "avatar-vtuber", status: "planned" });
+  const vtuberVerdict = verifyDomainPack(vtuberPack, { baseDir: proofRoot, requireFiles: false });
+  check("Vtuber claim without skeleton/blendshape proof fails", vtuberVerdict.ok === false && vtuberVerdict.blockerGateIds.includes("skeleton-proof") && vtuberVerdict.blockerGateIds.includes("blendshape-proof"));
+
+  console.log("\nOperationRalph (workflow action proof):");
+  const operationReceipt = makeOperationRalphReceipt({
+    goal: "brush select a wall, replace brick with wood, and export construction mockup",
+    domain: "construction-mockups",
+    status: "completed",
+  });
+  const operationVerdict = verifyOperationRalphReceipt(operationReceipt, { baseDir: proofRoot, requireFiles: false });
+  check("operation RALPH passes completed construction brush/material/export operations", operationVerdict.ok, operationVerdict.errors.join("; "));
+  const incompleteOperationReceipt = makeOperationRalphReceipt({
+    goal: "brush select a wall and replace material",
+    domain: "construction-mockups",
+    status: "planned",
+  });
+  const incompleteOperationVerdict = verifyOperationRalphReceipt(incompleteOperationReceipt, { baseDir: proofRoot, requireFiles: false });
+  check(
+    "operation RALPH rejects material swap without before/after proof",
+    incompleteOperationVerdict.ok === false && incompleteOperationVerdict.missingProofs.some((proof) => proof.includes("construction.replace-wall-material")),
   );
 
   console.log("\nPrometheusMode (versioned engineering loop over artifact attempts):");

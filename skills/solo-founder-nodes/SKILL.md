@@ -123,6 +123,14 @@ proof gate. Spec: [`references/domain-packs.md`](references/domain-packs.md); im
 [`templates/domain-pack/domainJudge.ts`](templates/domain-pack/domainJudge.ts). Doctrine:
 every user-reported domain failure becomes a permanent proof gate.
 
+**Operation RALPH:** object proof is not workflow proof. For brush selection, deletion, material
+replacement, moving/resizing, hotspot creation, animation, or export workflows, run
+`npm run sfn -- operation init --goal "<goal>" --domain <domain> --project .` and
+`npm run sfn -- operation verify --project .`. Spec:
+[`references/operation-ralph.md`](references/operation-ralph.md); implementation:
+[`templates/operation/operationRalph.ts`](templates/operation/operationRalph.ts). Doctrine:
+no operation proof, no workflow claim.
+
 **Prometheus Mode:** when the user wants the agent to keep improving a product over attempts, run
 `npm run sfn -- prometheus init --goal "<goal>" --target <domain> --project .`, then
 `npm run sfn -- prometheus run --goal "<goal>" --iterations <n> --record --project .`, then

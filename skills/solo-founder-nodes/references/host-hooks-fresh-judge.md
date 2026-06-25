@@ -18,6 +18,7 @@ Every target repo should converge on these local files:
 - `.solo/ledgers/assembly-coherence.json` - subassembly/interface proof for compositional products.
 - `.solo/domain/domain-pack.json` - domain ontology, professional invariants, proof gates, visual
   checks, and user-reported regression fixtures.
+- `.solo/operation/operation-ralph.json` - proof that edit/export workflow actions actually work.
 - `.solo/prometheus/current-run.json` and `.solo/prometheus/runs/<run>/run.json` - versioned
   engineering loop state, per-version proof gates, comparison, and improvement plans.
 - `.solo/proof-verdict.json` - the proof pass/fail boundary.
@@ -68,7 +69,8 @@ npm run sfn -- judge current --project . --on-stop
 The judge reads only durable evidence: loop state, RALPH required receipts, recent events,
 direction-change receipts, system-map/research-brief state, component-ledger status for compositional
 outputs, assembly/interface coherence status for composed artifacts, domain-pack proof gates for
-professional correctness, Prometheus version state, and proof-verdict state. It returns:
+professional correctness, Operation RALPH status for edit/export workflows, Prometheus version state,
+and proof-verdict state. It returns:
 
 - `done` only when the whole RALPH loop is complete.
 - `needs_research` when discover/research receipts are missing.
@@ -77,8 +79,8 @@ professional correctness, Prometheus version state, and proof-verdict state. It 
 - `needs_verification` when proof receipts or `proof-verdict.json` are missing/failing.
 - `not_done` when a milestone is locally satisfied but the whole loop has not completed, or when a
   compositional parent `L/P/H` claim is missing Component RALPH proofs, missing Assembly Coherence
-  interface proofs, missing Domain RALPH proof gates, or when an active Prometheus run's latest
-  version has not passed.
+  interface proofs, missing Domain RALPH proof gates, missing Operation RALPH proof for workflow
+  actions, or when an active Prometheus run's latest version has not passed.
 - `blocked` when there is no loop save file or an explicit blocker exists.
 
 Final-answer hooks should block when `blockClaim: true`. That is how the skill forces a coding agent
@@ -91,6 +93,7 @@ For compositional products, run:
 npm run sfn -- component proof --all --project .
 npm run sfn -- assembly verify --receipt .solo/ledgers/assembly-coherence.json --base .
 npm run sfn -- domain verify --project .
+npm run sfn -- operation verify --project .
 ```
 
-The clean rule is: no component proof, no assembly/interface proof, no domain proof, no parent claim.
+The clean rule is: no component proof, no assembly/interface proof, no domain proof, no operation proof, no parent claim.

@@ -8,9 +8,12 @@
     "packKind",
     "id",
     "goal",
+    "targetUsers",
+    "jobsToBeDone",
     "ontology",
     "invariants",
     "proofGates",
+    "exports",
     "parentGate"
   ],
   "properties": {
@@ -18,12 +21,15 @@
     "packKind": { "const": "domain-pack" },
     "id": { "type": "string" },
     "goal": { "type": "string", "minLength": 1 },
+    "targetUsers": { "type": "array", "items": { "type": "string" }, "minItems": 1 },
+    "jobsToBeDone": { "type": "array", "items": { "type": "string" }, "minItems": 1 },
     "ontology": {
       "type": "object",
-      "required": ["entities", "relationships"],
+      "required": ["entities", "relationships", "operations"],
       "properties": {
         "entities": { "type": "array", "items": { "type": "string" }, "minItems": 1 },
-        "relationships": { "type": "array", "items": { "type": "string" }, "minItems": 1 }
+        "relationships": { "type": "array", "items": { "type": "string" }, "minItems": 1 },
+        "operations": { "type": "array", "items": { "type": "string" }, "minItems": 1 }
       }
     },
     "invariants": {
@@ -40,6 +46,7 @@
       "type": "array",
       "items": { "$ref": "./regression-fixture.schema.json" }
     },
+    "exports": { "type": "array", "items": { "type": "string" }, "minItems": 1 },
     "parentGate": {
       "type": "object",
       "required": ["domainProofRequired", "userReportedFailuresBecomeGates", "genericProofIsInsufficient"],

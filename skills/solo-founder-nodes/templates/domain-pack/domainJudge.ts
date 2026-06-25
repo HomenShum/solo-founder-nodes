@@ -3,6 +3,12 @@ import { join, resolve } from "node:path";
 
 export const domainPackIds = [
   "3d-assets",
+  "construction-mockups",
+  "manufacturing-parts",
+  "onboarding-docs",
+  "avatar-vtuber",
+  "film-vfx",
+  "game-assets",
   "finance-nodeagent",
   "video-remix",
   "image-editing",
@@ -59,15 +65,19 @@ export type DomainPack = {
   id: DomainPackId;
   name: string;
   goal: string;
+  targetUsers: string[];
+  jobsToBeDone: string[];
   generatedAt: string;
   ontology: {
     entities: string[];
     relationships: string[];
+    operations: string[];
   };
   invariants: DomainInvariant[];
   proofGates: DomainProofGate[];
   visualChecks: DomainVisualCheck[];
   regressionFixtures: DomainRegressionFixture[];
+  exports: string[];
   parentGate: {
     domainProofRequired: true;
     userReportedFailuresBecomeGates: true;
@@ -98,6 +108,12 @@ export function domainRegressionDir(projectPath: string) {
 
 export function classifyDomainFromText(text: string): DomainPackId {
   const normalized = text.toLowerCase();
+  if (/construction|architecture|architectural|floorplan|floor plan|wall|window|door|room|brick|wood|material swap|mockup/.test(normalized)) return "construction-mockups";
+  if (/manufactur|motorcycle|part|fastener|bolt|hole|tolerance|stl|step|cnc|print|3d print|load-bearing/.test(normalized)) return "manufacturing-parts";
+  if (/onboard|training|new hire|documentation|docs|hotspot|explainer|coach|quiz|procedure/.test(normalized)) return "onboarding-docs";
+  if (/vtuber|avatar|vrm|rig|skeleton|blendshape|blend shape|facial|weight paint|mocap|motion tracking/.test(normalized)) return "avatar-vtuber";
+  if (/film|vfx|cgi|actor|stunt|plate|roto|composit|camera track|occlusion|flicker/.test(normalized)) return "film-vfx";
+  if (/game|unity|unreal|godot|lod|collision|poly budget|draw call|fps|engine import/.test(normalized)) return "game-assets";
   if (/3d|mesh|model|glb|gltf|obj|cad|blender|spline|webgl|three\.?js|asset/.test(normalized)) return "3d-assets";
   if (/finance|spreadsheet|formula|valuation|company|diligence|bank|cash|ledger|cell|source|citation/.test(normalized)) return "finance-nodeagent";
   if (/video|clip|caption|reframe|opus|shorts|tiktok|reels|transcript|loudness|b-?roll/.test(normalized)) return "video-remix";
@@ -123,12 +139,15 @@ export function makeDomainPack(input: {
     id: domain,
     name: seed.name,
     goal: input.goal,
+    targetUsers: seed.targetUsers,
+    jobsToBeDone: seed.jobsToBeDone,
     generatedAt: input.generatedAt ?? new Date().toISOString(),
     ontology: seed.ontology,
     invariants: seed.invariants,
     proofGates: seed.proofGates.map((gate) => ({ ...gate, status })),
     visualChecks: seed.visualChecks,
     regressionFixtures: [],
+    exports: seed.exports,
     parentGate: {
       domainProofRequired: true,
       userReportedFailuresBecomeGates: true,
@@ -168,6 +187,10 @@ export function verifyDomainPack(
   if (pack.parentGate?.genericProofIsInsufficient !== true) errors.push("domain pack must reject generic proof as sufficient");
   if ((pack.ontology?.entities ?? []).length === 0) errors.push("domain pack requires ontology entities");
   if ((pack.ontology?.relationships ?? []).length === 0) errors.push("domain pack requires ontology relationships");
+  if ((pack.ontology?.operations ?? []).length === 0) errors.push("domain pack requires ontology operations");
+  if ((pack.targetUsers ?? []).length === 0) errors.push("domain pack requires target users");
+  if ((pack.jobsToBeDone ?? []).length === 0) errors.push("domain pack requires jobs to be done");
+  if ((pack.exports ?? []).length === 0) errors.push("domain pack requires export targets");
   if ((pack.invariants ?? []).length === 0) errors.push("domain pack requires professional invariants");
   if ((pack.proofGates ?? []).length === 0) errors.push("domain pack requires proof gates");
 
@@ -318,6 +341,25 @@ function normalizeDomainPackId(value: string): DomainPackId {
     "3d-generation": "3d-assets",
     "3d-asset": "3d-assets",
     "3d-assets": "3d-assets",
+    construction: "construction-mockups",
+    "construction-mockup": "construction-mockups",
+    "construction-mockups": "construction-mockups",
+    architecture: "construction-mockups",
+    manufacturing: "manufacturing-parts",
+    "manufacturing-parts": "manufacturing-parts",
+    "motorcycle-parts": "manufacturing-parts",
+    onboarding: "onboarding-docs",
+    docs: "onboarding-docs",
+    "onboarding-docs": "onboarding-docs",
+    avatar: "avatar-vtuber",
+    vtuber: "avatar-vtuber",
+    "avatar-vtuber": "avatar-vtuber",
+    vfx: "film-vfx",
+    film: "film-vfx",
+    "film-vfx": "film-vfx",
+    game: "game-assets",
+    games: "game-assets",
+    "game-assets": "game-assets",
     finance: "finance-nodeagent",
     noderoom: "finance-nodeagent",
     "finance-nodeagent": "finance-nodeagent",
@@ -340,11 +382,152 @@ function normalizeDomainPackId(value: string): DomainPackId {
 }
 
 function domainSeed(domain: DomainPackId): Omit<DomainPack, "schemaVersion" | "packKind" | "id" | "goal" | "generatedAt" | "regressionFixtures" | "parentGate"> {
+  if (domain === "construction-mockups") {
+    return packSeed(
+      "Construction Mockups",
+      ["designer", "contractor", "founder", "reviewer"],
+      ["turn sketches/plans/screenshots into editable room mockups", "brush-select surfaces", "replace materials while preserving structure", "export reviewable before/after proof"],
+      [
+        "source image", "floorplan", "room", "wall", "window", "door", "surface", "material", "annotation", "before/after proof", "export",
+      ],
+      ["contains", "is embedded in", "supports", "material applied to", "preserves dimensions", "exports to"],
+      ["brush-select", "replace-material", "move-window", "delete-object", "annotate", "export-model"],
+      [
+        invariant("selected-region-accuracy", "Brush selection must bind to the intended wall/object surface.", "blocker", "The edit targets the wrong construction element.", ["selected-region-proof"]),
+        invariant("material-swap-locality", "Material replacement applies only to the selected surface.", "blocker", "The whole room changes when only one wall was selected.", ["material-replacement-proof"]),
+        invariant("openings-preserved", "Windows, doors, dimensions, and wall connectivity are preserved after edits.", "blocker", "The mockup breaks structural context.", ["structure-preservation-proof"]),
+        invariant("before-after-proof", "Before/after screenshots and export/reopen receipts prove the workflow.", "major", "The user cannot review what changed.", ["before-after-proof", "export-reopen-proof"]),
+      ],
+      [
+        gate("selected-region-proof", "Selected region proof", "npm run sfn -- operation verify --project .", "docs/proof/selected-region-receipt.json"),
+        gate("material-replacement-proof", "Material replacement proof", "npm run sfn -- operation verify --project .", "docs/proof/material-replacement-receipt.json"),
+        gate("structure-preservation-proof", "Structure preservation proof", "npm run sfn -- domain verify --project .", "docs/proof/structure-preservation-receipt.json"),
+        gate("before-after-proof", "Before/after visual proof", "npm run sfn -- operation verify --project .", "docs/proof/before-after-visual-receipt.json"),
+        gate("export-reopen-proof", "Export/reopen proof", "npm run sfn -- proof full-verify --receipt <proof-pack> --base .", "docs/proof/export-reopen-receipt.json"),
+      ],
+      [visual("construction-before-after", "Before/after plus selected surface overlays", ["before", "selected-region", "after", "diff"])],
+      ["GLB", "OBJ", "web viewer", "before/after proof pack"],
+    );
+  }
+  if (domain === "manufacturing-parts") {
+    return packSeed(
+      "Manufacturing / Product Parts",
+      ["inventor", "mechanical reviewer", "prototype engineer"],
+      ["decompose a reference into manufacturable part concepts", "review dimensions and attachment points", "export a non-production study artifact"],
+      ["part", "dimension", "hole", "fastener", "attachment point", "load surface", "material", "exploded view", "export"],
+      ["attaches to", "aligns with", "supports load at", "is fastened by", "exports to"],
+      ["measure", "add-fastener", "explode-assembly", "export-study-model"],
+      [
+        invariant("attachment-interface-proof", "Attachment points, holes, and fasteners must align.", "blocker", "The part cannot be reviewed as an assembly.", ["attachment-interface-proof"]),
+        invariant("scale-pivot-proof", "Scale, origin, and pivot are explicit.", "major", "The exported part cannot be inspected or reused reliably.", ["scale-pivot-proof"]),
+        invariant("study-only-safety", "Physical/human-use claims remain blocked without simulation and engineer approval.", "blocker", "The tool implies a part is safe to manufacture or use.", ["safety-approval-proof"]),
+      ],
+      [
+        gate("attachment-interface-proof", "Attachment interface proof", "npm run sfn -- assembly verify --receipt .solo/ledgers/assembly-coherence.json --base .", ".solo/ledgers/assembly-coherence.json"),
+        gate("scale-pivot-proof", "Scale/pivot proof", "npm run sfn -- domain verify --project .", "docs/proof/scale-pivot-receipt.json"),
+        gate("safety-approval-proof", "Study-only safety proof", "npm run sfn -- engineering verify --receipt <receipt>", "docs/proof/safety-approval-receipt.json"),
+      ],
+      [visual("exploded-part-review", "Exploded part and attachment-point labels", ["assembled", "exploded", "dimensioned"])],
+      ["OBJ", "STL study export", "GLB viewer", "STEP blocked until CAD proof"],
+    );
+  }
+  if (domain === "onboarding-docs") {
+    return packSeed(
+      "Onboarding / 3D Documentation",
+      ["new hire", "trainer", "ops lead"],
+      ["turn a 3D artifact into a teaching doc", "click parts for explanations", "prove learners can answer review questions"],
+      ["component", "hotspot", "label", "step", "coach prompt", "quiz", "source note", "export"],
+      ["explains", "links to", "orders before", "tests understanding of"],
+      ["add-hotspot", "explode-assembly", "ask-coach-question", "export-doc"],
+      [
+        invariant("hotspot-component-binding", "Every hotspot maps to a real component.", "blocker", "The doc teaches labels that do not correspond to the model.", ["hotspot-binding-proof"]),
+        invariant("sequence-proof", "Assembly or process steps are ordered and reviewable.", "major", "The onboarding artifact is not teachable.", ["sequence-proof"]),
+        invariant("coach-review-proof", "Coach/quiz prompts bind to components and source notes.", "major", "The learner cannot be evaluated.", ["coach-review-proof"]),
+      ],
+      [
+        gate("hotspot-binding-proof", "Hotspot binding proof", "npm run sfn -- operation verify --project .", "docs/proof/hotspot-binding-receipt.json"),
+        gate("sequence-proof", "Sequence proof", "npm run sfn -- domain verify --project .", "docs/proof/sequence-receipt.json"),
+        gate("coach-review-proof", "Coach review proof", "npm run sfn -- domain verify --project .", "docs/proof/coach-review-receipt.json"),
+      ],
+      [visual("labeled-hotspot-doc", "Clickable hotspots and explanation panel", ["overview", "hotspot", "quiz"])],
+      ["web doc", "PDF", "video walkthrough"],
+    );
+  }
+  if (domain === "avatar-vtuber") {
+    return packSeed(
+      "Avatar / Vtuber",
+      ["creator", "rigger", "streamer"],
+      ["create a controllable avatar", "validate rig, weights, expressions, and runtime export"],
+      ["mesh", "skeleton", "bone", "weight map", "blendshape", "eye control", "mouth control", "hair", "material", "runtime export"],
+      ["drives", "weights", "deforms", "retargets to", "exports as"],
+      ["rig-skeleton", "test-expression", "retarget-animation", "export-vrm"],
+      [
+        invariant("skeleton-proof", "Bone hierarchy exists and maps to major mesh regions.", "blocker", "The avatar only looks humanoid but cannot animate.", ["skeleton-proof"]),
+        invariant("blendshape-proof", "Mouth, eye, and expression blendshapes exist.", "blocker", "The avatar cannot talk or emote.", ["blendshape-proof"]),
+        invariant("deformation-proof", "Weighted regions deform without major artifacts.", "blocker", "Animation breaks the mesh.", ["deformation-proof"]),
+        invariant("runtime-export-proof", "VRM/FBX/glTF export and reopen proof exists for the target runtime.", "major", "The model cannot be used in avatar tooling.", ["runtime-export-proof"]),
+      ],
+      [
+        gate("skeleton-proof", "Skeleton proof", "npm run sfn -- domain verify --project .", "docs/proof/skeleton-receipt.json"),
+        gate("blendshape-proof", "Blendshape proof", "npm run sfn -- domain verify --project .", "docs/proof/blendshape-receipt.json"),
+        gate("deformation-proof", "Deformation proof", "npm run sfn -- domain verify --project .", "docs/proof/deformation-receipt.json"),
+        gate("runtime-export-proof", "Runtime export proof", "npm run sfn -- proof full-verify --receipt <proof-pack> --base .", "docs/proof/runtime-export-receipt.json"),
+      ],
+      [visual("avatar-rig-demo", "Skeleton, expression, and deformation proof views", ["rest-pose", "skeleton", "expression", "animation"])],
+      ["VRM", "FBX", "glTF/GLB"],
+    );
+  }
+  if (domain === "film-vfx") {
+    return packSeed(
+      "Film / VFX Replacement",
+      ["filmmaker", "VFX artist", "compositor"],
+      ["replace or augment an actor/object in footage", "prove camera/lighting/motion consistency over time"],
+      ["plate footage", "camera track", "mask", "depth", "clean plate", "CG asset", "lighting", "shadow", "occlusion", "composite", "frame sample"],
+      ["tracks", "occludes", "matches lighting of", "composites into", "is sampled at"],
+      ["track-camera", "rotoscope", "place-cg-asset", "composite", "sample-frames", "export-shot"],
+      [
+        invariant("camera-track-proof", "CG asset stays locked to plate motion.", "blocker", "The replacement slides or drifts across frames.", ["camera-track-proof"]),
+        invariant("lighting-occlusion-proof", "Lighting, shadows, depth, and occlusion match the plate.", "blocker", "The composite reads as pasted on.", ["lighting-occlusion-proof"]),
+        invariant("temporal-consistency-proof", "Frame-sampled QA catches flicker and motion breaks.", "major", "A still frame passes while the video fails.", ["temporal-consistency-proof"]),
+      ],
+      [
+        gate("camera-track-proof", "Camera track proof", "npm run sfn -- domain verify --project .", "docs/proof/camera-track-receipt.json"),
+        gate("lighting-occlusion-proof", "Lighting/occlusion proof", "npm run sfn -- domain verify --project .", "docs/proof/lighting-occlusion-receipt.json"),
+        gate("temporal-consistency-proof", "Temporal consistency proof", "npm run sfn -- domain verify --project .", "docs/proof/temporal-consistency-receipt.json"),
+      ],
+      [visual("frame-sampled-vfx", "Frame samples with track/mask/composite overlays", ["start", "mid", "end", "diff"])],
+      ["proof video", "frame-sample report", "composite export"],
+    );
+  }
+  if (domain === "game-assets") {
+    return packSeed(
+      "Game Assets",
+      ["game developer", "technical artist", "level designer"],
+      ["create engine-usable assets", "prove import, collision, scale, LOD, materials, and runtime budget"],
+      ["mesh", "material", "texture", "pivot", "scale", "LOD", "collision", "animation", "engine import", "performance budget"],
+      ["imports into", "collides with", "uses LOD", "animates in", "stays within budget"],
+      ["set-pivot", "generate-collision", "create-lod", "import-engine", "profile-runtime"],
+      [
+        invariant("engine-import-proof", "Target engine import succeeds.", "blocker", "The asset is not usable in the game pipeline.", ["engine-import-proof"]),
+        invariant("collision-lod-proof", "Collision mesh and LOD levels exist when claimed.", "blocker", "The asset looks good but cannot be played or optimized.", ["collision-lod-proof"]),
+        invariant("runtime-budget-proof", "Poly count, draw calls, scale, pivot, and FPS budget are recorded.", "major", "The asset is too heavy or incorrectly placed.", ["runtime-budget-proof"]),
+      ],
+      [
+        gate("engine-import-proof", "Engine import proof", "npm run sfn -- domain verify --project .", "docs/proof/engine-import-receipt.json"),
+        gate("collision-lod-proof", "Collision/LOD proof", "npm run sfn -- domain verify --project .", "docs/proof/collision-lod-receipt.json"),
+        gate("runtime-budget-proof", "Runtime budget proof", "npm run sfn -- domain verify --project .", "docs/proof/runtime-budget-receipt.json"),
+      ],
+      [visual("engine-asset-proof", "Engine import, collision, LOD, and runtime proof", ["viewer", "collision", "lod", "engine"])],
+      ["GLB", "FBX", "Unity package", "Unreal import receipt", "Godot import receipt"],
+    );
+  }
   if (domain === "3d-assets") {
-    return packSeed("3D Assets", [
+    return packSeed("3D Assets", ["3D app founder", "3D artist", "technical reviewer"], ["turn messy visual input into explainable 3D artifacts", "prove component/assembly/export quality"], [
       "source reference", "mask", "component", "subassembly", "interface", "mesh", "material", "export", "viewer proof",
     ], [
       "contains", "attaches", "hinges", "mirrors", "exports to", "reopens as", "is visible in",
+    ], [
+      "brush-select", "decompose", "generate", "inspect", "export",
     ], [
       invariant("assembly-interface-coherence", "Required parts attach, contain, align, mirror, or support each other.", "blocker", "Named parts can float or fail to form a coherent object.", ["assembly-coherence"]),
       invariant("canonical-view-coherence", "Canonical front/side/top/three-quarter views expose major failures.", "blocker", "A single flattering screenshot hides broken geometry.", ["canonical-view-proof"]),
@@ -358,13 +541,15 @@ function domainSeed(domain: DomainPackId): Omit<DomainPack, "schemaVersion" | "p
     ], [
       visual("canonical-views", "Front, left, right, top, and three-quarter views", ["front", "left", "right", "top", "three-quarter"]),
       visual("interface-failure-overlays", "Failed interfaces need labeled visual overlays", ["failed-interface", "exploded"]),
-    ]);
+    ], ["OBJ", "GLB", "viewer proof pack"]);
   }
   if (domain === "finance-nodeagent") {
-    return packSeed("Finance NodeAgent", [
+    return packSeed("Finance NodeAgent", ["banker", "analyst", "ops user"], ["produce reviewable finance artifacts with evidence and no-clobber safety"], [
       "room", "user", "agent job", "spreadsheet", "cell", "formula", "source capture", "evidence fact", "proposal", "trace step", "privacy lane", "export",
     ], [
       "reads from", "writes to", "cites", "locks", "rebases", "proposes", "exports",
+    ], [
+      "read-source", "write-proposal", "commit-cell", "cite-fact", "export-workbook",
     ], [
       invariant("no-silent-clobber", "Human authored or formula cells cannot be silently overwritten.", "blocker", "The agent corrupts professional work while appearing helpful.", ["no-clobber-proof"]),
       invariant("evidence-coverage", "Material finance claims need source evidence and citation provenance.", "blocker", "Numbers or claims appear without reviewable support.", ["evidence-coverage-proof"]),
@@ -379,13 +564,15 @@ function domainSeed(domain: DomainPackId): Omit<DomainPack, "schemaVersion" | "p
       gate("live-ui-proof", "Live UI task proof", "npm run proof:live-ui", "docs/proof/live-ui-receipt.json"),
     ], [
       visual("focus-box", "Focus boxes show active cell/source/output regions", ["spreadsheet", "source", "proposal"]),
-    ]);
+    ], ["workbook", "memo", "deck", "trace receipt"]);
   }
   if (domain === "video-remix") {
-    return packSeed("Video Remix", [
+    return packSeed("Video Remix", ["creator", "marketer", "video editor"], ["turn long media into coherent platform-ready clips"], [
       "source video", "transcript", "speaker", "shot boundary", "clip", "hook", "face track", "crop box", "caption", "safe zone", "audio", "brand template", "export",
     ], [
       "starts at", "ends at", "tracks", "overlays", "fits safe zone", "exports for",
+    ], [
+      "select-clip", "reframe", "caption", "duck-audio", "export-platform-clip",
     ], [
       invariant("clip-boundary-coherence", "Clips start and end at semantic boundaries.", "blocker", "The export cuts mid-thought or removes needed setup.", ["clip-boundary-proof"]),
       invariant("caption-safe-zone", "Captions align to audio and avoid faces/platform overlays.", "blocker", "Captions hide the speaker or are mistimed.", ["caption-safe-zone-proof"]),
@@ -398,13 +585,15 @@ function domainSeed(domain: DomainPackId): Omit<DomainPack, "schemaVersion" | "p
       gate("export-spec-proof", "Video export spec proof", "npm run sfn -- domain verify --project .", "docs/proof/video-export-spec-receipt.json"),
     ], [
       visual("sampled-frame-overlays", "Frame samples show subject, crop, caption, and safe-zone boxes", ["0s", "25%", "50%", "75%", "end"]),
-    ]);
+    ], ["MP4", "SRT", "platform proof pack"]);
   }
   if (domain === "image-editing") {
-    return packSeed("Image Editing", [
+    return packSeed("Image Editing", ["designer", "founder", "ecommerce operator"], ["edit selected image regions while preserving unrelated content"], [
       "source image", "mask", "subject", "background", "lighting", "shadow", "text layer", "style reference", "generated region", "final composite", "export",
     ], [
       "masks", "preserves", "matches lighting", "casts shadow", "diffs against", "exports as",
+    ], [
+      "brush-mask", "inpaint", "replace-object", "diff-before-after", "export-image",
     ], [
       invariant("mask-alignment", "The edited area matches the intended brush/mask.", "blocker", "The app edits the wrong object or leaves unwanted context.", ["mask-boundary-proof"]),
       invariant("identity-shape-preservation", "The requested subject/product shape stays stable when required.", "major", "The object becomes unrecognizable or unfit for the task.", ["subject-preservation-proof"]),
@@ -417,13 +606,15 @@ function domainSeed(domain: DomainPackId): Omit<DomainPack, "schemaVersion" | "p
       gate("before-after-diff-proof", "Before/after diff proof", "npm run sfn -- domain verify --project .", "docs/proof/before-after-diff-receipt.json"),
     ], [
       visual("before-after-mask", "Before/after/mask visual diff", ["before", "mask", "after", "diff"]),
-    ]);
+    ], ["PNG", "JPG", "layered proof pack"]);
   }
   if (domain === "web-app-ui") {
-    return packSeed("Web App UI", [
+    return packSeed("Web App UI", ["product user", "founder", "operator"], ["complete real workflows in a usable interface"], [
       "route", "component", "state", "action", "loading state", "empty state", "error state", "responsive layout", "accessibility tree", "visual proof",
     ], [
       "renders", "updates", "announces", "responds to", "preserves state in",
+    ], [
+      "navigate", "submit", "filter", "edit", "recover-from-error",
     ], [
       invariant("workflow-completion", "Primary user workflows complete in the actual UI.", "blocker", "The UI looks present but cannot complete the job.", ["live-ui-proof"]),
       invariant("responsive-accessible-states", "Responsive and accessibility states are verified.", "major", "The app breaks on common devices or assistive paths.", ["responsive-a11y-proof"]),
@@ -434,13 +625,15 @@ function domainSeed(domain: DomainPackId): Omit<DomainPack, "schemaVersion" | "p
       gate("design-quality-proof", "Design quality proof", "npm run sfn -- design quality-verify --receipt <receipt>", "docs/proof/design-quality-receipt.json"),
     ], [
       visual("viewport-matrix", "Desktop/mobile/tablet screenshots for key workflows", ["desktop", "mobile", "tablet"]),
-    ]);
+    ], ["deployed URL", "trace", "screenshot pack"]);
   }
   if (domain === "data-pipeline") {
-    return packSeed("Data Pipeline", [
+    return packSeed("Data Pipeline", ["data engineer", "operator", "analyst"], ["move data safely through schema-checked transforms and replayable jobs"], [
       "source", "schema", "transform", "state store", "backfill", "replay", "sink", "dashboard", "alert", "audit log",
     ], [
       "validates", "transforms", "persists", "replays", "exports", "alerts",
+    ], [
+      "ingest", "validate-schema", "transform", "replay", "backfill", "alert",
     ], [
       invariant("schema-contract", "Source and sink schemas are versioned and validated.", "blocker", "The pipeline silently corrupts or drops data.", ["schema-contract-proof"]),
       invariant("replay-backfill", "Replay/backfill produce idempotent results.", "blocker", "Reruns change facts or double count.", ["replay-backfill-proof"]),
@@ -449,13 +642,15 @@ function domainSeed(domain: DomainPackId): Omit<DomainPack, "schemaVersion" | "p
       gate("schema-contract-proof", "Schema contract proof", "npm run sfn -- domain verify --project .", "docs/proof/schema-contract-receipt.json"),
       gate("replay-backfill-proof", "Replay/backfill proof", "npm run sfn -- domain verify --project .", "docs/proof/replay-backfill-receipt.json"),
       gate("observability-proof", "Observability proof", "npm run sfn -- domain verify --project .", "docs/proof/observability-receipt.json"),
-    ], []);
+    ], [], ["dataset", "audit log", "dashboard"]);
   }
   if (domain === "agent-app") {
-    return packSeed("Agent App", [
+    return packSeed("Agent App", ["non-technical founder", "operator", "developer"], ["let an agent act through typed tools with traces, memory, UI, and eval proof"], [
       "user intent", "planner", "tool schema", "action", "state", "memory", "trace", "eval", "UI", "proof verdict",
     ], [
       "plans", "calls", "writes", "reads", "observes", "evaluates", "proves",
+    ], [
+      "plan", "call-tool", "write-state", "observe-ui", "run-eval", "publish-proof",
     ], [
       invariant("typed-tool-contract", "Tools have typed contracts, validation, and error handling.", "blocker", "The agent acts through brittle or unsafe calls.", ["tool-contract-proof"]),
       invariant("state-trace-binding", "Actions bind to durable state, traces, and proof receipts.", "blocker", "The agent cannot self-orient or explain what changed.", ["trace-binding-proof"]),
@@ -466,28 +661,34 @@ function domainSeed(domain: DomainPackId): Omit<DomainPack, "schemaVersion" | "p
       gate("live-eval-proof", "Live eval proof", "npm run sfn -- proof full-verify --receipt <proof-pack> --base .", "docs/proof/live-eval-receipt.json"),
     ], [
       visual("agent-workspace", "Agent chat, trace, tools, and artifact panes visible together", ["workspace", "trace", "artifact"]),
-    ]);
+    ], ["trace", "proof verdict", "deployed URL"]);
   }
-  return packSeed("Generic Domain", [
+  return packSeed("Generic Domain", ["founder", "reviewer"], ["define the professional invariants before claiming completion"], [
     "input", "decision", "component", "interface", "artifact", "proof", "export",
   ], [
     "feeds", "depends on", "proves", "exports",
   ], [
+    "inspect", "build", "verify", "export",
+  ], [
     invariant("professional-invariants-defined", "The domain-specific invariants are explicitly listed before parent proof.", "blocker", "The loop can pass without proving what good means for this domain.", ["domain-invariant-proof"]),
   ], [
     gate("domain-invariant-proof", "Domain invariant proof", "npm run sfn -- domain verify --project .", "docs/proof/domain-invariant-receipt.json"),
-  ], []);
+  ], [], ["proof pack"]);
 }
 
 function packSeed(
   name: string,
+  targetUsers: string[],
+  jobsToBeDone: string[],
   entities: string[],
   relationships: string[],
+  operations: string[],
   invariants: DomainInvariant[],
   proofGates: DomainProofGate[],
   visualChecks: DomainVisualCheck[],
+  exports: string[],
 ) {
-  return { name, ontology: { entities, relationships }, invariants, proofGates, visualChecks };
+  return { name, targetUsers, jobsToBeDone, ontology: { entities, relationships, operations }, invariants, proofGates, visualChecks, exports };
 }
 
 function invariant(

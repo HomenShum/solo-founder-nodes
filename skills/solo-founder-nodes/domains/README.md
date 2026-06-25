@@ -14,6 +14,12 @@ Domain packs are not benchmark answer keys. They are professional invariant cont
 Start here when a founder prompt enters a known domain:
 
 - `3d-assets/`
+- `construction-mockups/`
+- `manufacturing-parts/`
+- `onboarding-docs/`
+- `avatar-vtuber/`
+- `film-vfx/`
+- `game-assets/`
 - `finance-nodeagent/`
 - `video-remix/`
 - `image-editing/`

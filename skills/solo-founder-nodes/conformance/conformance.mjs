@@ -33,9 +33,9 @@ ok("4 non-negotiables present", nn.every((n) => M.includes(n)), nn.filter((n) =>
 const nodes = ["1-discover", "2-benchmark", "3-setup", "4-build", "5-adapter", "6-verify", "7-iterate"];
 ok("7 node playbooks present", nodes.every((n) => existsSync(join(skill, "nodes", `${n}.md`))));
 ok("phase order is verify then iterate", /adapter\s*\|\s*wire[\s\S]*\|\s*6\s*\|\s*verify[\s\S]*\|\s*7\s*\|\s*iterate/i.test(master));
-const refs = ["honest-lane", "memory", "context-substrate", "control-plane", "cli-command-center", "host-hooks-fresh-judge", "design-bridge", "agent-chat-ux", "gstack-bridge", "benchmarks", "research", "research-spine", "research-governor", "architecture-governor", "direction-change", "intent-ralph", "idea-tweaks", "component-ralph", "assembly-coherence", "domain-packs", "prometheus-mode", "industry-3d-assets", "part-research-ralph"];
+const refs = ["honest-lane", "memory", "context-substrate", "control-plane", "cli-command-center", "host-hooks-fresh-judge", "design-bridge", "agent-chat-ux", "gstack-bridge", "benchmarks", "research", "research-spine", "research-governor", "architecture-governor", "direction-change", "intent-ralph", "idea-tweaks", "component-ralph", "assembly-coherence", "domain-packs", "domain-ralph", "operation-ralph", "prometheus-mode", "industry-3d-assets", "part-research-ralph"];
 ok("references present", refs.every((r) => existsSync(join(skill, "references", `${r}.md`))));
-ok("domain pack catalog present", ["3d-assets", "finance-nodeagent", "video-remix", "image-editing"].every((d) => existsSync(join(skill, "domains", d, "invariants.md"))));
+ok("domain pack catalog present", ["3d-assets", "construction-mockups", "manufacturing-parts", "onboarding-docs", "avatar-vtuber", "film-vfx", "game-assets", "finance-nodeagent", "video-remix", "image-editing"].every((d) => existsSync(join(skill, "domains", d, "invariants.md"))));
 
 // 4. Runnable substrate files present (Node + the smoke).
 ok("templates substrate present", [
@@ -57,6 +57,8 @@ ok("templates substrate present", [
   "domain-pack/domain-pack.schema.json",
   "domain-pack/proof-gate.schema.json",
   "domain-pack/regression-fixture.schema.json",
+  "operation/operationRalph.ts",
+  "operation/operation-ralph.schema.json",
   "prometheus/prometheusMode.ts",
   "prometheus/prometheus-run.schema.json",
   "prometheus/version.schema.json",
@@ -112,6 +114,7 @@ ok("idea tweak directive present", /Idea tweaks/i.test(master) && /tweak intake/
 ok("generic component RALPH directive present", /Component RALPH/i.test(master) && /component proof --all/i.test(master) && /No component proof, no parent claim/i.test(master));
 ok("assembly coherence directive present", /Assembly Coherence/i.test(master) && /assembly verify/i.test(master) && /No assembly\/interface proof/i.test(master));
 ok("domain pack directive present", /Domain RALPH/i.test(master) && /domain verify/i.test(master) && /Every user-reported domain failure becomes a permanent proof gate/i.test(master));
+ok("operation RALPH directive present", /Operation RALPH/i.test(master) && /operation verify/i.test(master) && /No operation proof, no workflow claim/i.test(master));
 ok("Prometheus Mode directive present", /Prometheus Mode/i.test(master) && /prometheus run/i.test(master) && /Every version needs proof/i.test(master));
 ok("3D/fresh-user/trust proof directives present", /3D founder scenario/i.test(master) && /fresh-user/i.test(master) && /trust verify/i.test(master));
 ok("industry-grade 3D asset quality gate directive present", /3D asset quality gate/i.test(master) && /3d quality-plan/i.test(master) && /assetQualityGate/i.test(master));

@@ -161,15 +161,22 @@ import {
   addRegressionToDomainPack,
   classifyDomainFromText,
   domainPackPath,
-  domainRegressionDir,
   makeDomainPack,
   makeDomainRegressionFixture,
   readDomainPack,
   verifyDomainPack,
   type DomainGateStatus,
   type DomainPack,
-  type DomainPackId,
 } from "../domain-pack/domainJudge";
+import {
+  makeOperationRalphReceipt,
+  operationRalphPath,
+  readOperationRalphReceipt,
+  verifyOperationRalphReceipt,
+  type OperationInput,
+  type OperationRalphReceipt,
+  type OperationRalphStatus,
+} from "../operation/operationRalph";
 import { judgeComponentLayer } from "../component-ralph/componentJudge";
 import {
   appendPrometheusVersion,
@@ -472,6 +479,13 @@ function parseDomainGateStatus(value?: string): DomainGateStatus {
   throw new Error(`unsupported domain gate status '${status}' (expected one of: ${allowed.join(", ")})`);
 }
 
+function parseOperationStatus(value?: string): OperationRalphStatus {
+  const status = value ?? "planned";
+  const allowed: OperationRalphStatus[] = ["planned", "completed", "blocked"];
+  if (allowed.includes(status as OperationRalphStatus)) return status as OperationRalphStatus;
+  throw new Error(`unsupported operation RALPH status '${status}' (expected one of: ${allowed.join(", ")})`);
+}
+
 function parsePrometheusTarget(value: string | undefined, goal = ""): PrometheusTarget {
   if (!value) return inferPrometheusTarget(goal);
   if (prometheusTargets.includes(value as PrometheusTarget)) return value as PrometheusTarget;
@@ -607,10 +621,13 @@ const HELP = `sfn - Solo Founder Nodes local CLI   (run via: npm run sfn -- <cmd
   assembly verify --receipt <file> [--base <dir>] [--no-files]
   assembly status [--project <path>] [--receipt <file>]
   domain init --goal <g> [--domain <d|auto>] [--completed] [--project <path>] [--out <file>]
-  domain classify-report (--input <text>|--file <path>) [--out <file>]
+  domain classify|classify-report (--input <text>|--file <path>) [--out <file>]
   domain add-regression (--input <text>|--file <path>) [--domain <d|auto>] [--project <path>] [--pack <file>] [--covered] [--out <file>]
   domain verify [--project <path>] [--pack <file>] [--no-files] [--planned-ok]
   domain status [--project <path>] [--pack <file>]
+  operation init --goal <g> [--domain <d>] [--operations <file>] [--completed] [--project <path>] [--out <file>]
+  operation verify [--project <path>] [--receipt <file>] [--no-files] [--planned-ok]
+  operation status [--project <path>] [--receipt <file>]
   prometheus init --goal <g> [--target <domain>] [--iterations <n>] [--project <path>] [--run-id <id>]
   prometheus run --goal <g> [--target <domain>] [--iterations <n>] [--project <path>] [--record]
   prometheus status [--project <path>] [--run <id>]
@@ -1890,10 +1907,10 @@ async function main() {
         console.log(JSON.stringify({ out: target, pack, verdict }, jbig, 2));
         process.exit(0);
       }
-      if (sub === "classify-report") {
+      if (sub === "classify-report" || sub === "classify") {
         const report = readInputText(rest);
         if (!report.trim()) {
-          console.error("domain classify-report (--input <text>|--file <path>) [--out <file>]");
+          console.error("domain classify|classify-report (--input <text>|--file <path>) [--out <file>]");
           process.exit(2);
         }
         const fixture = makeDomainRegressionFixture({
@@ -1962,7 +1979,54 @@ async function main() {
         console.log(JSON.stringify({ pack: packPath, verdict }, jbig, 2));
         process.exit(verdict.ok ? 0 : 1);
       }
-      console.error("domain: init | classify-report | add-regression | verify | status");
+      console.error("domain: init | classify | classify-report | add-regression | verify | status");
+      process.exit(2);
+    }
+    case "operation": {
+      const sub = rest[0];
+      const projectPath = resolve(flag(rest, "--project", ".")!);
+      const receiptPath = flag(rest, "--receipt")
+        ? resolve(flag(rest, "--receipt")!)
+        : operationRalphPath(projectPath);
+      if (sub === "init") {
+        const goal = flag(rest, "--goal");
+        if (!goal) {
+          console.error("operation init --goal <g> [--domain <d>] [--operations <file>] [--completed] [--project <path>] [--out <file>]");
+          process.exit(2);
+        }
+        const operationsPath = flag(rest, "--operations");
+        const operations = operationsPath ? readJson<OperationInput[]>(resolve(operationsPath)) : undefined;
+        const receipt = makeOperationRalphReceipt({
+          goal,
+          domain: flag(rest, "--domain", "generic"),
+          operations,
+          status: parseOperationStatus(rest.includes("--completed") ? "completed" : flag(rest, "--status", "planned")),
+        });
+        const target = flag(rest, "--out") ? resolve(flag(rest, "--out")!) : receiptPath;
+        writeJson(target, receipt);
+        const verdict = verifyOperationRalphReceipt(receipt, {
+          baseDir: projectPath,
+          requireFiles: false,
+          requireCompleted: !rest.includes("--planned-ok"),
+        });
+        console.log(JSON.stringify({ out: target, receipt, verdict }, jbig, 2));
+        process.exit(0);
+      }
+      if (sub === "verify" || sub === "status") {
+        const receipt = existsSync(receiptPath) ? readJson<OperationRalphReceipt>(receiptPath) : readOperationRalphReceipt(projectPath);
+        if (!receipt) {
+          console.error("operation verify [--project <path>] [--receipt <file>] [--no-files] [--planned-ok]");
+          process.exit(2);
+        }
+        const verdict = verifyOperationRalphReceipt(receipt, {
+          baseDir: projectPath,
+          requireFiles: !rest.includes("--no-files"),
+          requireCompleted: !rest.includes("--planned-ok"),
+        });
+        console.log(JSON.stringify({ receipt: receiptPath, verdict }, jbig, 2));
+        process.exit(verdict.ok ? 0 : 1);
+      }
+      console.error("operation: init | verify | status");
       process.exit(2);
     }
     case "prometheus": {

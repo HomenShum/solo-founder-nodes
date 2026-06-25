@@ -215,7 +215,7 @@ compositional goals when the assembly ledger is missing or incomplete. Doctrine:
 [`templates/assembly/assemblyCoherence.ts`](templates/assembly/assemblyCoherence.ts). Doctrine:
 **No assembly/interface proof, no professional workflow claim.**
 
-**Domain RALPH Packs (professional invariants):** Generic RALPH proves the process; a domain pack
+**Domain RALPH Packs (professional invariants):** Generic RALPH proves the process; Domain RALPH
 proves that the work is good for the user's specific industry/task. When the goal is domain-specific,
 professional, visual, agentic, financial, deployment-facing, or benchmark-facing, run
 `npm run sfn -- domain init --goal "<goal>" --project .` and
@@ -228,6 +228,17 @@ The fresh-context judge blocks parent `L/P/H` claims when required domain gates 
 Doctrine: [`references/domain-packs.md`](references/domain-packs.md); copyable implementation:
 [`templates/domain-pack/domainJudge.ts`](templates/domain-pack/domainJudge.ts). Doctrine:
 **Every user-reported domain failure becomes a permanent proof gate.**
+
+**Operation RALPH (workflow actions):** object proof is not workflow proof. When the user expects
+brush selection, delete, material replacement, moving/resizing, hotspot creation, animation, export,
+or any other product action, run
+`npm run sfn -- operation init --goal "<goal>" --domain <domain> --project .` and
+`npm run sfn -- operation verify --project .`. Each required operation needs `R/A/L/P/H` receipts,
+expected post-conditions, before/after or selection proof, and regression hardening. The
+fresh-context judge blocks parent `L/P/H` claims for edit/export workflows when Operation RALPH is
+missing or failing. Doctrine: [`references/operation-ralph.md`](references/operation-ralph.md);
+copyable implementation: [`templates/operation/operationRalph.ts`](templates/operation/operationRalph.ts).
+Doctrine: **No operation proof, no workflow claim.**
 
 **Prometheus Mode (versioned engineering loop):** when the user wants a product to improve over
 attempts, or when the proof story is "watch the artifact get better," wrap the parent RALPH loop in
