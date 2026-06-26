@@ -1,175 +1,927 @@
-# Solo Founder Agent Builder + Eval Loop Engineering Skill Nodes
+# Solo Founder Agent Builder
 
-**Solo Founder Agent Builder + Eval Loop Engineering Skill Nodes -- an agent skill for one-person companies** (slug `solo-founder-nodes`).
+### One prompt in. A researched, built, browser-verified agent product out.
 
-Benchmark-driven development for AI agents: your coding agent builds the agent for your app, then
-**proves it actually works in your live app -- without cheating.**
+Solo Founder Agent Builder turns your preferred coding agent into a proof-driven product engineer.
 
-## What it is
-One portable skill (`solo-founder-nodes`). Point the coding agent you already use (Claude Code, Codex,
-OpenClaw, Hermes, Trae) at the master directive and it runs the loop, reading a phase playbook in
-`nodes/` as it goes:
+It does not stop when code merely compiles.
 
-`discover -> benchmark -> setup -> build -> adapter -> iterate -> verify`
+It researches what good means, builds the app and its agent, runs the real workflow through the application UI, captures evidence, repairs failures, and only claims completion when the proof verdict passes.
 
-Discover + benchmark define *what good is*; setup + build + adapter make it runnable; iterate + verify
-make it real.
+> **Skills suggest. Hooks observe. State remembers. Receipts prove.**
 
-## Public claim proof
-Before reposting launch copy or benchmark claims, read
-[`docs/PUBLIC_CLAIM_PROOF.md`](docs/PUBLIC_CLAIM_PROOF.md). The core loop is proofed locally; several
-public-facing claims need narrower wording or explicit receipts.
+## Why this exists
 
-Short version: no receipt, no number.
+Most agent repos give an AI model a skill, plugin, MCP server, or rule file and call it autonomous.
 
-## The one non-negotiable -- why this exists
-A coding agent told to "pass the benchmark" will cheat: hardcode answers, detect-and-template specific
-tasks, report a high score with **zero** real capability. NodeRoom has adjacent receipts for this
-failure pattern: selected/family-writer BankerToolBench runs around **0.96**, an older
-pre-materializer signal around **0.009**, and a current full-100 clean-probe mean of **0.251875**.
-Do **not** compress those into the public sentence "0.96 versus 0.008" unless the exact incident
-receipt is linked in [`docs/PUBLIC_CLAIM_PROOF.md`](docs/PUBLIC_CLAIM_PROOF.md). Every phase obeys:
-- **HELD-OUT** -- never tune on the tasks you score on; keep a held-out split + an off-distribution slice.
-- **NO ANSWER-KEYS** -- no per-task detectors or hardcoded outputs; revert any change that only lifts the tuned tasks. The **honest lane** sharpens this: the same task scores three ways -- **model-off** (0 tokens, no real tool-call) is a floor/harness-failure *not* capability; a per-task/family writer firing is a fake answer-key; only **model-in-loop + the generic writer on a held-out task** is real. A change counts only if it raises the held-out clean-probe mean via a reusable tool / context / generic-writer / app-UI affordance ([`references/honest-lane.md`](skills/solo-founder-nodes/references/honest-lane.md)).
-- **IN-APP TRANSFER** -- a score counts only if the same task through the real app UI reproduces it (browser-verified).
-- **HONEST PROVENANCE** -- every number traces to a recorded run; report the real number even if it is low.
+That is not enough.
 
-## Serving the models
-The benchmark runs need a model server. Use **[Inference.ai](https://inference.ai)** or any
-OpenAI-compatible provider your eval policy approves. Configure the harness with a one-line
-`base_url` override, no SDK changes:
+A coding agent can still:
 
+- agree with a weak idea;
+- skip domain research;
+- produce an ugly UI;
+- say tests passed when the browser is visually broken;
+- generate a package-shaped output that is professionally useless;
+- forget context after a long session;
+- overwrite user-owned data;
+- claim completion without a real proof run.
+
+Solo Founder Agent Builder adds the missing operating system around the model:
+
+- durable goal state;
+- self-researched domain packs;
+- reference-driven product quality;
+- executable acceptance gates;
+- browser proof;
+- visual and domain judges;
+- hooks;
+- receipts;
+- anti-shallow QA;
+- recovery and repair loops.
+
+The goal is simple:
+
+> Give a coding agent one product goal and make it leave behind proof, not vibes.
+
+---
+
+## /goal Cup quickstart
+
+Use this for one-prompt hackathons, autonomous coding sessions, and agent benchmarks.
+
+1. Open the repository you want the coding agent to modify.
+2. Start your preferred coding agent.
+3. Paste one `/goal` prompt.
+4. Do not provide more steering.
+5. Judge the final output by the proof it returns.
+
+### Copy this prompt
+
+Replace `<YOUR GOAL>` with the thing you want built.
+
+```text
+/goal
+
+Fetch and follow the Solo Founder Agent Builder from:
+
+https://github.com/HomenShum/solo-founder-agent-builder
+
+Use:
+skills/solo-founder-nodes/SKILL.md
+then:
+skills/solo-founder-nodes/MASTER_SKILL.md
+
+Work inside THIS repository.
+
+GOAL:
+<YOUR GOAL>
+
+This is a one-prompt autonomous run. I will not provide additional guidance after submitting this message.
+
+Do not wait for clarification. Make the safest reversible assumptions, record them, and continue.
+
+AUTONOMY ENVELOPE
+
+You are authorized to:
+- inspect and modify this repository;
+- install ordinary local development dependencies;
+- create local branches and isolated worktrees;
+- run local servers, browsers, tests, benchmarks, and evaluators;
+- use existing configured credentials without displaying them;
+- choose free/local providers or existing approved providers;
+- research current official documentation, examples, benchmarks, papers, and relevant product references;
+- spawn bounded subagents for research, implementation, verification, security, product critique, visual review, and repair;
+- retry and repair failed work autonomously;
+- commit completed local work.
+
+You are not authorized to:
+- delete user data or unrelated files;
+- publish publicly or merge to production without an existing explicit policy;
+- incur new paid spend beyond the configured budget;
+- purchase services;
+- expose secrets;
+- weaken security, privacy, held-out, or proof requirements;
+- hardcode benchmark answers.
+
+REQUIRED PROCESS
+
+1. Initialize the durable RALPH loop and inspect the current repository state.
+2. Identify the target user, workflow, artifact, application surface, and agent task.
+3. Research the domain and generate a source-backed domain pack.
+4. If the goal references an existing product, tutorial, style, workflow, or inspiration, generate a Reference RALPH pack before implementation.
+5. Run a contrarian product, buyer, engineering, security, maintainability, and taste review before committing to the plan.
+6. Compile the domain and reference packs into acceptance criteria and executable proof gates.
+7. Build both:
+   - the application agent/harness/tools/context;
+   - the user-facing UI needed to run and inspect the workflow.
+8. Keep the work resumable through durable state, events, receipts, and checkpoints.
+9. Run the workflow through the real application UI using a fresh browser state.
+10. Capture screenshots, video, traces, exported artifacts, scorer results, runtime, cost, model usage, and known limitations.
+11. When a test, visual check, benchmark, or tool fails:
+    - record the evidence;
+    - determine root cause;
+    - spawn an isolated repair lane when useful;
+    - add a regression fixture;
+    - verify the repair in a fresh context;
+    - allow future work lanes to use the repaired version only after a canary passes.
+12. Do not stop because the transcript sounds plausible.
+13. Before the final response, run the fresh-context completion judge.
+14. Only return PASS when the durable proof verdict passes.
+
+ANTI-SHALLOW QA POLICY
+
+Do not claim QA passed from unit tests, DOM inspection, or successful commands alone.
+
+For every changed user-facing feature:
+1. Reproduce the original failure or create a negative fixture.
+2. Run the real user path in a browser.
+3. Capture screenshot or video.
+4. Check console errors.
+5. Verify pixels, not only DOM.
+6. Verify the domain invariant.
+7. Verify reload/reopen/export when applicable.
+8. Save receipts.
+9. Run a fresh-context judge over the receipts.
+10. Report PASS only if the proof depth matches the feature type.
+
+If a test passes but the screenshot looks wrong, treat the test as shallow and fix the test.
+If the DOM looks right but the visible pixels are wrong, treat the product as failing.
+If the output exists but cannot be reopened or professionally used, treat the workflow as failing.
+
+If blocked by a true external requirement such as an unavailable secret, paid account, destructive approval, or inaccessible system, finish all deterministic work first, record the exact blocker and resume command, and return BLOCKED rather than pretending success.
+
+FINAL RESPONSE
+
+Return one concise GOAL RESULT containing:
+- verdict: PASS, PARTIAL, or BLOCKED;
+- the original goal;
+- what was built;
+- how to run it;
+- live URL or local command;
+- browser proof;
+- tests and benchmark result;
+- exported artifact paths;
+- screenshot, video, trace, and receipt paths;
+- model, cost, runtime, and tool-call summary;
+- git commit;
+- known limitations;
+- exact next action only when blocked.
 ```
-OPENAI_BASE_URL = https://<your-provider-endpoint>/v1   # OpenAI-compatible
-OPENAI_API_KEY  = <your provider key>
-model           = <approved model id>
+
+---
+
+## What counts as done?
+
+A coding agent saying "done" does not count.
+
+A task is complete only when the repository contains evidence that:
+
+1. The requested workflow runs through the real application UI.
+2. The application's agent actually performs the task.
+3. Required artifacts are produced and can be reopened.
+4. Tests, domain checks, and benchmark/scorer gates pass.
+5. Screenshots, video, traces, metrics, and receipts exist.
+6. The fresh-context judge returns `done`.
+7. `.solo/proof-verdict.json` passes.
+
+### The doctrine
+
+```text
+No receipt, no number.
+No live UI proof, no product claim.
+No self-researched domain pack, no build.
+No domain proof, no domain claim.
+No reference pack, no product-quality claim.
+No before/after visual receipt, no UX fix.
+No negative fixture, no regression claim.
 ```
 
-The public event receipt says The Super Solo: Agent Skills Hack Day was co-hosted by BotLearn,
-Inference.ai, and SSG Accelerator. Use "co-hosted with Inference.ai," not "hosted by Inference.ai,"
-unless a separate receipt supports that narrower wording.
+---
 
-Optional cheap OpenRouter agent-host setup is now generated by the local CLI:
+## What the agent creates
 
-```
-cd skills/solo-founder-nodes/templates
-npm run sfn -- agents openrouter-audit --out openrouter-model-audit.json
-npm run sfn -- agents openrouter-plan --audit openrouter-model-audit.json --out agent-host-setup
-```
+A successful run may create:
 
-The current 2026-06-24 conformance-backed defaults are `deepseek/deepseek-v4-flash` for OpenClaw
-and `qwen/qwen3-coder-next` for Hermes/coding fallback. The live OpenRouter catalog audit currently
-recommends `openrouter/owl-alpha` as the free code candidate and `qwen/qwen3.5-flash-02-23` as the
-multimodal UI candidate, but those stay in `SOLO_OPENROUTER_AUDITED_*` until the selected host
-produces its own smoke and conformance receipt. Rerun the audit and agent conformance before
-publishing model claims.
+```text
+.solo/
+  loop-state.json
+  events.jsonl
+  proof-verdict.json
+  GOAL_RESULT.md
+  goal-result.json
 
-## Use it with your coding agent
-Portable **SKILL.md** -- works with any coding agent. Paste this into your agent, **inside your own project**:
+  receipts/
+    R/
+    A/
+    L/
+    P/
+    H/
 
-> Fetch Solo Founder Agent Builder + Eval Loop Engineering Skill Nodes from https://github.com/HomenShum/solo-founder-agent-builder (clone it, or read the
-> raw files). Then act as the master directive in `skills/solo-founder-nodes/SKILL.md` -> `MASTER_SKILL.md`:
-> run benchmark-driven development on THIS project -- discover what my agent should do, recommend a
-> benchmark, set it up, build the missing agent + UI, wire the adapter, iterate, and verify it in my live
-> app UI -- reading each phase playbook in `skills/solo-founder-nodes/nodes/`. Obey the non-negotiables:
-> held-out (never tune on what you score), no answer-keys, in-app transfer (a score counts only if it
-> reproduces in my real UI), honest provenance (report the real number). Gate any install / spend / code
-> change on my approval, and log each phase: what you did, the result, and what you COULD NOT do.
+  direction/
+    direction-intake.md
+    direction-proposal.json
+    direction-decision.md
 
-**Claude Code:** copy `skills/solo-founder-nodes/` into your project's `.claude/skills/` -- it auto-loads
-`SKILL.md`. **Codex / OpenClaw / Hermes / Trae / Cursor / Windsurf / other agents:** point them at the
-GitHub files and have them follow `SKILL.md` -> `MASTER_SKILL.md` as the playbook, then run
-`skills/solo-founder-nodes/conformance/conformance.mjs`. Do not claim an agent is verified until its
-probe receipt is recorded.
+  domain/
+    domain-pack.json
+    invariants.md
+    proof-gates.json
+    regression-fixtures.json
 
-## Repo layout
-- `skills/solo-founder-nodes/` -- `SKILL.md` (loader entry) + `MASTER_SKILL.md` (full directive) + 7 phase playbooks in `nodes/` + `references/` (incl. `honest-lane.md`, `memory.md`, `design-bridge.md`).
-- **Design Bridge** -- `references/design-bridge.md` + `templates/design/` -- the UI/UX subroutine the **build** and **verify** phases call so the in-app surface can actually run the benchmark task.
-- **Design Skill Bridge** -- `templates/design/designSkillBridge.ts` -- selects portable design guidance across Claude-origin skills, shadcn, GSAP, UI UX Pro Max, Expo, Material 3, and design registries without locking the loop to Claude Code.
-- **gstack Bridge** -- `references/gstack-bridge.md` + `templates/gstack/` -- converts `garrytan/gstack` CEO/eng/design/QA/security/release roles into portable operating-review receipts, without requiring a Claude Code runtime.
-- **Memory substrate** -- `references/memory.md` + `templates/memory/` -- local-first, audit-safe memory so a resumed session re-hydrates instead of re-deriving.
-- **Research Spine** -- `references/research-spine.md` + `templates/research/` -- executable research receipts so each major implementation decision traces user need -> reference -> paper/benchmark -> eval metric -> proof artifact.
-- **RALPH Loop Ledger** -- `references/ralph-loop-ledger.md` + `templates/loop/` -- resumable `.solo/loop-state.json`, `events.jsonl`, milestone receipt directories, and start-anywhere gates for Reality/Research -> Acceptance Bar -> Live Build -> Proof Run -> Harden.
-- **Loop Runner** -- `templates/loop/` -- executable phase receipts for discover -> benchmark -> setup -> build -> adapter -> iterate -> verify, including proof-verdict enforcement.
-- **Agent-ready API** -- `references/agent-ready-api.md` + `templates/agentApi/` -- semantic tool contracts, provider-schema parity checks, and structured failure/recovery gates.
-- **Fresh-room proof receipts** -- `templates/proof/` -- live browser proof receipts for fresh-room UI runs, official scorer results, trace/video/screenshots, exports, costs, latency, and token usage.
-- **Build-to-delete / rework ledger** -- `references/build-to-delete.md` + `templates/rework/` -- records deleted/replaced approaches, failure receipts, surviving proof, and lessons so agents do not resurrect dead paths.
-- **Optional agent hosts** -- `templates/setup/openrouterAgentHosts.ts` -- generates OpenRouter/OpenClaw/Hermes setup packs with cheap current model lanes, secret hygiene, and conformance commands; not required by the core skill.
-- `docs/eval/nonbtb/` -- a runnable deterministic example grader; `docs/eval/BTB_GENERALIZATION_DIAGNOSTIC.md` -- the anti-overfit protocol.
+  reference/
+    reference-pack.json
+    reference-digest.md
+    reference-proof.json
 
-## Context + control substrates
-The loop now ships the missing self-direction pieces:
+  repairs/
+    incident-*/
+      incident-brief.json
+      root-cause.md
+      patch-contract.md
+      verification.json
+      promotion-receipt.json
 
-- **Context substrate**: inspect `graphify-out/GRAPH_REPORT.md` + `graphify-out/graph.json`, require a ready graph receipt after discover, and query the graph before raw file search.
-- **Control plane**: persist loop/phase state, approval pauses, event triggers, budget stops, trace spans, worktree leases, and trace-sourced improvement candidates.
-
-Run `npm run smoke` in `skills/solo-founder-nodes/templates/` to prove these local invariants.
-
-Executable receipts:
-
-```
-npm run sfn -- loop init --goal <goal> --project <path>
-npm run sfn -- loop status --project <path>
-npm run sfn -- loop resume --loop-id <id> --project <path>
-npm run sfn -- loop start --from <R|A|L|P|H> --project <path>
-npm run sfn -- loop verify --milestone <R|A|L|P|H> --project <path>
-npm run sfn -- run --project <path> --goal <goal> --out loop-run.json
-npm run sfn -- run verify --receipt loop-run.json
-npm run sfn -- agent-api verify --contract agent-api-contract.json
-npm run sfn -- fresh-room verify --receipt docs/eval/fresh-room/<case-id>/latest.json
-npm run sfn -- rework verify --ledger rework-ledger.json
+docs/
+  qa/
+  proof/
+  eval/
+  research/
+  adr/
+  system-map.graph.json
+  system-map.mmd
+  system-map.html
 ```
 
-## Research-backed implementation
-The loop now gates major architecture and product claims through `research-spine.json`.
+The exact files depend on the target repo and goal.
 
-- `npm run sfn -- research init --goal "build a 3D model app from pictures" --domain 3d-generation`
-- `npm run sfn -- research verify research-spine.json`
-- `npm run sfn -- proof init --goal "fresh-user 3D app proof" --domain 3d-generation`
-- `npm run sfn -- compare top3d`
+---
 
-The seeded 3D-agent lane points agents toward a realistic v1: provider-backed image/text-to-3D,
-Three.js viewer, deployment, persistence, full UI proof, and comparator scoring against Meshy, Tripo,
-Rodin/Hyper3D, and Luma. COLMAP/3DGS, CAD-native output, humanoid rigging, and motion tracking remain
-stretch lanes until separately proved.
+## How the loop works
 
-## Portable design skills
-The design bridge is now agent-agnostic:
+Solo Founder Agent Builder is built around RALPH:
 
-- `npm run sfn -- design registry`
-- `npm run sfn -- design recommend --surface dashboard --stack "Next.js shadcn" --runtime codex`
-- `npm run sfn -- design recommend --surface marketing-site --style premium --visuals --animation --runtime codex`
-- `npm run sfn -- design recommend --surface mobile-app --platform ios --stack SwiftUI --runtime codex`
-- `npm run sfn -- design flow --surface 3d-app --category "3D asset generation" --style premium --visuals --animation --shadcn-mcp --runtime codex`
-- `npm run sfn -- design flow --surface dashboard --category analytics --stack "Next.js shadcn" --shadcn-mcp --runtime codex`
+```text
+R — Reality
+    Understand the user, product, workflow, repo, constraints, domain, and current state.
 
-Claude-labeled skills can still be useful, but only as portable markdown/tooling references. The loop
-copies their concrete design decisions into `design-brief.md` and `component-contract.md`; implementation
-can run under Codex, Claude Code, Cursor, Windsurf, Copilot, or a generic coding agent. Use
-`design flow` when you want the full transcript sequence: classify the surface, break generic defaults,
-use component registries where appropriate, arrange dashboard information, run industry-fit palette/font
-selection, choose one taste preset, add GSAP/Higgsfield/mobile lanes only when needed, and verify in the
-real UI.
+A — Acceptance Bar
+    Define what good means using proof gates, benchmarks, visual checks, and domain invariants.
 
-## Portable gstack operating lanes
-The loop also integrates `garrytan/gstack` as a portable specialist-review model:
+L — Live Build
+    Build the app, the agent, the UI, the tools, and the workflow surface.
 
-- `npm run sfn -- gstack registry`
-- `npm run sfn -- gstack recommend --phase discover --goal "3D model app from screenshots"`
-- `npm run sfn -- gstack recommend --phase build --goal "3D model app" --ui --security --risk high`
-- `npm run sfn -- gstack recommend --phase verify --goal "fresh-user proof" --ui --deploy --security --devex`
+P — Proof Run
+    Run through the real application UI. Capture screenshots, video, trace, exports, scorer, and receipts.
 
-These commands make the coding agent produce CEO/product, engineering, design, staff-review, QA,
-security, release, canary, docs, and retro receipts before it claims progress. Upstream gstack remains
-the inspiration source; Solo Founder Nodes owns the cross-agent gate.
+H — Harden
+    Convert failures into regression gates, memory, repair receipts, and future-proof constraints.
+```
 
-## Memory substrate
-The loop **persists** what it learns so a founder resuming the next day does not re-derive it: the
-capability spec, the benchmark choice + the **frozen** held-out split **hashes**, scorecards and
-per-iteration deltas, the env provenance, and the in-app transfer verdict. It is **local-first and
-audit-safe** -- held-out task *contents* never enter persistent memory (only split hashes + aggregate
-scores), the memory-side mirror of NO ANSWER-KEYS. Doctrine + the event contract:
-[`skills/solo-founder-nodes/references/memory.md`](skills/solo-founder-nodes/references/memory.md);
-copyable templates in [`skills/solo-founder-nodes/templates/memory/`](skills/solo-founder-nodes/templates/memory/).
+That gives the macro loop.
 
-Distilled from **NodeRoom** (the origin).
+Then specialized loops run when needed.
+
+---
+
+## Direction RALPH
+
+Used when the user changes product direction.
+
+Examples:
+
+```text
+"Make it like Emergent + Spline."
+"Turn this into an OpusClip-style video pipeline."
+"Change this from a demo into a finance war room."
+"Make our own OSS version instead of integrating a proprietary tool."
+```
+
+The agent must produce a direction receipt before coding.
+
+```text
+Old direction
+New direction
+Why it changed
+Invalidated assumptions
+New required proof gates
+Accepted / parked / rejected inspiration
+```
+
+---
+
+## Reference RALPH
+
+Used when the goal references a product, tutorial, visual style, SDK workflow, design system, or external inspiration.
+
+Examples:
+
+```text
+Emergent + Spline
+Open Design
+assistant-ui
+React Bits
+Claude Artifacts
+OpusClip
+Attio
+Linear
+Notion
+Bruno Simon
+Igloo Inc
+```
+
+The agent must extract:
+
+```text
+what to adopt
+what to avoid
+what not to copy
+what implementation stack matters
+what proof gates the reference implies
+what product-quality bar must be met
+```
+
+Reference RALPH prevents the agent from building a technically working but ugly, irrelevant, or product-weak artifact.
+
+---
+
+## Domain RALPH
+
+Used when the goal belongs to a professional domain.
+
+Examples:
+
+```text
+finance-nodeagent
+3d-assets
+construction-mockups
+video-remix
+image-editing
+agent-app
+web-app-ui
+data-pipeline
+game-assets
+avatar-vtuber
+manufacturing-parts
+```
+
+A domain pack contains:
+
+```text
+domain classification
+target users
+jobs to be done
+ontology
+professional invariants
+proof gates
+negative fixtures
+regression fixtures
+child RALPH loops
+```
+
+Example:
+
+```text
+3D asset:
+  components must exist
+  assemblies must connect
+  export must reopen
+  canonical views must pass
+
+Finance workflow:
+  numbers must have evidence
+  formulas must not be clobbered
+  citations must open source regions
+  private context must not leak
+```
+
+---
+
+## Component, Assembly, and Operation RALPH
+
+For compositional products, the agent must go deeper than "output exists."
+
+### Component RALPH
+
+Proves the parts exist and have roles.
+
+```text
+eyewear:
+  frame
+  lens
+  hinge
+  temple arm
+  bridge
+  nose pad
+```
+
+### Assembly RALPH
+
+Proves the parts connect into a coherent object or workflow.
+
+```text
+lens contained by ring
+bridge connects left and right frame
+temple arm attaches to hinge
+spreadsheet output cell links to source fact
+video caption does not cover speaker face
+```
+
+### Operation RALPH
+
+Proves the user action works.
+
+```text
+brush select
+replace material
+export
+reopen
+approve
+reject
+retry
+upload
+download
+attach to chat
+```
+
+---
+
+## Reflex RALPH
+
+Used when a failure appears while a long run is still in progress.
+
+Instead of waiting until the whole benchmark ends:
+
+```text
+failure event
+  -> incident broker
+  -> classify transient vs task-specific vs systemic
+  -> spawn repair subagents
+  -> verify fix in isolated generation
+  -> promote fixed version to future lanes
+```
+
+The active run stays version-pinned so evidence does not get corrupted.
+
+---
+
+## Anti-shallow QA
+
+A feature is shallowly tested if the agent only proves:
+
+```text
+the function ran
+the DOM node exists
+the command exited 0
+the model said it worked
+```
+
+A feature is deeply tested when it proves:
+
+```text
+real user path
+visible pixels
+no console errors
+artifact correctness
+export/reopen
+domain invariants
+negative fixture
+fresh-context judge
+durable receipt
+```
+
+Minimum proof depth:
+
+| Feature type              | Minimum proof                                             |
+| ------------------------- | --------------------------------------------------------- |
+| Utility function          | Unit test + negative fixture                              |
+| Backend mutation          | Integration test + idempotency                            |
+| UI component              | DOM + screenshot + console check                          |
+| User workflow             | Browser video + trace + reload                            |
+| File upload/preview       | Upload + open + reload + attach                           |
+| Spreadsheet edit          | Cell state + version + CAS + export/reopen                |
+| Human-agent collaboration | Multi-user browser + no-clobber + trace                   |
+| Finance workflow          | Evidence + citation + privacy + export/reopen             |
+| 3D asset                  | Component + assembly + visual + export/reopen             |
+| Benchmark claim           | Fresh room + scorer + video + receipt + visual judge      |
+| Notification/downstream   | Audience + privacy + idempotency + delivery/draft receipt |
+
+---
+
+## Architecture Governor
+
+The agent should not lose the system as the repo grows.
+
+Solo Founder Agent Builder supports an architecture-governor pattern:
+
+```text
+docs/system-map.graph.json  # canonical agent-readable system graph
+docs/system-map.mmd         # Mermaid render
+docs/system-map.html        # interactive human view
+```
+
+The architecture graph tracks:
+
+```text
+agents
+subagents
+hooks
+MCP servers
+tools
+databases
+Convex functions
+UI surfaces
+external APIs
+queues/jobs
+trust boundaries
+data flow
+implementation files
+```
+
+A repo-local MCP server can expose the graph through tools such as:
+
+```text
+read_architecture_context
+find_implementations
+upsert_node
+add_edge
+validate_architecture_map
+```
+
+Hooks can force the agent to read the graph at session start, user prompt submit, subagent start, post-tool-use, and stop.
+
+CI can fail when architecture-relevant files changed but the system map did not.
+
+---
+
+## Research Governor
+
+The agent should not rely on stale memory when touching fast-moving systems.
+
+The research governor decides when current external research is required.
+
+Source tiers:
+
+```text
+T0 — Local truth
+     repo code, tests, docs, receipts, ADRs
+
+T1 — Official SDK/API docs
+     framework docs, changelogs, platform docs
+
+T2 — Official examples
+     cookbooks, sample repos, templates
+
+T3 — Trusted engineering posts
+     maintainer posts, production writeups
+
+T4 — Research papers / benchmarks
+     arXiv, eval papers, benchmark suites
+
+T5 — Inspiration references
+     product references, UI patterns, OSS examples
+```
+
+Example triggers:
+
+```text
+SDK/API change:
+  requires T1 + T2
+
+agent harness change:
+  requires T1 + T2 + T4
+
+MCP/hook change:
+  requires T1 + T3
+
+UI/UX/product reference:
+  requires T3 + T5
+
+eval/benchmark change:
+  requires T1 + T2 + T4
+```
+
+The output should be a research brief, not a list of links.
+
+---
+
+## Supported coding-agent environments
+
+Solo Founder Agent Builder is host-agnostic.
+
+Some hosts support native lifecycle hooks. Others are controlled through rules, wrappers, MCP, or final proof validation.
+
+| Environment              | Best integration                                     |
+| ------------------------ | ---------------------------------------------------- |
+| Codex                    | Native hooks + MCP + stop judge                      |
+| Claude Code              | Native hooks + MCP + stop judge                      |
+| Windsurf / Devin Desktop | Cascade hooks + transcript/evidence checks           |
+| Cursor                   | Rules + MCP + headless/wrapper proof                 |
+| OpenCode                 | Plugin events + tools                                |
+| Pi / Flue                | `pi-yaml-hooks`                                      |
+| Hermes                   | Plugin hooks or shell hooks                          |
+| OpenClaw                 | Internal hooks + typed plugin hooks                  |
+| Trae                     | Native adapter when verified; generic proof fallback |
+| Generic coding agent     | External proof wrapper                               |
+
+Important:
+
+```text
+Native hooks can nudge and block.
+Generic wrappers can verify after the fact.
+CI and receipts are the hard backstop.
+```
+
+No host is allowed to self-report a verified pass without proof receipts.
+
+---
+
+## Hook model
+
+Hooks are sensors and interrupts.
+
+They can run at:
+
+```text
+session start
+user prompt submit
+pre-tool use
+post-tool use
+subagent start
+subagent stop
+idle
+stop / final answer
+```
+
+They enforce:
+
+```text
+read loop state
+read architecture graph
+inject context
+block dangerous actions
+record tool events
+record receipts
+run fresh judge
+block premature completion
+```
+
+But hooks are not the entire guarantee.
+
+The hard guarantee is the proof registry:
+
+```text
+required artifact missing -> no pass
+required screenshot missing -> no pass
+required domain receipt missing -> no pass
+required benchmark scorer missing -> no pass
+```
+
+---
+
+## Proof registry
+
+A proof registry turns "we should test this" into "CI can prove this ran."
+
+A receipt should include:
+
+```text
+caseId
+goal
+room / app URL
+command
+model
+runtime profile
+prompt
+freshness proof
+screenshots
+video
+trace
+exported files
+reopened files
+scorer results
+visual judge
+cost
+latency
+model usage
+tool calls
+known limitations
+verdict
+```
+
+The proof registry is what separates:
+
+```text
+"the agent says it worked"
+```
+
+from:
+
+```text
+"the app ran, the artifact opened, the scorer passed, and the receipt proves it."
+```
+
+---
+
+## Example final output
+
+The agent should finish by printing something like:
+
+```text
+GOAL RESULT
+
+Verdict:
+PASS
+
+Goal:
+Build a source-backed company research agent inside the current app.
+
+Built:
+- company intake UI
+- NodeAgent evidence tool
+- citation cards
+- spreadsheet enrichment flow
+- browser proof receipt
+
+Run:
+npm run dev
+Open:
+http://localhost:5173
+
+Proof:
+- docs/proof/fresh-user/latest.json
+- test-results/company-research/video.webm
+- test-results/company-research/trace.zip
+- docs/proof/screenshots/company-research-after.png
+
+Tests:
+42 passed, 0 failed
+
+Benchmark:
+8/10 held-out cases passed
+
+Model:
+qwen/qwen3.7-plus via OpenRouter
+
+Usage:
+187k tokens · $0.38 · 14m 32s
+
+Commit:
+abc1234
+
+Known limitations:
+- no CRM downstream write yet
+- one low-confidence evidence row requires review
+```
+
+If blocked:
+
+```text
+Verdict:
+BLOCKED
+
+Reason:
+GOOGLE_GENERATIVE_AI_API_KEY is not configured, so visual judge could not run.
+
+Completed:
+- implementation
+- unit tests
+- browser proof
+- exported artifacts
+
+Resume:
+npm run sfn -- judge current --project .
+```
+
+---
+
+## Event / Agent Community relevance
+
+Solo Founder Agent Builder is useful for the agentic web because it makes autonomous work inspectable across four trust layers:
+
+### Identity
+
+```text
+Which agent host, model, tools, repo commit, run ID, and proof contract produced the work?
+```
+
+### Discovery
+
+```text
+Which domain, references, SDKs, benchmarks, docs, and examples did the agent use?
+```
+
+### Governance
+
+```text
+Which hooks, permissions, budgets, approvals, and proof gates controlled the agent?
+```
+
+### Accountability
+
+```text
+Which traces, screenshots, videos, exported artifacts, evaluator results, and receipts justify the final claim?
+```
+
+---
+
+## Local usage
+
+### Install
+
+```text
+git clone https://github.com/HomenShum/solo-founder-agent-builder
+cd solo-founder-agent-builder
+npm install
+```
+
+### Smoke test
+
+```text
+npm run smoke
+node skills/solo-founder-nodes/conformance/conformance.mjs --run-smoke
+```
+
+### Judge current repo state
+
+```text
+npm run sfn -- judge current --project .
+```
+
+### Install hooks
+
+Dry run:
+
+```text
+npm run sfn -- hooks install --target codex --project . --dry-run
+npm run sfn -- hooks install --target claude-code --project . --dry-run
+npm run sfn -- hooks install --target pi --project . --dry-run
+npm run sfn -- hooks install --target hermes --project . --dry-run
+npm run sfn -- hooks install --target openclaw --project . --dry-run
+npm run sfn -- hooks install --target trae --project . --mode generic-until-verified --dry-run
+```
+
+Install only when you understand what files will be written.
+
+---
+
+## Recommended pre-event setup
+
+For one-prompt hackathons, hooks often need to exist before the agent session begins.
+
+Optional but recommended:
+
+```text
+1. Clone this repo.
+2. Install the hook pack for your coding agent.
+3. Run hook conformance.
+4. Start a fresh coding-agent session.
+5. Paste the /goal prompt once.
+```
+
+If you do not preinstall hooks, the final proof registry and fresh-context judge still provide an external proof lane.
+
+---
+
+## Safety and limitations
+
+Solo Founder Agent Builder does not guarantee that every model will succeed.
+
+It guarantees that unsupported success claims are harder to make.
+
+It should return `PARTIAL` or `BLOCKED` rather than pretending success when:
+
+```text
+secrets are missing
+provider accounts are unavailable
+paid services are not configured
+browser proof cannot run
+domain proof cannot be generated
+reference research is blocked
+export/reopen fails
+visual output is bad
+```
+
+A strong agent product is not one that always says yes.
+
+A strong agent product is one that knows when it has not proven the work.
+
+---
+
+## Core motto
+
+```text
+Skills suggest.
+Hooks observe.
+State remembers.
+Goals direct.
+Receipts prove.
+Councils challenge.
+Reflex loops repair.
+Canaries promote.
+CI guarantees.
+```
+
+Or shorter:
+
+> **Do not trust the transcript. Trust the receipts.**
