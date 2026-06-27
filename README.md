@@ -290,6 +290,203 @@ Then specialized loops run when needed.
 
 ---
 
+## Anchored RALPH
+
+> **No anchor artifact, no next phase.**
+
+Each RALPH phase must produce a concrete anchor artifact before the next phase can begin. Without anchors, the agent drifts into sycophantic approval, invented architecture, god objects, bad directory layouts, and shallow proof.
+
+### Phase anchors
+
+```text
+R — Reality
+  Anchor: .solo/anchors/R-system-context.json
+  Required: repo inventory, system map read receipt, affected nodes, directory map, patterns to reuse, anti-god-object risk list
+  Block if: no architecture graph read, no affected nodes, no pattern inspection
+
+A — Acceptance
+  Anchor: .solo/anchors/A-proof-contract.json
+  Required: domain pack, reference pack if applicable, proof gates, negative fixtures, directory contract, rejected options
+  Block if: no proof gates, no rejected options, no directory contract, no research brief when required
+
+L — Live Build
+  Anchor: .solo/anchors/L-implementation-map.json
+  Required: implementation slices, file placement plan, no god-object check, component ownership boundaries, architecture delta
+  Block if: runtime/tool/agent/db/ui code not in graph, file exceeds threshold, unowned shared blob
+
+P — Proof
+  Anchor: .solo/anchors/P-proof-ledger.json
+  Required: browser proof for UI, export/reopen for artifacts, domain proof, visual proof, telemetry
+  Block if: unit-only proof for UI, DOM-only proof for visual state, no negative regression
+
+H — Harden
+  Anchor: .solo/anchors/H-hardening-ledger.json
+  Required: root-cause patch contract, rework ledger, changed system map, ADR if architecture changed, resume command
+  Block if: failure fixed with no regression, architecture changed with no ADR/graph update
+```
+
+### Architecture graph as phase gate
+
+The canonical `docs/system-map.graph.json` is not a pretty diagram. It is the phase gate.
+
+```text
+R phase: must read graph
+A phase: must identify affected nodes
+L phase: must update graph if architecture changes
+P phase: must prove graph-linked runtime path
+H phase: must record architecture delta or rejected update
+```
+
+### Directory shape governor
+
+Force code organization before edits. Block god objects. Use `src/nodeagent/`-style structure for agent apps:
+
+```text
+src/
+  nodeagent/
+    core/        — orchestrator, state, events, hooks, queue, receipts
+    models/      — router, providers, prompts
+    tools/       — registry, filesystem, browser, search, domain
+    domains/     — domain packs, invariants, proof gates, fixtures
+    guardrails/  — approval, circuit breaker, anti-shallow QA, sanitize
+    mcp/         — tools, resources, prompts
+  features/
+    <feature>/
+      components/
+      hooks/
+      types.ts
+      proof.ts
+  ui/
+  shared/
+```
+
+Anti-god-object limits:
+
+```json
+{
+  "maxFileLines": 350,
+  "maxComponentLines": 250,
+  "maxFunctionLines": 80,
+  "noGodObjects": true
+}
+```
+
+If the agent creates a 1,400-line `App.tsx`, the judge returns `not_done`.
+
+### Preceptor review
+
+Before Live Build and before final pass, run a preceptor council:
+
+```text
+Preceptor Council
+  ├── Staff engineer — boundaries, file ownership, maintainability
+  ├── Product engineer — user workflow, UI clarity, product taste
+  ├── Domain expert — professional acceptability
+  ├── Security/privacy reviewer — data boundaries, secrets, unsafe actions
+  ├── QA/eval reviewer — proof gates, negative fixtures, anti-shallow QA
+  └── Contrarian — sycophancy, overclaiming, unnecessary complexity
+```
+
+Output: `.solo/reviews/preceptor-review.md` + `.solo/reviews/preceptor-review.json`
+
+### Hook enforcement
+
+```text
+Hook event        Required behavior
+────────────────────────────────────────────────────────────────────────────
+SessionStart      Read docs/system-map.graph.json; store graph hash.
+UserPromptSubmit  Classify: architecture? research? UI? eval? domain?
+PreToolUse        If editing architecture-sensitive paths without R/A anchors, block.
+PostToolUse       If changed files touch agents/tools/db/ui/hooks, mark graph update required.
+SubagentStart     Inject affected graph nodes, directory contract, invariants.
+Stop              Block if anchors, graph update, research brief, tests, or proof are missing.
+CI/pre-commit     Repeat the graph/research/directory/proof checks outside the agent.
+```
+
+CI is required because hooks can guide supported agent lifecycles, but they are not the hard correctness boundary. Repo-level guards must backstop them.
+
+### Anchor checklist
+
+```text
+R — Reality
+  [ ] Read architecture graph
+  [ ] Write architecture_read receipt
+  [ ] Inspect existing directory patterns
+  [ ] Identify affected nodes/edges/files
+  [ ] Identify anti-pattern risks
+  [ ] Write System Context Packet
+
+A — Acceptance
+  [ ] Create domain pack
+  [ ] Create reference pack when applicable
+  [ ] Create proof contract
+  [ ] Create directory contract
+  [ ] Create negative fixtures
+  [ ] Run Preceptor Council
+  [ ] Write accepted/rejected options
+
+L — Live Build
+  [ ] Implement within planned file map
+  [ ] Avoid god objects
+  [ ] Keep functions/modules bounded
+  [ ] Update architecture graph if runtime changes
+  [ ] Update ADR if architectural decision changes
+  [ ] Emit implementation receipts
+
+P — Proof
+  [ ] Run deterministic tests
+  [ ] Run live browser if UI changed
+  [ ] Run export/reopen if artifacts changed
+  [ ] Run visual/taste proof if product surface changed
+  [ ] Run domain proof if professional workflow changed
+  [ ] Run anti-shallow QA
+  [ ] Write proof ledger
+
+H — Harden
+  [ ] Add regression fixture
+  [ ] Write root-cause patch contract
+  [ ] Update rework ledger
+  [ ] Update system map / research brief / ADR
+  [ ] Run fresh-context judge
+  [ ] Emit GOAL_RESULT
+```
+
+### What this changes in practice
+
+Before:
+
+```text
+Agent: "I'll add an agent runtime."
+Writes: src/agent.ts, src/tools.ts, src/App.tsx, maybe tests.
+Says done.
+```
+
+After:
+
+```text
+Agent: "I'll add an agent runtime."
+Must first:
+  read architecture graph
+  produce System Impact Brief
+  research if SDK/harness-sensitive
+  decide tool vs subagent vs MCP vs hook
+  write file placement plan
+  pass preceptor review
+
+Then:
+  implement bounded modules
+  update graph
+  run tests/evals
+  run proof
+  block final if receipts missing
+```
+
+This is how you stop "AI-shaped architecture."
+
+> **The model writes code. The harness forces architecture, research, proof, and maintainability.**
+
+---
+
 ## End-to-end sequence
 
 What happens behind the scenes from the moment a user pastes a `/goal` prompt into any coding agent or IDE:

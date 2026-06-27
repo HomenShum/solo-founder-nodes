@@ -1,0 +1,55 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://solo-founder-agent-builder.dev/anchors/H-hardening-ledger.schema.json",
+  "title": "H — Regression + Rework Ledger",
+  "description": "Harden phase anchor. Makes failures permanent learning.",
+  "type": "object",
+  "required": ["failuresObserved", "regressionsAdded", "reworkNotes"],
+  "properties": {
+    "failuresObserved": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Failures observed during proof run."
+    },
+    "regressionsAdded": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Regression fixture IDs added to prevent recurrence."
+    },
+    "reworkNotes": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "What was changed and why."
+    },
+    "rootCausePatchContracts": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "failure": { "type": "string" },
+          "rootCause": { "type": "string" },
+          "patch": { "type": "string" },
+          "verificationReceipt": { "type": "string" }
+        },
+        "additionalProperties": false
+      },
+      "description": "Root-cause patch contracts for each failure."
+    },
+    "architectureDelta": {
+      "type": "object",
+      "properties": {
+        "graphUpdated": { "type": "boolean" },
+        "adrWritten": { "type": "boolean" },
+        "adrPath": { "type": "string" },
+        "rejectedUpdate": { "type": "boolean" },
+        "rejectedReason": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "resumeCommand": {
+      "type": "string",
+      "description": "Command to resume if blocked or partial."
+    }
+  },
+  "additionalProperties": false
+}

@@ -419,6 +419,147 @@ deployed `verify` needs live QA, release/deploy, and canary receipts. Doctrine:
 [`references/gstack-bridge.md`](references/gstack-bridge.md); copyable implementation:
 [`templates/gstack/`](templates/gstack/).
 
+## Anchored RALPH (hard phase gates)
+
+**Doctrine: No anchor artifact, no next phase.**
+
+Each RALPH phase must produce a concrete anchor artifact before the next phase can begin. Without
+anchors, the agent drifts into sycophantic approval, invented architecture, god objects, bad directory
+layouts, and shallow proof. Full doctrine: [`references/anchored-ralph.md`](references/anchored-ralph.md);
+directory shape: [`references/directory-shape-governor.md`](references/directory-shape-governor.md);
+preceptor review: [`references/preceptor-review.md`](references/preceptor-review.md);
+system impact: [`references/system-impact-brief.md`](references/system-impact-brief.md).
+
+### Phase anchors
+
+```text
+R — Reality
+  Anchor: .solo/anchors/R-system-context.json
+  Schema: templates/anchors/R-system-context.schema.json
+  Required: repo inventory, system map read receipt, affected nodes, directory map, patterns to reuse, anti-god-object risk list
+  Block if: no architecture graph read, no affected nodes, no pattern inspection
+
+A — Acceptance
+  Anchor: .solo/anchors/A-proof-contract.json
+  Schema: templates/anchors/A-proof-contract.schema.json
+  Required: domain pack, reference pack if applicable, proof gates, negative fixtures, directory contract, rejected options
+  Block if: no proof gates, no rejected options, no directory contract, no research brief when required
+
+L — Live Build
+  Anchor: .solo/anchors/L-implementation-map.json
+  Schema: templates/anchors/L-implementation-map.schema.json
+  Required: implementation slices, file placement plan, no god-object check, component ownership boundaries, architecture delta
+  Block if: runtime/tool/agent/db/ui code not in graph, file exceeds threshold, unowned shared blob
+
+P — Proof
+  Anchor: .solo/anchors/P-proof-ledger.json
+  Schema: templates/anchors/P-proof-ledger.schema.json
+  Required: browser proof for UI, export/reopen for artifacts, domain proof, visual proof, telemetry
+  Block if: unit-only proof for UI, DOM-only proof for visual state, no negative regression
+
+H — Harden
+  Anchor: .solo/anchors/H-hardening-ledger.json
+  Schema: templates/anchors/H-hardening-ledger.schema.json
+  Required: root-cause patch contract, rework ledger, changed system map, ADR if architecture changed, resume command
+  Block if: failure fixed with no regression, architecture changed with no ADR/graph update
+```
+
+### Architecture graph as phase gate
+
+The canonical `docs/system-map.graph.json` is not a pretty diagram. It is the phase gate.
+
+```text
+R phase: must read graph
+A phase: must identify affected nodes
+L phase: must update graph if architecture changes
+P phase: must prove graph-linked runtime path
+H phase: must record architecture delta or rejected update
+```
+
+### Directory shape governor
+
+Force code organization before edits. Block god objects. Use `src/nodeagent/`-style structure for
+agent apps: `core`, `models`, `tools`, `domains`, `guardrails`, `mcp`. Anti-god-object limits:
+max file 350 lines, max component 250 lines, max function 80 lines. If the agent creates a
+1,400-line `App.tsx`, the judge returns `not_done`. Full doctrine:
+[`references/directory-shape-governor.md`](references/directory-shape-governor.md).
+
+### Preceptor review
+
+Before Live Build and before final pass, run a preceptor council: staff engineer, product engineer,
+domain expert, security/privacy reviewer, QA/eval reviewer, contrarian. Output:
+`.solo/reviews/preceptor-review.md` + `.solo/reviews/preceptor-review.json`
+(schema: [`templates/reviews/preceptor-review.schema.json`](templates/reviews/preceptor-review.schema.json)).
+The review must include approved direction, required simplifications, architecture risks, god-object
+warnings, missing tests/evals, and rejected options. Full doctrine:
+[`references/preceptor-review.md`](references/preceptor-review.md).
+
+### Hook enforcement table
+
+```text
+Hook event        Required behavior
+────────────────────────────────────────────────────────────────────────────
+SessionStart      Read docs/system-map.graph.json; store graph hash.
+UserPromptSubmit  Classify: architecture? research? UI? eval? domain?
+PreToolUse        If editing architecture-sensitive paths without R/A anchors, block.
+PostToolUse       If changed files touch agents/tools/db/ui/hooks, mark graph update required.
+SubagentStart     Inject affected graph nodes, directory contract, invariants.
+Stop              Block if anchors, graph update, research brief, tests, or proof are missing.
+CI/pre-commit     Repeat the graph/research/directory/proof checks outside the agent.
+```
+
+### Major-loop anchor checklist
+
+```text
+R — Reality
+  [ ] Read architecture graph through MCP or file
+  [ ] Write architecture_read receipt
+  [ ] Inspect existing directory patterns
+  [ ] Identify affected nodes/edges/files
+  [ ] Identify current user/product/domain
+  [ ] Identify anti-pattern risks
+  [ ] Write System Context Packet
+
+A — Acceptance
+  [ ] Create domain pack
+  [ ] Create reference pack when applicable
+  [ ] Create proof contract
+  [ ] Create directory contract
+  [ ] Create negative fixtures
+  [ ] Run Preceptor Council
+  [ ] Write accepted/rejected options
+
+L — Live Build
+  [ ] Implement within planned file map
+  [ ] Avoid god objects
+  [ ] Keep functions/modules bounded
+  [ ] Update architecture graph if runtime changes
+  [ ] Update ADR if architectural decision changes
+  [ ] Emit implementation receipts
+
+P — Proof
+  [ ] Run deterministic tests
+  [ ] Run live browser if UI changed
+  [ ] Run export/reopen if artifacts changed
+  [ ] Run visual/taste proof if product surface changed
+  [ ] Run domain proof if professional workflow changed
+  [ ] Run anti-shallow QA
+  [ ] Write proof ledger
+
+H — Harden
+  [ ] Add regression fixture
+  [ ] Write root-cause patch contract
+  [ ] Update rework ledger
+  [ ] Update system map / research brief / ADR
+  [ ] Run fresh-context judge
+  [ ] Emit GOAL_RESULT
+```
+
+The fresh-context judge must block the final answer if required anchor files are missing, if
+architecture-sensitive files changed without `system-map.graph.json` update, if
+SDK/agent/hook/MCP/UI/eval paths changed without research brief, if a generated file exceeds
+god-object thresholds, or if preceptor review is missing for product/architecture changes.
+
 ## The loop - run in order; read the playbook for each phase
 
 | # | Phase | Goal | Weight | Gate | Playbook |

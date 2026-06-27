@@ -1,0 +1,67 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://solo-founder-agent-builder.dev/anchors/L-implementation-map.schema.json",
+  "title": "L — Architecture-Conforming Implementation Plan",
+  "description": "Live Build phase anchor. Forces code organization before edits.",
+  "type": "object",
+  "required": [
+    "plannedFiles",
+    "mustNotTouch",
+    "architectureDeltaRequired"
+  ],
+  "properties": {
+    "plannedFiles": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["path", "owner", "maxLines"],
+        "properties": {
+          "path": { "type": "string" },
+          "owner": {
+            "type": "string",
+            "description": "What this file owns (single responsibility)."
+          },
+          "maxLines": {
+            "type": "integer",
+            "description": "Maximum lines before god-object warning."
+          }
+        },
+        "additionalProperties": false
+      },
+      "description": "Files that will be created or modified."
+    },
+    "sharedTypes": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Shared type definition files."
+    },
+    "mustNotTouch": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Files/directories that must not be modified."
+    },
+    "architectureDeltaRequired": {
+      "type": "boolean",
+      "description": "Whether docs/system-map.graph.json must be updated."
+    },
+    "godObjectRisks": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Files at risk of becoming god objects."
+    },
+    "componentOwnershipBoundaries": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "component": { "type": "string" },
+          "owns": { "type": "string" },
+          "doesNotOwn": { "type": "string" }
+        },
+        "additionalProperties": false
+      },
+      "description": "Clear ownership boundaries for each component."
+    }
+  },
+  "additionalProperties": false
+}

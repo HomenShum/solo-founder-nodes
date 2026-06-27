@@ -1,0 +1,74 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://solo-founder-agent-builder.dev/anchors/A-proof-contract.schema.json",
+  "title": "A — Acceptance + Proof Contract",
+  "description": "Acceptance phase anchor. Defines what good means before build.",
+  "type": "object",
+  "required": [
+    "domain",
+    "requiredProofDepth",
+    "proofGates",
+    "negativeFixtures",
+    "directoryContract",
+    "rejectedOptions"
+  ],
+  "properties": {
+    "domain": {
+      "type": "string",
+      "description": "Domain classification for this goal."
+    },
+    "requiredProofDepth": {
+      "type": "string",
+      "enum": ["unit", "integration", "live_browser", "live_browser_visual", "domain_professional", "benchmark"],
+      "description": "Minimum proof depth required."
+    },
+    "proofGates": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Executable proof gate IDs that must pass."
+    },
+    "negativeFixtures": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Negative fixture IDs that must not pass (regression guards)."
+    },
+    "directoryContract": {
+      "type": "object",
+      "required": ["forbidden"],
+      "properties": {
+        "mainRuntime": { "type": "string" },
+        "uiComponents": { "type": "string" },
+        "proof": { "type": "string" },
+        "tests": { "type": "string" },
+        "forbidden": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Patterns that must not appear (e.g. 'single 1500-line App.tsx god object')."
+        }
+      },
+      "additionalProperties": false
+    },
+    "rejectedOptions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["option", "reason"],
+        "properties": {
+          "option": { "type": "string" },
+          "reason": { "type": "string" }
+        },
+        "additionalProperties": false
+      },
+      "description": "Options considered and explicitly rejected."
+    },
+    "referencePackRequired": {
+      "type": "boolean",
+      "description": "Whether a Reference RALPH pack is needed."
+    },
+    "preceptorReviewRequired": {
+      "type": "boolean",
+      "description": "Whether preceptor review must run before Live Build."
+    }
+  },
+  "additionalProperties": false
+}

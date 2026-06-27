@@ -1,0 +1,92 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://solo-founder-agent-builder.dev/anchors/P-proof-ledger.schema.json",
+  "title": "P — Proof Ledger",
+  "description": "Proof phase anchor. Prevents shallow QA.",
+  "type": "object",
+  "required": ["verdict"],
+  "properties": {
+    "browserProof": {
+      "type": "object",
+      "properties": {
+        "desktopScreenshot": { "type": "string" },
+        "mobileScreenshot": { "type": "string" },
+        "video": { "type": "string" },
+        "trace": { "type": "string" },
+        "consoleErrors": { "type": "integer" }
+      },
+      "additionalProperties": false
+    },
+    "artifactProof": {
+      "type": "object",
+      "properties": {
+        "exports": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "reopenStatus": {
+          "type": "string",
+          "enum": ["pass", "fail", "not_applicable"]
+        }
+      },
+      "additionalProperties": false
+    },
+    "visualProof": {
+      "type": "object",
+      "properties": {
+        "verdict": {
+          "type": "string",
+          "enum": ["pass", "partial", "fail", "not_applicable"]
+        },
+        "reason": { "type": "string" },
+        "judgeReceipt": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "domainProof": {
+      "type": "object",
+      "properties": {
+        "invariantsChecked": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "invariantsPassed": { "type": "integer" },
+        "invariantsFailed": { "type": "integer" }
+      },
+      "additionalProperties": false
+    },
+    "telemetry": {
+      "type": "object",
+      "properties": {
+        "model": { "type": "string" },
+        "cost": { "type": "number" },
+        "runtime": { "type": "string" },
+        "toolCalls": { "type": "integer" },
+        "tokenUsage": { "type": "integer" }
+      },
+      "additionalProperties": false
+    },
+    "negativeFixturesRun": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "fixture": { "type": "string" },
+          "result": { "type": "string", "enum": ["pass", "fail"] }
+        },
+        "additionalProperties": false
+      },
+      "description": "Negative fixtures that were run and their results."
+    },
+    "verdict": {
+      "type": "string",
+      "enum": ["pass", "partial", "fail", "blocked"],
+      "description": "Overall proof verdict."
+    },
+    "knownLimitations": {
+      "type": "array",
+      "items": { "type": "string" }
+    }
+  },
+  "additionalProperties": false
+}

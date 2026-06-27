@@ -1,0 +1,59 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://solo-founder-agent-builder.dev/anchors/R-system-context.schema.json",
+  "title": "R — System Context Packet",
+  "description": "Reality phase anchor. Stops the agent from coding without understanding the system.",
+  "type": "object",
+  "required": [
+    "goal",
+    "repoKind",
+    "currentArchitectureGraphHash",
+    "affectedNodes",
+    "filesInspected",
+    "existingPatternsToReuse",
+    "antiPatternsToAvoid"
+  ],
+  "properties": {
+    "goal": {
+      "type": "string",
+      "description": "The user's goal statement."
+    },
+    "repoKind": {
+      "type": "string",
+      "description": "Repository type: vite-react-app, nextjs, node-cli, etc."
+    },
+    "currentArchitectureGraphHash": {
+      "type": "string",
+      "description": "SHA-256 hash of docs/system-map.graph.json at read time."
+    },
+    "affectedNodes": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Graph node IDs that this goal will touch."
+    },
+    "filesInspected": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "File paths the agent inspected to understand current state."
+    },
+    "existingPatternsToReuse": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Patterns in the repo that should be extended, not reinvented."
+    },
+    "antiPatternsToAvoid": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Known failure modes and anti-patterns to avoid."
+    },
+    "researchRequired": {
+      "type": "boolean",
+      "description": "Whether the Research Governor must run before Acceptance."
+    },
+    "researchReason": {
+      "type": "string",
+      "description": "Why research is required (SDK change, agent scaffold, etc.)."
+    }
+  },
+  "additionalProperties": false
+}

@@ -1,0 +1,71 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://solo-founder-agent-builder.dev/reviews/preceptor-review.schema.json",
+  "title": "Preceptor Review",
+  "description": "Senior engineer review that teaches, names failure modes, and requires cleaner structure.",
+  "type": "object",
+  "required": ["approved", "reviewers"],
+  "properties": {
+    "approved": {
+      "type": "boolean",
+      "description": "Whether the direction/implementation is approved."
+    },
+    "reviewers": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["role", "verdict", "findings"],
+        "properties": {
+          "role": {
+            "type": "string",
+            "enum": ["staff-engineer", "product-engineer", "domain-expert", "security-privacy", "qa-eval", "contrarian"]
+          },
+          "verdict": {
+            "type": "string",
+            "enum": ["approve", "require-changes", "reject"]
+          },
+          "findings": {
+            "type": "array",
+            "items": { "type": "string" }
+          }
+        },
+        "additionalProperties": false
+      },
+      "description": "Each council member's review."
+    },
+    "requiredSimplifications": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Things that must be simplified before proceeding."
+    },
+    "architectureRisks": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "badAbstractionRisks": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "godObjectWarnings": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Files that look like god objects."
+    },
+    "missingTestsOrEvals": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "rejectedOptions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "option": { "type": "string" },
+          "reason": { "type": "string" }
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": false
+}
