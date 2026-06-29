@@ -6,6 +6,12 @@ This one skill is the whole loop. The master directive runs the phases in order,
 rubric **before** building, then build the agent and UI/UX to pass it **in the actual app, on the real
 UI**, and prove the capability is real, not memorized.
 
+> **NodeRL bridge.** This loop generates the trajectories that NodeRL (trace → reward → memory →
+> repair) records, scores, and turns into durable proof. The gates that flip a benchmark claim
+> blocked→passed *from committed evidence* (not by hand) are the pattern to copy: derive the claim
+> from a gate-verdict receipt so re-generation can't silently revert it. Machine-readable loop state:
+> `references/ralph-anchors.md`. Public substrate: github.com/HomenShum/noderl.
+
 ## The one non-negotiable - why this skill exists
 
 A coding agent told to "pass the benchmark" will cheat: hardcode answers, detect-and-template
